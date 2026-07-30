@@ -28,7 +28,7 @@ const STATUS_ITEMS: { value: InventoryStatusFilter; label: string }[] = [
 
 export default function MyStockPage() {
   const user = useAppStore((s) => s.user);
-  const label = user?.branch?.split(" — ")[0] ?? "My Branch";
+  const label = user?.store?.split(" — ")[0] ?? "My Branch";
 
   const [status, setStatus] = useState<InventoryStatusFilter>("All");
   const [pageIndex, setPageIndex] = useState(0);

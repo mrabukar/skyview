@@ -112,8 +112,8 @@ export function ExpensesTable({
           <DataTableColumnHeader column={column} title="Branch" />
         ),
         cell: ({ row }) =>
-          row.original.branch ? (
-            row.original.branch.name
+          row.original.store ? (
+            row.original.store.name
           ) : (
             <Badge color="slate">Company-wide</Badge>
           ),
