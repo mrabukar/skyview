@@ -1,0 +1,59 @@
+"use client";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { AppUser, Toast } from "@/lib/types";
+
+interface AppState {
+  user: AppUser | null;
+  collapsed: boolean;
+  toasts: Toast[];
+  setUser: (user: AppUser) => void;
+  clearUser: () => void;
+  setCollapsed: (v: boolean) => void;
+  addToast: (t: Omit<Toast, "id" | "createdAt" | "kind">) => void;
+  addErrorToast: (t: Omit<Toast, "id" | "createdAt" | "kind">) => void;
+  removeToast: (id: number) => void;
+}
+
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      user: null,
+      collapsed: false,
+      toasts: [],
+
+      setUser: (user) => set({ user }),
+      clearUser: () => set({ user: null }),
+      setCollapsed: (v) => set({ collapsed: v }),
+
+      addToast: (t) => {
+        const id = Date.now() + Math.random();
+        const toast: Toast = {
+          kind: "success",
+          createdAt: new Date().toISOString(),
+          ...t,
+          id,
+        };
+        set((s) => ({ toasts: [...s.toasts, toast] }));
+        setTimeout(() => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })), 3200);
+      },
+      addErrorToast: (t) => {
+        const id = Date.now() + Math.random();
+        const toast: Toast = {
+          kind: "error",
+          createdAt: new Date().toISOString(),
+          ...t,
+          id,
+        };
+        set((s) => ({ toasts: [...s.toasts, toast] }));
+        setTimeout(() => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })), 3200);
+      },
+      removeToast: (id) =>
+        set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
+    }),
+    {
+      name: "inventory-session",
+      partialize: (s) => ({ collapsed: s.collapsed }),
+    }
+  )
+);
