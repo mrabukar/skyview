@@ -12,6 +12,7 @@ change of scope should be reflected here first.
 | [04-data-model.md](04-data-model.md) | Entities, fields, relationships, constraints |
 | [05-api-design.md](05-api-design.md) | REST endpoints, permissions, request/response shapes, errors |
 | [06-non-functional.md](06-non-functional.md) | Auth, roles, audit, timezone, money, validation, pagination |
+| [07-tech-stack.md](07-tech-stack.md) | Stack & versions (same platform as the inventory product) |
 
 ## Context
 
