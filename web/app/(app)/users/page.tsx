@@ -117,6 +117,7 @@ export default function UsersPage() {
           email: form.email,
           role: form.role,
           phone: form.phone || null,
+          salary: form.salary ? Number(form.salary) : 0,
         };
 
         if (form.password) input.password = form.password;
@@ -138,6 +139,7 @@ export default function UsersPage() {
           storeId:
             form.role === "branch_manager" ? form.storeId : undefined,
           phone: form.phone || undefined,
+          salary: form.salary ? Number(form.salary) : 0,
         });
         addToast({ title: "User added successfully" });
       }
