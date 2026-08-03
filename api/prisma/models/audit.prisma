@@ -1,0 +1,49 @@
+enum AuditAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_DEACTIVATED
+  USER_REACTIVATED
+  STORE_CREATED
+  STORE_UPDATED
+  STORE_DEACTIVATED
+  STORE_REACTIVATED
+  VENDOR_CREATED
+  VENDOR_UPDATED
+  VENDOR_DEACTIVATED
+  DAILY_SALE_CREATED
+  DAILY_SALE_UPDATED
+  DAILY_SALE_DELETED
+  PURCHASE_CREATED
+  PURCHASE_UPDATED
+  PURCHASE_DELETED
+  EXPENSE_CREATED
+  EXPENSE_UPDATED
+  EXPENSE_DELETED
+  EXPENSE_CATEGORY_CREATED
+  EXPENSE_CATEGORY_UPDATED
+  EXPENSE_CATEGORY_DELETED
+  PAYROLL_RUN_EXECUTED
+  ORGANIZATION_UPDATED
+  REPORT_EXPORTED
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  action         AuditAction
+  entityType     String
+  entityId       String
+  storeId        String?
+  oldValue       Json?
+  newValue       Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
