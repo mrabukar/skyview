@@ -1,8 +1,27 @@
 # Bubble Tea Palace — Frontend Demo (Skyview Coffee Ltd)
 
-Client-facing demo of the café management system. This is a **copy of the
-inventory frontend** running entirely on **mock data** — no backend, no
-database. Every screen works; nothing is saved permanently.
+Client-facing demo of the café management system, running entirely on
+**mock data** — no backend, no database. Every screen works; changes last
+until the page reloads.
+
+## Scope (per client decisions)
+
+Three record types, all per-branch, plus payroll:
+
+- **Daily Sales** — one sales total per branch per day. Managers enter their
+  own branch; can only edit **today's** entry (older corrections are admin-only).
+- **Purchases** — supplies bought for a branch (free-text item + quantity +
+  unit price), with a **managed vendor list** (admin maintains it). Managers
+  record for their own branch; admin for any branch.
+- **Expenses** — per branch or company-wide, by category.
+- **Payroll** — each user has a monthly salary. Admin clicks
+  "Pay salaries — <month>" once per month; it creates a Salaries expense per
+  staff member and **locks until the next month starts**.
+
+Removed from the app (out of scope): products/menu, categories, inventory,
+warehouse, distribute-to-branch, stock report, my stock, per-item sales.
+
+Profit = Sales − Purchases − Expenses (dashboard + Financial Summary).
 
 ## Run it
 
@@ -15,39 +34,31 @@ Open http://localhost:3000
 
 ## Login (demo)
 
-Any email and password work:
+Click a badge on the login page, or use any email/password:
 
-- Any email (e.g. `admin@skyviewcoffee.co.ke`) → **Admin** view (all 4 branches)
-- An email containing `manager` (e.g. `manager@x.com`) → **Branch Manager** view (Hub Karen)
+- Any email → **Admin** (all branches, payroll, vendors, users)
+- Email containing `manager` → **Branch Manager** (Hub Karen: own sales,
+  purchases, expenses only)
 
-## What's in the mock data
+## Mock data
 
-- 4 branches: Hub Mall – Karen, Runda Mall, One Stop Arcade – Langata, Mombasa City
-- Menu items: Bubble Coffee, Iced Latte Boba Tea, Chai Boba Coffee, milk teas, fruit teas, matcha, waffles — organised in menu sections
-- ~4 months of daily sales across all branches (KSh)
-- Vendor purchases: Carrefour, Osterberg, Maasai Boba, Swiss Packaging, etc.
-- Expenses from the real spreadsheet patterns: rent, salaries, service charge, transport, repairs, internet, promotional levy
-- Reports/dashboards computed live from the mock sales and expenses
+4 real branches, ~4 months of daily sales totals (KSh), supply purchases from
+real vendors (Carrefour, Osterberg, Maasai Boba, Swiss Packaging…), expenses
+mirroring the client's spreadsheet, salaries per user, and 3 months of payroll
+history (current month unpaid so the button is clickable). Dates are generated
+relative to today, so the demo always looks current.
 
-## Purpose
+## Key files
 
-The client clicks through every screen and decides **which modules to keep or
-remove** (the stated scope is sales + expenses; purchases/inventory/etc. are
-included so removal decisions are made on real screens).
-
-## What was changed vs the inventory frontend
-
-| Area | Change |
+| Area | File |
 |---|---|
-| `service/client.ts`, `service/upload.ts` | All API calls routed to a local mock router |
-| `service/mock/data.ts` | Skyview dataset (branches, menu, sales, expenses…) |
-| `service/mock/handlers.ts` | Mock API: every `/api/*` route answered locally |
-| `hooks/auth/*`, `lib/auth/proxy/auth.ts`, `lib/auth/session-refresh.ts` | Demo login (any credentials), no Better-Auth server |
-| `app/globals.css` | Skyview palette: espresso `#3F201B`, amber `#F9A72A`, cream backgrounds (colors extracted from the company profile PDF) |
-| `components/logo.tsx`, `public/logo-*.svg` | Bubble tea cup logo mark |
-| `public/login_background.png` | Warm espresso/amber gradient |
-| `lib/utils.ts` | Currency: `KSh` instead of `$` |
-| `lib/page-title.ts`, `app/layout.tsx`, sidebar wordmark | "Bubble Tea Palace" branding |
+| Mock dataset | `service/mock/data.ts` |
+| Mock API (all routes + role rules) | `service/mock/handlers.ts` |
+| Daily sales page | `app/(app)/sales/` |
+| Purchases + vendor modal | `app/(app)/purchases/` |
+| Payroll page | `app/(app)/payroll/page.tsx` |
+| Salary field | `app/(app)/users/`, `types/users/user.ts` |
+| Nav | `components/shell/sidebar.tsx` |
 
-To wire a real backend later, restore `service/client.ts` / `service/upload.ts`
-and the auth files from `inventory/web` — everything else is unchanged.
+To wire a real backend later, replace `service/client.ts` / `service/upload.ts`
+and the auth files with the originals from `inventory/web`.
