@@ -11,7 +11,7 @@ export function DashboardPageHeader({ filters }: Props) {
     <PageHeader
       className="page-head--band"
       title="Dashboard"
-      desc="Monitor revenue, profit, expenses, and inventory for the selected period."
+      desc="Sales, purchases, expenses, and profit for the selected period."
       action={<ReportFilterBar filters={filters} />}
     />
   );
