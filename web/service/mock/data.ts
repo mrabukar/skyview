@@ -1,19 +1,20 @@
 /**
  * Skyview Coffee (Bubble Tea Palace) — demo mock dataset.
- * All data is generated deterministically so the demo looks the same on every load.
- * No backend is required; service/client.ts routes every request to service/mock/handlers.ts.
+ * Scope: daily sales, branch purchases (free-text items + managed vendors),
+ * expenses, and payroll. No stock/inventory tracking.
+ *
+ * Data is generated deterministically, with dates relative to "today",
+ * so the demo always looks current. No backend is required.
  */
 import type { Store } from "@/types/stores/store";
-import type { Category } from "@/types/categories/category";
-import type { Product } from "@/types/products/product";
 import type { User } from "@/types/users/user";
 import type { ApiUser } from "@/types/auth/me";
 import type { Expense } from "@/types/expenses/expense";
 import type { ExpenseCategory } from "@/types/expenses/expense-category";
-import type { Sale } from "@/types/sales/sale";
-import type { Purchase } from "@/types/purchases/purchase";
-import type { StockSupply } from "@/types/stock-supplies/stock-supply";
-import type { Inventory } from "@/types/inventory/inventory";
+import type { DailySale } from "@/types/daily-sales/daily-sale";
+import type { PurchaseEntry } from "@/types/purchases/purchase-entry";
+import type { Vendor } from "@/types/vendors/vendor";
+import type { PayrollRun } from "@/types/payroll/payroll";
 
 /* ------------------------------------------------------------------ */
 /* Deterministic RNG                                                   */
@@ -30,16 +31,51 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(rand() * arr.length)];
 }
 
-const NOW = new Date("2026-07-30T12:00:00.000Z");
-export function daysAgo(n: number, hour = 10): string {
+const NOW = new Date();
+
+export function ymd(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+export function daysAgoDate(n: number): Date {
   const d = new Date(NOW);
-  d.setUTCDate(d.getUTCDate() - n);
-  d.setUTCHours(hour, randInt(0, 59), 0, 0);
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+export function daysAgo(n: number, hour = 10): string {
+  const d = daysAgoDate(n);
+  d.setHours(hour, randInt(0, 59), 0, 0);
   return d.toISOString();
 }
 
+export function daysAgoYmd(n: number): string {
+  return ymd(daysAgoDate(n));
+}
+
+export function monthKeyOfDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export const MONTH_LABELS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+export const MONTH_FULL = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+export function monthLabelOfKey(key: string): string {
+  const [y, m] = key.split("-");
+  return `${MONTH_FULL[Number(m) - 1]} ${y}`;
+}
+
+export const CURRENT_MONTH_KEY = monthKeyOfDate(NOW);
+
 /* ------------------------------------------------------------------ */
-/* Stores — the four Bubble Tea Palace branches                        */
+/* Branches                                                            */
 /* ------------------------------------------------------------------ */
 export const stores: Store[] = [
   {
@@ -77,7 +113,7 @@ export const stores: Store[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/* Users                                                               */
+/* Users (with monthly salary)                                         */
 /* ------------------------------------------------------------------ */
 export const users: User[] = [
   {
@@ -86,6 +122,7 @@ export const users: User[] = [
     email: "admin@skyviewcoffee.co.ke",
     role: "admin",
     phone: "0723534990",
+    salary: 60000,
     isActive: true,
     storeId: null,
     store: null,
@@ -98,6 +135,7 @@ export const users: User[] = [
     email: "catherine@skyviewcoffee.co.ke",
     role: "branch_manager",
     phone: "0712000001",
+    salary: 25000,
     isActive: true,
     storeId: "store-hub-karen",
     store: { id: "store-hub-karen", name: "Hub Mall – Karen" },
@@ -110,6 +148,7 @@ export const users: User[] = [
     email: "brian@skyviewcoffee.co.ke",
     role: "branch_manager",
     phone: "0712000002",
+    salary: 25000,
     isActive: true,
     storeId: "store-runda",
     store: { id: "store-runda", name: "Runda Mall" },
@@ -122,6 +161,7 @@ export const users: User[] = [
     email: "amina@skyviewcoffee.co.ke",
     role: "branch_manager",
     phone: "0712000003",
+    salary: 22000,
     isActive: true,
     storeId: "store-mombasa",
     store: { id: "store-mombasa", name: "Mombasa City" },
@@ -134,7 +174,8 @@ export const users: User[] = [
     email: "kevin@skyviewcoffee.co.ke",
     role: "branch_manager",
     phone: "0712000004",
-    isActive: false,
+    salary: 22000,
+    isActive: true,
     storeId: "store-langata",
     store: { id: "store-langata", name: "One Stop Arcade – Langata" },
     createdAt: daysAgo(290),
@@ -186,77 +227,29 @@ export const meManager: ApiUser = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Menu sections (categories)                                          */
+/* Vendors (managed list)                                              */
 /* ------------------------------------------------------------------ */
-const categoryDefs = [
-  ["Specialty Coffee", "Espresso-based and signature coffee drinks"],
-  ["Milk Teas", "Classic and flavoured milk teas with boba"],
-  ["Fruit Teas", "Fresh fruit teas and mocktail bobas"],
-  ["Matcha", "Matcha lattes and matcha fusions"],
-  ["Waffles & Desserts", "Waffles, donuts, and sweet treats"],
-] as const;
+const vendorNames = [
+  "Carrefour",
+  "Osterberg",
+  "Maasai Boba",
+  "Swiss Packaging",
+  "Lotus Group",
+  "Savora Flavors",
+  "FengSheng Boba",
+];
 
-export const categories: Category[] = categoryDefs.map(([name, description], i) => ({
-  id: `cat-${i + 1}`,
+export const vendors: Vendor[] = vendorNames.map((name, i) => ({
+  id: `vendor-${i + 1}`,
   name,
-  description,
-  createdAt: daysAgo(400),
-  updatedAt: daysAgo(100),
-  _count: { products: 0 },
+  isActive: true,
+  createdAt: daysAgo(300),
+  updatedAt: daysAgo(50),
+  _count: { purchases: 0 },
 }));
 
 /* ------------------------------------------------------------------ */
-/* Menu items (products)                                               */
-/* ------------------------------------------------------------------ */
-const productDefs: Array<[string, string, number, number]> = [
-  // [name, categoryId, sellingPrice, averageCost]
-  ["Bubble Coffee", "cat-1", 380, 120],
-  ["Iced Latte Boba Tea", "cat-1", 420, 140],
-  ["Chai Boba Coffee", "cat-1", 400, 130],
-  ["Cappuccino", "cat-1", 300, 90],
-  ["Caramel Macchiato", "cat-1", 380, 125],
-  ["Classic Milk Tea", "cat-2", 320, 95],
-  ["Brown Sugar Boba", "cat-2", 380, 115],
-  ["Taro Milk Tea", "cat-2", 350, 110],
-  ["Thai Milk Tea", "cat-2", 350, 105],
-  ["Passion Fruit Tea", "cat-3", 320, 85],
-  ["Mango Fruit Tea", "cat-3", 320, 88],
-  ["Strawberry Mocktail Boba", "cat-3", 360, 100],
-  ["Matcha Latte", "cat-4", 380, 130],
-  ["Strawberry Matcha", "cat-4", 420, 145],
-  ["Belgian Waffle", "cat-5", 450, 160],
-  ["Glazed Donut", "cat-5", 200, 70],
-  ["Ice Cream Sundae", "cat-5", 350, 120],
-];
-
-export const products: Product[] = productDefs.map(([name, categoryId, sellingPrice, averageCost], i) => {
-  const cat = categories.find((c) => c.id === categoryId)!;
-  if (cat._count) cat._count.products += 1;
-  return {
-    id: `prod-${i + 1}`,
-    name,
-    normalizedName: name.toLowerCase(),
-    model: null,
-    categoryId,
-    category: {
-      id: Number(categoryId.replace("cat-", "")),
-      name: cat.name,
-      description: cat.description,
-      createdAt: cat.createdAt,
-      updatedAt: cat.updatedAt,
-    },
-    description: null,
-    averageCost,
-    sellingPrice,
-    isActive: true,
-    createdById: "user-admin",
-    createdAt: daysAgo(390),
-    updatedAt: daysAgo(50),
-  };
-});
-
-/* ------------------------------------------------------------------ */
-/* Expense categories — straight from the client's spreadsheet         */
+/* Expense categories                                                  */
 /* ------------------------------------------------------------------ */
 const expenseCategoryDefs = [
   ["Rent", "Monthly branch rent"],
@@ -280,21 +273,16 @@ export const expenseCategories: ExpenseCategory[] = expenseCategoryDefs.map(
   }),
 );
 
+export const SALARIES_CATEGORY_ID = 2;
+
 /* ------------------------------------------------------------------ */
-/* Expenses — mirrors the boba spreadsheet patterns                    */
+/* Expenses                                                            */
 /* ------------------------------------------------------------------ */
 const expenseTemplates: Array<[string, number, number, string | null]> = [
-  // [title, categoryId(1-based), baseAmount, storeId|null(company-wide)]
   ["Branch rent", 1, 67785, "store-hub-karen"],
   ["Branch rent", 1, 58200, "store-runda"],
   ["Branch rent", 1, 41500, "store-langata"],
   ["Branch rent", 1, 46800, "store-mombasa"],
-  ["Manager salary", 2, 25000, "store-hub-karen"],
-  ["Manager salary", 2, 25000, "store-runda"],
-  ["Manager salary", 2, 22000, "store-langata"],
-  ["Manager salary", 2, 22000, "store-mombasa"],
-  ["Baristas wages", 2, 54000, "store-hub-karen"],
-  ["Baristas wages", 2, 48000, "store-runda"],
   ["Mall service charge", 3, 8197, "store-hub-karen"],
   ["Mall service charge", 3, 7450, "store-runda"],
   ["Daily transport allowance", 4, 9000, "store-hub-karen"],
@@ -312,15 +300,20 @@ const expenseTemplates: Array<[string, number, number, string | null]> = [
 
 export const expenses: Expense[] = [];
 let expenseId = 1;
+
+function pushExpense(e: Omit<Expense, "id">): Expense {
+  const rec = { ...e, id: `exp-${expenseId++}` };
+  expenses.push(rec);
+  return rec;
+}
+
 for (let month = 0; month < 4; month++) {
   for (const [title, categoryId, base, storeId] of expenseTemplates) {
-    // not every expense repeats every month
     if (month > 0 && (categoryId === 5 || categoryId === 9) && rand() < 0.6) continue;
     const day = month * 30 + randInt(2, 26);
     const store = storeId ? stores.find((s) => s.id === storeId)! : null;
     const amount = Math.round(base * (0.92 + rand() * 0.16));
-    expenses.push({
-      id: `exp-${expenseId++}`,
+    pushExpense({
       title,
       amount,
       categoryId,
@@ -336,156 +329,163 @@ for (let month = 0; month < 4; month++) {
     });
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Payroll — previous 3 months already paid; current month open        */
+/* ------------------------------------------------------------------ */
+export const payrollRuns: PayrollRun[] = [];
+
+function monthKeyMinus(n: number): string {
+  const d = new Date(NOW);
+  d.setDate(1);
+  d.setMonth(d.getMonth() - n);
+  return monthKeyOfDate(d);
+}
+
+for (let back = 3; back >= 1; back--) {
+  const key = monthKeyMinus(back);
+  const activeUsers = users.filter((u) => u.isActive);
+  const total = activeUsers.reduce((a, u) => a + u.salary, 0);
+  // paid on ~28th of that month → approximate as back*30 - 27 days ago
+  const paidDaysAgo = Math.max(1, back * 30 - 27);
+  const paidAt = daysAgo(paidDaysAgo, 15);
+  payrollRuns.push({
+    id: `payroll-${key}`,
+    monthKey: key,
+    monthLabel: monthLabelOfKey(key),
+    totalAmount: total,
+    userCount: activeUsers.length,
+    paidAt,
+    paidById: "user-admin",
+    paidBy: { id: "user-admin", name: "Skyview Admin" },
+    users: activeUsers.map((u) => ({
+      id: u.id,
+      name: u.name,
+      salary: u.salary,
+      storeName: u.store?.name ?? null,
+    })),
+  });
+  // matching salary expenses
+  for (const u of activeUsers) {
+    pushExpense({
+      title: `Salary — ${u.name} (${monthLabelOfKey(key)})`,
+      amount: u.salary,
+      categoryId: SALARIES_CATEGORY_ID,
+      category: expenseCategories[SALARIES_CATEGORY_ID - 1],
+      storeId: u.storeId,
+      store: u.store ? { id: u.store.id, name: u.store.name } : null,
+      expenseDate: paidAt,
+      note: `Payroll run ${monthLabelOfKey(key)}`,
+      createdById: "user-admin",
+      createdBy: { id: "user-admin", name: "Skyview Admin", email: "admin@skyviewcoffee.co.ke" },
+      createdAt: paidAt,
+      updatedAt: paidAt,
+    });
+  }
+}
+
 expenses.sort((a, b) => b.expenseDate.localeCompare(a.expenseDate));
 
 /* ------------------------------------------------------------------ */
-/* Sales — ~4 months of daily café sales across branches               */
+/* Daily sales — one total per branch per day                          */
 /* ------------------------------------------------------------------ */
-const sellersByStore: Record<string, User> = {
+const managersByStore: Record<string, User> = {
   "store-hub-karen": users[1],
   "store-runda": users[2],
   "store-langata": users[4],
   "store-mombasa": users[3],
 };
 
-export const sales: Sale[] = [];
-let saleId = 1;
+// typical daily revenue per branch (KSh)
+const dailyBase: Record<string, number> = {
+  "store-hub-karen": 32000,
+  "store-runda": 26000,
+  "store-langata": 17000,
+  "store-mombasa": 21000,
+};
+
+export const dailySales: DailySale[] = [];
+let dailySaleId = 1;
 for (let day = 0; day < 120; day++) {
   for (const store of stores) {
-    // busier branches sell more line items per day
-    const weight = store.id === "store-hub-karen" ? 4 : store.id === "store-runda" ? 3 : 2;
-    const entries = randInt(Math.max(1, weight - 1), weight + 1);
-    for (let e = 0; e < entries; e++) {
-      const product = pick(products);
-      const qty = randInt(1, 6);
-      const unitPrice = Number(product.sellingPrice);
-      const seller = sellersByStore[store.id] ?? users[0];
-      const corrected = rand() < 0.02;
-      sales.push({
-        id: `sale-${saleId++}`,
-        productId: product.id,
+    // occasionally a branch misses a day's entry
+    if (rand() < 0.04) continue;
+    const who = managersByStore[store.id] ?? users[0];
+    const weekendBoost = daysAgoDate(day).getDay() % 6 === 0 ? 1.25 : 1;
+    const amount = Math.round((dailyBase[store.id] * (0.75 + rand() * 0.5) * weekendBoost) / 10) * 10;
+    dailySales.push({
+      id: `dsale-${dailySaleId++}`,
+      storeId: store.id,
+      store: { id: store.id, name: store.name },
+      saleDate: daysAgoYmd(day),
+      totalAmount: amount,
+      note: null,
+      enteredById: who.id,
+      enteredBy: { id: who.id, name: who.name, email: who.email },
+      createdAt: daysAgo(day, 20),
+      updatedAt: daysAgo(day, 20),
+    });
+  }
+}
+dailySales.sort((a, b) => b.saleDate.localeCompare(a.saleDate));
+
+/* ------------------------------------------------------------------ */
+/* Purchases — free-text supply items per branch                       */
+/* ------------------------------------------------------------------ */
+const supplyItems: Array<[string, string, number, number, number]> = [
+  // [itemName, unit hint → vendorId, unitPrice, qtyMin, qtyMax]
+  ["Paper cups 16oz (pack of 50)", "vendor-4", 450, 4, 20],
+  ["Sealing film rolls", "vendor-4", 1200, 1, 6],
+  ["Tapioca boba pearls 3kg", "vendor-3", 2200, 2, 10],
+  ["Popping boba — passion", "vendor-7", 1800, 1, 6],
+  ["Popping boba — strawberry", "vendor-7", 1800, 1, 6],
+  ["Fresh milk 1L", "vendor-1", 145, 20, 80],
+  ["Sugar 2kg", "vendor-1", 320, 5, 20],
+  ["Ice cream tubs 5L", "vendor-2", 2500, 2, 8],
+  ["Flavour syrup — caramel 750ml", "vendor-6", 950, 2, 8],
+  ["Flavour syrup — taro 750ml", "vendor-6", 980, 2, 8],
+  ["Coffee beans 1kg", "vendor-2", 1450, 3, 12],
+  ["Tea leaves 500g", "vendor-5", 780, 3, 10],
+  ["Straws jumbo (pack of 100)", "vendor-4", 380, 3, 12],
+  ["Napkins & tissues", "vendor-1", 260, 5, 15],
+  ["Matcha powder 250g", "vendor-5", 1650, 1, 5],
+];
+
+export const purchaseEntries: PurchaseEntry[] = [];
+let purchaseId = 1;
+for (let day = 0; day < 120; day++) {
+  for (const store of stores) {
+    // each branch buys supplies roughly every 2-3 days
+    if (rand() < 0.6) continue;
+    const nEntries = randInt(1, 3);
+    for (let e = 0; e < nEntries; e++) {
+      const [itemName, vendorId, unitPrice, qMin, qMax] = pick(supplyItems);
+      const vendor = vendors.find((v) => v.id === vendorId)!;
+      if (vendor._count) vendor._count.purchases += 1;
+      const who = rand() < 0.75 ? (managersByStore[store.id] ?? users[0]) : users[0];
+      const quantity = randInt(qMin, qMax);
+      const price = Math.round(unitPrice * (0.95 + rand() * 0.1));
+      purchaseEntries.push({
+        id: `pentry-${purchaseId++}`,
         storeId: store.id,
-        soldById: seller.id,
-        quantitySold: qty,
-        unitPrice,
-        unitPurchasePrice: Number(product.averageCost),
-        totalAmount: qty * unitPrice,
-        saleDate: daysAgo(day, randInt(8, 20)),
+        store: { id: store.id, name: store.name },
+        itemName,
+        quantity,
+        unitPrice: price,
+        totalCost: quantity * price,
+        vendorId: vendor.id,
+        vendor: { id: vendor.id, name: vendor.name },
+        purchaseDate: daysAgoYmd(day),
         note: null,
-        status: corrected ? "corrected" : "active",
-        createdAt: daysAgo(day),
-        updatedAt: daysAgo(day),
-        product,
-        store,
-        soldBy: { id: seller.id, name: seller.name, email: seller.email },
-        corrections: corrected
-          ? [
-              {
-                id: `corr-${saleId}`,
-                saleId: `sale-${saleId - 1}`,
-                originalQuantity: qty + 1,
-                correctedQuantity: qty,
-                reason: "Entry error — wrong quantity keyed in",
-                correctedById: "user-admin",
-                createdAt: daysAgo(day - 1 < 0 ? 0 : day - 1),
-              },
-            ]
-          : [],
+        createdById: who.id,
+        createdBy: { id: who.id, name: who.name, email: who.email },
+        createdAt: daysAgo(day, 11),
+        updatedAt: daysAgo(day, 11),
       });
     }
   }
 }
-sales.sort((a, b) => b.saleDate.localeCompare(a.saleDate));
-
-/* ------------------------------------------------------------------ */
-/* Purchases — vendor invoices (Carrefour, Osterberg, Maasai Boba...)  */
-/* ------------------------------------------------------------------ */
-const vendors = [
-  "Carrefour",
-  "Osterberg",
-  "Maasai Boba",
-  "Swiss Packaging",
-  "Lotus Group",
-  "Savora Flavors",
-  "FengSheng Boba",
-];
-
-export const purchases: Purchase[] = [];
-let purchaseId = 1;
-for (let day = 0; day < 120; day += randInt(2, 5)) {
-  const product = pick(products);
-  const qty = randInt(20, 120);
-  const unit = Math.round(Number(product.averageCost) * (0.85 + rand() * 0.2));
-  const vendor = pick(vendors);
-  purchases.push({
-    id: `pur-${purchaseId++}`,
-    productId: product.id,
-    quantity: qty,
-    unitPurchasePrice: unit,
-    totalCost: qty * unit,
-    type: "purchase",
-    correctsPurchaseId: null,
-    invoiceNumber: `${vendor.slice(0, 3).toUpperCase()}-${2600 + purchaseId}`,
-    purchaseDate: daysAgo(day),
-    note: `Supplier: ${vendor}`,
-    purchasedById: "user-admin",
-    createdAt: daysAgo(day),
-    product,
-    purchasedBy: { id: "user-admin", name: "Skyview Admin", email: "admin@skyviewcoffee.co.ke" },
-    reversibleQuantity: qty,
-  });
-}
-purchases.sort((a, b) => b.purchaseDate.localeCompare(a.purchaseDate));
-
-/* ------------------------------------------------------------------ */
-/* Inventory per store                                                 */
-/* ------------------------------------------------------------------ */
-export const inventory: Inventory[] = [];
-let invId = 1;
-for (const store of stores) {
-  for (const product of products) {
-    const qty = rand() < 0.06 ? 0 : randInt(3, 80);
-    inventory.push({
-      id: `inv-${invId++}`,
-      productId: product.id,
-      storeId: store.id,
-      quantity: qty,
-      lowStockThreshold: 10,
-      createdAt: daysAgo(200),
-      updatedAt: daysAgo(randInt(0, 10)),
-      product,
-      store,
-    });
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/* Stock supplies                                                      */
-/* ------------------------------------------------------------------ */
-export const stockSupplies: StockSupply[] = [];
-let supplyId = 1;
-for (let day = 0; day < 90; day += randInt(3, 7)) {
-  const product = pick(products);
-  const store = pick(stores);
-  const qty = randInt(10, 60);
-  stockSupplies.push({
-    id: `sup-${supplyId++}`,
-    productId: product.id,
-    storeId: store.id,
-    quantity: qty,
-    unitPurchasePrice: Number(product.averageCost),
-    type: "supply",
-    correctsSupplyId: null,
-    suppliedById: "user-admin",
-    note: null,
-    createdAt: daysAgo(day),
-    product,
-    store,
-    suppliedBy: { id: "user-admin", name: "Skyview Admin", email: "admin@skyviewcoffee.co.ke" },
-    correctsSupply: null,
-  });
-}
-stockSupplies.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+purchaseEntries.sort((a, b) => b.purchaseDate.localeCompare(a.purchaseDate));
 
 /* ------------------------------------------------------------------ */
 /* Audit logs                                                          */
@@ -506,11 +506,9 @@ export interface MockAuditLog {
 }
 
 const auditActions: Array<[string, string]> = [
-  ["SALE_CREATED", "Sale"],
+  ["SALE_CREATED", "DailySale"],
   ["EXPENSE_CREATED", "Expense"],
   ["PURCHASE_CREATED", "Purchase"],
-  ["STOCK_SUPPLIED", "StockSupply"],
-  ["PRODUCT_UPDATED", "Product"],
   ["USER_UPDATED", "User"],
   ["STORE_UPDATED", "Store"],
 ];
@@ -557,7 +555,6 @@ export function inRange(dateIso: string, from?: string | null, to?: string | nul
   return true;
 }
 
-export const MONTH_LABELS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
+export function todayYmd(): string {
+  return ymd(new Date());
+}
