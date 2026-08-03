@@ -8,6 +8,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { RoleBadge, StatusBadge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/format-relative-time";
+import { fmt } from "@/lib/utils";
 import type { User } from "@/types/users/user";
 
 interface UsersTableProps {
@@ -89,6 +90,19 @@ export function UsersTable({
           <DataTableColumnHeader column={column} title="Branch" />
         ),
         cell: ({ row }) => row.original.store?.name ?? "—",
+      },
+      {
+        accessorKey: "salary",
+        meta: {
+          label: "Salary",
+          exportValue: (row: User) => String(row.salary ?? 0),
+        },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Salary" />
+        ),
+        cell: ({ row }) => (
+          <span className="tabular-nums">{fmt(row.original.salary ?? 0)}</span>
+        ),
       },
       {
         accessorKey: "isActive",
