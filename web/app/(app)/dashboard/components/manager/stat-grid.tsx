@@ -1,4 +1,4 @@
-import { AlertTriangle, Package, ShoppingCart, TrendingUp } from "lucide-react";
+import { ClipboardList, ShoppingCart, TrendingUp } from "lucide-react";
 import { formatPeriodTrend } from "@/lib/reports/format";
 import { fmt } from "@/lib/utils";
 import type { ManagerPeriodComparison } from "@/types/reports/common";
@@ -12,7 +12,7 @@ interface Props {
 
 export function ManagerStatGrid({ summary: s, comparison }: Props) {
   return (
-    <div className="stat-grid grid-4 mb-16">
+    <div className="stat-grid grid-3 mb-16">
       <StatCard
         icon={ShoppingCart}
         color="indigo"
@@ -20,30 +20,19 @@ export function ManagerStatGrid({ summary: s, comparison }: Props) {
         label="Today's Sales"
         {...formatPeriodTrend(comparison.todayRevenue)}
       />
-      {/* <StatCard
+      <StatCard
         icon={TrendingUp}
         color="teal"
         value={fmt(s.monthRevenue)}
-        label="This Month Sales"
+        label="This Month's Sales"
         {...formatPeriodTrend(comparison.monthRevenue)}
-      /> */}
+      />
       <StatCard
-        icon={Package}
+        icon={ClipboardList}
         color="violet"
-        value={s.inStockBalance.toLocaleString()}
-        label="In-Stock Balance"
-      />
-      <StatCard
-        icon={AlertTriangle}
-        color="amber"
-        value={s.lowStockCount}
-        label="Low Stock Items"
-      />
-      <StatCard
-        icon={AlertTriangle}
-        color="rose"
-        value={s.outOfStockCount}
-        label="Out of Stock"
+        value={s.todayUnitsSold > 0 ? "Recorded" : "Not yet"}
+        label="Today's Entry"
+        valueColor={s.todayUnitsSold > 0 ? undefined : "var(--status-amber)"}
       />
     </div>
   );
