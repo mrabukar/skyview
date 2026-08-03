@@ -28,7 +28,7 @@ export function AdminRevenueCharts({ charts }: Props) {
 
   return (
     <div className="dash-charts mb-16">
-      <Card title="Revenue vs COGS vs Expenses" pad>
+      <Card title="Sales vs Purchases vs Expenses" pad>
         {revenueChart.length > 0 ? (
           <GroupedBar data={revenueChart} />
         ) : (
