@@ -3,22 +3,14 @@ import type { Role } from "@/lib/types";
 
 export const PROTECTED_ROUTE_PREFIXES = [
   "/dashboard",
-  "/products",
-  "/purchases",
-  "/warehouse",
-  "/inventory",
-  "/stock-report",
   "/sales",
-  "/supply",
+  "/purchases",
   "/expenses",
+  "/payroll",
   "/financial",
-  "/categories",
   "/branches",
   "/users",
   "/audit",
-  "/submit-sale",
-  "/my-stock",
-  "/sales-history",
   "/settings/organization",
   "/settings/profile",
   "/settings/password",
@@ -34,16 +26,8 @@ export const ACCOUNT_SETTINGS_ROUTE_PREFIXES = [
 
 /** Admin-only routes — branch managers must not access these. */
 export const ADMIN_ONLY_ROUTE_PREFIXES = [
-  "/products",
-  "/purchases",
-  "/warehouse",
-  "/inventory",
-  "/stock-report",
-  "/sales",
-  "/supply",
-  "/expenses",
+  "/payroll",
   "/financial",
-  "/categories",
   "/branches",
   "/users",
   "/audit",
@@ -51,11 +35,7 @@ export const ADMIN_ONLY_ROUTE_PREFIXES = [
 ] as const;
 
 /** Manager-only routes — admins must not access these (unless hasStores is false). */
-export const MANAGER_ONLY_ROUTE_PREFIXES = [
-  "/submit-sale",
-  "/my-stock",
-  "/sales-history",
-] as const;
+export const MANAGER_ONLY_ROUTE_PREFIXES = [] as const;
 
 export const PUBLIC_ROUTE_PREFIXES = ["/login"] as const;
 
