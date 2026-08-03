@@ -12,8 +12,8 @@ interface DataPoint {
 }
 
 const SERIES: { key: keyof DataPoint; label: string; color: string }[] = [
-  { key: "rev", label: "Revenue", color: "var(--brand-indigo)" },
-  { key: "cogs", label: "COGS", color: "var(--cost-slate)" },
+  { key: "rev", label: "Sales", color: "var(--brand-indigo)" },
+  { key: "cogs", label: "Purchases", color: "var(--cost-slate)" },
   { key: "exp", label: "Expenses", color: "var(--status-amber)" },
 ];
 
