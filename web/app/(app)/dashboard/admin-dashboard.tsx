@@ -5,13 +5,12 @@ import { useMemo } from "react";
 import { useAdminDashboard } from "@/hooks/reports/admin-dashboard";
 import { useReportFilters } from "@/hooks/filters/use-report-filters";
 import { AdminPerformanceCharts } from "./components/admin/performance-charts";
-// import { AdminProductDistributionChart } from "./components/admin/product-distribution-chart";
+import { AdminRecentSalesTable } from "./components/admin/recent-sales-table";
 import { AdminRevenueCharts } from "./components/admin/revenue-charts";
 import { AdminStatGrid } from "./components/admin/stat-grid";
-import { AdminStockAlertsTable } from "./components/admin/stock-alerts-table";
-import { AdminStockSection } from "./components/admin/stock-section";
 import { DashboardError, DashboardLoading } from "./components/admin/status";
 import { DashboardPageHeader } from "./components/admin/page-header";
+import { Card } from "@/components/ui/card";
 
 export function AdminDashboard() {
   const filters = useReportFilters();
@@ -53,14 +52,10 @@ export function AdminDashboard() {
 
       <AdminStatGrid summary={summary} comparison={comparison} />
       <AdminRevenueCharts charts={charts} />
-      {/* <AdminProductDistributionChart filters={filters} /> */}
       <AdminPerformanceCharts charts={charts} />
-      <AdminStockSection stockByCategory={charts.stockByCategory} recentSales={recentSales} />
-      <AdminStockAlertsTable
-        storeId={filters.query.storeId}
-        lowStockCount={summary.lowStockCount}
-        outOfStockCount={summary.outOfStockCount}
-      />
+      <Card title="Recent Daily Sales" pad>
+        <AdminRecentSalesTable sales={recentSales} />
+      </Card>
     </>
   );
 }
