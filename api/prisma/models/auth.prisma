@@ -1,0 +1,85 @@
+enum UserRole {
+  super_admin
+  admin
+  branch_manager
+}
+
+model User {
+  id             String        @id
+  name           String        @default("")
+  email          String
+  emailVerified  Boolean       @default(false)
+  image          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  role           UserRole
+  isActive       Boolean       @default(true)
+  phone          String?
+  /// Monthly salary in KSh — used by the payroll run (BR-6.1).
+  salary         Decimal       @default(0) @db.Decimal(12, 2)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  /// Branch assignment. Required for branch_manager, null for admin (BR-7.3).
+  storeId        String?
+  store          Store?        @relation(fields: [storeId], references: [id])
+
+  sessions        Session[]
+  accounts        Account[]
+  dailySales      DailySale[]      @relation("DailySalesEnteredBy")
+  purchases       Purchase[]       @relation("PurchasesCreatedBy")
+  expenses        Expense[]        @relation("ExpensesCreatedBy")
+  payrollRuns     PayrollRun[]     @relation("PayrollPaidBy")
+  payrollItems    PayrollRunItem[] @relation("PayrollItemUser")
+  auditLogs       AuditLog[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
