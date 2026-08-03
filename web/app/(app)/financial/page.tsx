@@ -3,10 +3,8 @@
 import { useMemo, useState } from "react";
 import {
   CreditCard,
-  Layers,
-  Package,
+  ShoppingBag,
   TrendingUp,
-  Truck,
   XCircle,
 } from "lucide-react";
 
@@ -105,10 +103,10 @@ export default function FinancialPage() {
           label="Total Revenue"
         />
         <StatCard
-          icon={Package}
+          icon={ShoppingBag}
           color="violet"
           value={fmt(s.cogs)}
-          label="Cost of Goods Sold"
+          label="Purchases"
           valueColor="var(--cost-slate)"
         />
         <StatCard
@@ -129,18 +127,6 @@ export default function FinancialPage() {
           value={fmt(s.netProfit)}
           label="Net Profit"
         />
-        <StatCard
-          icon={Truck}
-          color="indigo"
-          value={fmt(s.stockInvestment)}
-          label="Stock Capital Invested"
-        />
-        <StatCard
-          icon={Layers}
-          color="teal"
-          value={fmt(s.currentStockValue)}
-          label="Current Stock Value"
-        />
       </div>
 
       <div className="mb-16">
@@ -148,7 +134,7 @@ export default function FinancialPage() {
       </div>
 
       <div className="grid-2">
-        <Card title="Revenue vs COGS vs Expenses" pad>
+        <Card title="Sales vs Purchases vs Expenses" pad>
           {revenueChart.length > 0 ? (
             <GroupedBar data={revenueChart} />
           ) : (
