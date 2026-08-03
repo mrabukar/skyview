@@ -3,7 +3,6 @@
 import { Store } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { ProductName } from "@/components/ui/product-name";
 import { formatSaleDate, toNumber } from "@/lib/reports/format";
 import { fmt } from "@/lib/utils";
 import type { DashboardRecentSale } from "@/types/reports/admin-dashboard";
@@ -17,7 +16,7 @@ export function AdminRecentSalesTable({ sales }: Props) {
     return (
       <EmptyState
         title="No recent sales"
-        sub="No sales recorded in the selected period."
+        sub="No daily sales recorded in the selected period."
       />
     );
   }
@@ -30,9 +29,8 @@ export function AdminRecentSalesTable({ sales }: Props) {
             <tr>
               <th className="dt-th-left">Date</th>
               <th className="dt-th-left">Branch</th>
-              <th className="dt-th-left">Product</th>
-              <th className="dt-th-center">Qty</th>
-              <th className="dt-th-center">Amount</th>
+              <th className="dt-th-left">Entered by</th>
+              <th className="dt-th-center">Sales total</th>
             </tr>
           </thead>
           <tbody className="dt-body">
@@ -51,13 +49,7 @@ export function AdminRecentSalesTable({ sales }: Props) {
                   </span>
                 </td>
                 <td className="dt-cell-left">
-                  <ProductName
-                    name={sale.product.name}
-                    model={sale.product.model}
-                  />
-                </td>
-                <td className="dt-cell-center">
-                  <span className="num">{sale.quantitySold}</span>
+                  <span className="muted">{sale.soldBy.name}</span>
                 </td>
                 <td className="dt-cell-center">
                   <span className="num t-indigo strong">
