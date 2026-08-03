@@ -5,27 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Collapsible } from "radix-ui";
 import {
+  Banknote,
   Building2,
   ChevronDown,
-  FileBarChart2,
   LayoutDashboard,
-  Package,
-  Layers,
-  Receipt,
   ShoppingCart,
   ShoppingBag,
-  Tag,
-  Truck,
   CreditCard,
   TrendingUp,
   Users,
   ClipboardList,
-  PlusCircle,
-  History,
   ShieldCheck,
   Store,
-  Boxes,
-  Warehouse,
 } from "lucide-react";
 
 import { LogoMark } from "@/components/logo";
@@ -70,48 +61,15 @@ const SUPER_ADMIN_NAV: NavLinkItem[] = [
 ];
 
 function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
+  void hasStores;
   const nav: AdminNavEntry[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    {
-      type: "group",
-      label: "Purchase",
-      icon: ShoppingBag,
-      children: [
-        { href: "/categories", label: "Categories", icon: Tag },
-        { href: "/products", label: "Products", icon: Package },
-        { href: "/purchases", label: "Purchases", icon: Receipt },
-        ...(hasStores
-          ? [{ href: "/supply", label: "Distribute to Branch", icon: Truck }]
-          : []),
-      ],
-    },
-  ];
-
-  nav.push({
-    type: "group",
-    label: "Stock",
-    icon: Boxes,
-    children: [
-      { href: "/warehouse", label: "Warehouse", icon: Warehouse },
-      { href: "/inventory", label: "Inventory", icon: Layers },
-      { href: "/stock-report", label: "Stock Report", icon: FileBarChart2 },
-    ],
-  });
-
-  nav.push(
-    { href: "/sales", label: "Sales", icon: ShoppingCart },
+    { href: "/sales", label: "Daily Sales", icon: ShoppingCart },
+    { href: "/purchases", label: "Purchases", icon: ShoppingBag },
     { href: "/expenses", label: "Expenses", icon: CreditCard },
-  );
-
-  if (hasStores) {
-    nav.push({ href: "/branches", label: "Branches", icon: Store });
-  } else {
-    nav.push({
-      href: "/submit-sale",
-      label: "Submit Sale",
-      icon: PlusCircle,
-    });
-  }
+    { href: "/payroll", label: "Payroll", icon: Banknote },
+    { href: "/branches", label: "Branches", icon: Store },
+  ];
 
   nav.push(
     {
@@ -136,9 +94,9 @@ function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
 
 const MANAGER_NAV: NavLinkItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/submit-sale", label: "Submit Sale", icon: PlusCircle },
-  { href: "/my-stock", label: "My Stock", icon: Package },
-  { href: "/sales-history", label: "Sales History", icon: History },
+  { href: "/sales", label: "Daily Sales", icon: ShoppingCart },
+  { href: "/purchases", label: "Purchases", icon: ShoppingBag },
+  { href: "/expenses", label: "Expenses", icon: CreditCard },
 ];
 
 function isNavGroup(entry: AdminNavEntry): entry is NavGroupItem {
