@@ -1,0 +1,17 @@
+/// Managed supplier list (BR-4). Soft-deleted (isActive=false) when referenced.
+model Vendor {
+  id             String       @id @default(cuid())
+  name           String
+  isActive       Boolean      @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  purchases Purchase[]
+
+  /// BR-4.1 — vendor names unique per org (case-insensitive enforced in app +
+  /// a functional index added via raw SQL in the migration).
+  @@unique([name, organizationId])
+  @@map("vendor")
+}
