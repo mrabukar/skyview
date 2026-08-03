@@ -17,6 +17,7 @@ export interface UserFormValues {
   role: UserRole;
   storeId: string;
   phone: string;
+  salary: string;
 }
 
 interface UserModalProps {
@@ -77,6 +78,7 @@ function initialForm(user?: User): UserFormValues {
     role: user?.role ?? "branch_manager",
     storeId: user?.storeId ?? "",
     phone: user?.phone ?? "",
+    salary: user?.salary != null ? String(user.salary) : "",
   };
 }
 
@@ -144,6 +146,10 @@ export function UserModal({
 
     if (showStoreField && form.role === "branch_manager" && !form.storeId) {
       next.storeId = "Branch is required for branch managers";
+    }
+
+    if (form.salary && Number(form.salary) < 0) {
+      next.salary = "Salary cannot be negative";
     }
 
     setErr(next);
@@ -325,6 +331,22 @@ export function UserModal({
                 value={form.phone}
                 onChange={(e) => set("phone", e.target.value)}
                 placeholder="Optional"
+              />
+            </FormField>
+
+            <FormField
+              label="Monthly salary (KSh)"
+              error={err.salary}
+              helper="Used by the monthly payroll run."
+            >
+              <input
+                className={cn(inputClassName, err.salary && "border-destructive")}
+                type="number"
+                min="0"
+                step="1"
+                value={form.salary}
+                onChange={(e) => set("salary", e.target.value)}
+                placeholder="e.g. 25000"
               />
             </FormField>
           </div>
