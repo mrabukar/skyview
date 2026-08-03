@@ -161,7 +161,7 @@ export function ExpenseModal({
               <Dialog.Description className="text-sm text-muted-foreground">
                 {isEdit
                   ? "Update operating cost details."
-                  : "Record a company-wide or store-specific expense."}
+                  : "Record a company-wide or branch-specific expense."}
               </Dialog.Description>
             </div>
 
