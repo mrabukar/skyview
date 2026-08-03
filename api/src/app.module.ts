@@ -1,0 +1,59 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { IncomingMessage, ServerResponse } from "http";
+import { LoggerModule } from "nestjs-pino";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+import { envValidationSchema } from "./config/env.validation";
+import { BetterAuthNestModule } from "./modules/auth/auth.module";
+import { HealthModule } from "./modules/health/health.module";
+import { PrismaModule } from "./prisma/prisma.module";
+import { TenantModule } from "./common/tenant/tenant.module";
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: envValidationSchema,
+    }),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== "production"
+            ? {
+                target: "pino-pretty",
+                options: { colorize: true, singleLine: true },
+              }
+            : undefined,
+        level: "info",
+        redact: ["req.headers.cookie", "req.headers.authorization"],
+        serializers: {
+          req: () => undefined,
+          res: () => undefined,
+        },
+        customSuccessMessage: (
+          req: IncomingMessage,
+          res: ServerResponse,
+          responseTime: number,
+        ) =>
+          `${req.method ?? "?"} ${req.url ?? "?"} ${res.statusCode} ${responseTime}ms`,
+        customErrorMessage: (
+          req: IncomingMessage,
+          res: ServerResponse,
+          error: Error,
+        ) =>
+          `${req.method ?? "?"} ${req.url ?? "?"} ${res.statusCode} ${error.message}`,
+      },
+    }),
+    PrismaModule,
+    TenantModule,
+    HealthModule,
+    BetterAuthNestModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+})
+export class AppModule {}
