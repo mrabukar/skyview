@@ -9,6 +9,8 @@ export interface User {
   email: string;
   role: UserRole;
   phone: string | null;
+  /** Monthly salary in KSh — used by the payroll run. */
+  salary: number;
   isActive: boolean;
   storeId: string | null;
   store: Pick<Store, "id" | "name"> | null;
@@ -33,6 +35,7 @@ export interface CreateUserInput {
   role: UserRole;
   storeId?: string;
   phone?: string;
+  salary?: number;
 }
 
 export interface UpdateUserInput {
@@ -42,6 +45,7 @@ export interface UpdateUserInput {
   role?: UserRole;
   storeId?: string | null;
   phone?: string | null;
+  salary?: number;
 }
 
 export const ROLE_ITEMS = [
