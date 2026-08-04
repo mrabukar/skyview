@@ -101,17 +101,17 @@ export function LoginForm() {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string) => {
+  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
     if (signIn.isPending) return;
     setErrorMessage(null);
     // autofill the form so the client sees the credentials go in
     setEmail(demoEmail);
-    setPw("demo1234");
+    setPw(demoPassword);
     await new Promise((r) => setTimeout(r, 450));
     try {
       await signIn.mutateAsync({
         email: demoEmail,
-        password: "demo1234",
+        password: demoPassword,
         rememberMe,
       });
       router.push(returnUrl);
@@ -165,7 +165,7 @@ export function LoginForm() {
               <div className="flex items-center justify-center gap-2">
                 <button
                   type="button"
-                  onClick={() => void handleDemoLogin("admin@skyviewcoffee.co.ke")}
+                  onClick={() => void handleDemoLogin("admin@skyviewcoffee.co.ke", "Admin123!")}
                   disabled={signIn.isPending}
                   className="rounded-full border border-[#3f201b]/15 bg-[#3f201b] px-3.5 py-1.5 text-[12px] font-semibold text-[#fdf6ec] transition-transform hover:scale-[1.03] hover:bg-[#55321c] disabled:opacity-50"
                 >
@@ -173,7 +173,7 @@ export function LoginForm() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleDemoLogin("manager@skyviewcoffee.co.ke")}
+                  onClick={() => void handleDemoLogin("catherine@skyviewcoffee.co.ke", "Manager123!")}
                   disabled={signIn.isPending}
                   className="rounded-full border border-[#e08e12]/30 bg-[#f9a72a] px-3.5 py-1.5 text-[12px] font-semibold text-[#3f201b] transition-transform hover:scale-[1.03] hover:bg-[#e08e12] disabled:opacity-50"
                 >
