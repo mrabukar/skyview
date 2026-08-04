@@ -6,7 +6,7 @@ import { AuditAction, Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { UpdateMeDto } from "./dto/update-me.dto";
 
-const storeSelect = {
+const branchSelect = {
   id: true,
   name: true,
   address: true,
@@ -26,13 +26,13 @@ const userSelect = {
   name: true,
   email: true,
   role: true,
-  storeId: true,
+  branchId: true,
   organizationId: true,
   isActive: true,
   phone: true,
 } as const;
 
-export type MeStore = {
+export type MeBranch = {
   id: string;
   name: string;
   address: string;
@@ -67,11 +67,11 @@ export class MeService {
       throw new NotFoundException("User not found");
     }
 
-    const [store, organization] = await Promise.all([
-      user.storeId != null
-        ? this.prisma.store.findUnique({
-            where: { id: user.storeId },
-            select: storeSelect,
+    const [branch, organization] = await Promise.all([
+      user.branchId != null
+        ? this.prisma.branch.findUnique({
+            where: { id: user.branchId },
+            select: branchSelect,
           })
         : Promise.resolve(null),
       user.organizationId
@@ -85,7 +85,7 @@ export class MeService {
     return {
       user: {
         ...user,
-        store,
+        branch,
         organization,
       },
     };
@@ -126,11 +126,11 @@ export class MeService {
       });
     }
 
-    const [store, organization] = await Promise.all([
-      updated.storeId != null
-        ? this.prisma.store.findUnique({
-            where: { id: updated.storeId },
-            select: storeSelect,
+    const [branch, organization] = await Promise.all([
+      updated.branchId != null
+        ? this.prisma.branch.findUnique({
+            where: { id: updated.branchId },
+            select: branchSelect,
           })
         : Promise.resolve(null),
       updated.organizationId
@@ -144,7 +144,7 @@ export class MeService {
     return {
       user: {
         ...updated,
-        store,
+        branch,
         organization,
       },
     };
@@ -159,7 +159,7 @@ export class MeService {
       email: user.email,
       role: user.role,
       organizationId: user.organizationId,
-      storeId: user.storeId,
+      branchId: user.branchId,
       phone: user.phone,
       isActive: user.isActive,
     };
