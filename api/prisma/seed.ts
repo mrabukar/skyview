@@ -68,7 +68,7 @@ async function main(): Promise<void> {
 
     // Branches
     for (const b of BRANCHES) {
-      await prisma.store.upsert({
+      await prisma.branch.upsert({
         where: { name_organizationId: { name: b.name, organizationId: org.id } },
         update: {},
         create: { ...b, organizationId: org.id },
@@ -108,12 +108,12 @@ async function main(): Promise<void> {
       name: ADMIN_NAME,
       role: UserRole.admin,
       organizationId: org.id,
-      storeId: null,
+      branchId: null,
       salary: 60000,
     });
 
     // One branch manager (Hub Mall – Karen) to exercise authorization
-    const hub = await prisma.store.findFirst({
+    const hub = await prisma.branch.findFirst({
       where: { organizationId: org.id, name: "Hub Mall – Karen" },
       select: { id: true },
     });
@@ -123,7 +123,7 @@ async function main(): Promise<void> {
       name: MANAGER_NAME,
       role: UserRole.branch_manager,
       organizationId: org.id,
-      storeId: hub?.id ?? null,
+      branchId: hub?.id ?? null,
       salary: 25000,
     });
 
@@ -143,7 +143,7 @@ async function ensureUser(
     name: string;
     role: UserRole;
     organizationId: string;
-    storeId: string | null;
+    branchId: string | null;
     salary: number;
   },
 ): Promise<void> {
@@ -170,7 +170,7 @@ async function ensureUser(
       isActive: true,
       salary: opts.salary,
       organizationId: opts.organizationId,
-      storeId: opts.storeId,
+      branchId: opts.branchId,
       accounts: {
         create: {
           id: accountId,
