@@ -23,6 +23,7 @@ enum AuditAction {
   EXPENSE_CATEGORY_UPDATED
   EXPENSE_CATEGORY_DELETED
   PAYROLL_RUN_EXECUTED
+  SALARY_PAID
   ORGANIZATION_UPDATED
   REPORT_EXPORTED
 }
@@ -36,7 +37,7 @@ model AuditLog {
   action         AuditAction
   entityType     String
   entityId       String
-  storeId        String?
+  branchId       String?
   oldValue       Json?
   newValue       Json?
   createdAt      DateTime     @default(now())
