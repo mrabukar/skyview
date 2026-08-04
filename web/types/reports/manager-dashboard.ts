@@ -9,6 +9,9 @@ export interface ManagerDashboardSummary {
   todayRevenue: number;
   todayUnitsSold: number;
   monthRevenue: number;
+  monthPurchases: number;
+  monthExpenses: number;
+  netProfit: number;
   inStockBalance: number;
   lowStockCount: number;
   outOfStockCount: number;
