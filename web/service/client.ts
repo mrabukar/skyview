@@ -1,11 +1,15 @@
 /**
- * DEMO MODE — Skyview Coffee (Bubble Tea Palace).
- * All requests are answered locally by service/mock/handlers.ts.
- * No backend is contacted. Restore the fetch-based implementation
- * (see inventory/web/service/client.ts) when wiring a real API.
+ * Real API client for the Skyview backend, with a thin translation seam.
+ *
+ * The backend speaks `branch`/`branchId` and mounts branches at
+ * `/api/branches`; the frontend keeps its internal `store`/`storeId` naming.
+ * This layer bridges the two so no component or type had to change:
+ *   - request path : /api/stores → /api/branches, storeId= → branchId=
+ *   - request body : storeId → branchId (keys)
+ *   - response body: branchId → storeId, branch → store, branchName → storeName
  */
+import { getApiBaseUrl } from "@/lib/api-base-url";
 import { notifyUnauthorized } from "@/lib/auth/unauthorized";
-import { mockRoute, MockHttpError } from "@/service/mock/handlers";
 
 export class ApiError extends Error {
   constructor(
@@ -17,27 +21,71 @@ export class ApiError extends Error {
   }
 }
 
-/** Kept for compatibility with modules that import it. */
 export async function throwIfNotOk(res: Response): Promise<void> {
   if (res.ok) return;
-  throw new ApiError(res.status, res.statusText);
+  if (res.status === 401) {
+    notifyUnauthorized();
+  }
+  let message = res.statusText;
+  try {
+    const body = (await res.json()) as { message?: string | string[]; error?: string };
+    const raw = body.message ?? body.error;
+    message = Array.isArray(raw) ? raw.join(", ") : (raw ?? message);
+  } catch {
+    // ignore JSON parse errors
+  }
+  throw new ApiError(res.status, message);
 }
 
-const MOCK_DELAY_MS = 220;
+/* ---------------- branch ↔ store bridge ---------------- */
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+const REQ_KEYS: Record<string, string> = { storeId: "branchId", store: "branch", storeName: "branchName" };
+const RES_KEYS: Record<string, string> = { branchId: "storeId", branch: "store", branchName: "storeName" };
+
+function renameKeys(value: unknown, map: Record<string, string>): unknown {
+  if (Array.isArray(value)) return value.map((v) => renameKeys(v, map));
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[map[k] ?? k] = renameKeys(v, map);
+    }
+    return out;
+  }
+  return value;
+}
+
+function bridgePath(path: string): string {
+  return path
+    .replace("/api/stores", "/api/branches")
+    .replace(/storeId=/g, "branchId=");
+}
+
+function bridgeRequestBody(body: BodyInit | null | undefined): BodyInit | null | undefined {
+  if (typeof body !== "string") return body;
+  try {
+    return JSON.stringify(renameKeys(JSON.parse(body), REQ_KEYS));
+  } catch {
+    return body;
+  }
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  await delay(MOCK_DELAY_MS);
-  try {
-    return (await mockRoute(init?.method ?? "GET", path, init?.body)) as T;
-  } catch (err) {
-    if (err instanceof MockHttpError) {
-      if (err.status === 401) notifyUnauthorized();
-      throw new ApiError(err.status, err.message);
-    }
-    throw err;
+  const res = await fetch(`${getApiBaseUrl()}${bridgePath(path)}`, {
+    ...init,
+    body: bridgeRequestBody(init?.body),
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...init?.headers,
+    },
+  });
+
+  await throwIfNotOk(res);
+
+  if (res.status === 204) {
+    return undefined as T;
   }
+
+  const json = (await res.json()) as unknown;
+  return renameKeys(json, RES_KEYS) as T;
 }
