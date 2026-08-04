@@ -10,13 +10,12 @@ model Organization {
   updatedAt     DateTime  @updatedAt
 
   users             User[]
-  stores            Store[]
+  branches          Branch[]
   vendors           Vendor[]
   dailySales        DailySale[]
   purchases         Purchase[]
   expenseCategories ExpenseCategory[]
   expenses          Expense[]
-  payrollRuns       PayrollRun[]
   auditLogs         AuditLog[]
 
   @@map("organization")
