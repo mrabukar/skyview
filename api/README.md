@@ -8,9 +8,9 @@ Same platform approach as the inventory product: Better-Auth sessions, a global
 auth guard with `@Roles()`, and org-scoped Prisma via an AsyncLocalStorage
 tenant context.
 
-> **Naming note:** internally the branch entity is the `Store` model / `storeId`
-> field (to match Better-Auth's user field and the shared tenancy code). The
-> product's user-facing term is **branch**. See `docs/05-api-design.md §3`.
+> **Naming:** the branch entity is the `Branch` model with a `branchId` field
+> throughout (schema, Better-Auth user field, and session payload), matching
+> `docs/04-data-model.md`.
 
 ## Prerequisites
 
@@ -44,6 +44,22 @@ Seed prints the credentials, defaults:
 | Authorization | global auth guard; `@Roles(admin \| branch_manager)`; `@AllowAnonymous()` opt-out |
 | Tenancy | every org-scoped query filtered by the caller's `organizationId` |
 | Data model | full schema per `docs/04` (all business tables created now, wired up later) |
+| Daily Sales | `GET/POST /api/daily-sales`, `GET/PATCH/DELETE /api/daily-sales/:id` |
+
+## Daily Sales module (BR-2)
+
+First business module. Endpoints under `/api/daily-sales`:
+
+| Method | Path | Who | Rule |
+|---|---|---|---|
+| GET | `/api/daily-sales` | admin, manager | `?branchId&fromDate&toDate&page&limit`; managers auto-scoped to own branch |
+| POST | `/api/daily-sales` | admin, manager | admin sends `branchId`; manager's branch is forced. `409` on duplicate `(branch, day)`; `400` future date / amount ≤ 0 |
+| GET | `/api/daily-sales/:id` | admin, manager | manager only own branch |
+| PATCH | `/api/daily-sales/:id` | admin, manager | manager may edit **only today's** entry; admin any |
+| DELETE | `/api/daily-sales/:id` | admin only | |
+
+Every write is audit-logged. One entry per branch per day is enforced by a DB
+unique index, not just the app.
 
 ## Verify (curl)
 
@@ -61,7 +77,7 @@ curl -s -c cookies.txt \
 
 # 3. Who am I (uses the cookie)
 curl -s -b cookies.txt localhost:4000/api/me
-# → { "user": { role:"admin", store:null, organization:{...}, ... } }
+# → { "user": { role:"admin", branch:null, organization:{...}, ... } }
 
 # 4. Update own profile
 curl -s -b cookies.txt -X PATCH localhost:4000/api/me \
@@ -73,18 +89,38 @@ curl -s -c mgr.txt -X POST localhost:4000/api/auth/sign-in/email \
   -H "Content-Type: application/json" -H "Origin: http://localhost:4000" \
   -d '{"email":"catherine@skyviewcoffee.co.ke","password":"Manager123!"}'
 curl -s -b mgr.txt localhost:4000/api/me
-# → role:"branch_manager", store:{ name:"Hub Mall – Karen", ... }
+# → role:"branch_manager", branch:{ name:"Hub Mall – Karen", ... }
 ```
 
-Authorization is verifiable now via `@Roles()` on `/api/me` behaviour and the
-session payload; the admin-only vs manager-only **business** endpoints arrive
-with their modules (per `docs/05`), each guarded the same way.
+```bash
+# 6. Daily Sales — admin records for a branch (get a branchId from your DB/seed)
+curl -s -b cookies.txt -X POST localhost:4000/api/daily-sales \
+  -H "Content-Type: application/json" \
+  -d '{"branchId":"<BRANCH_ID>","saleDate":"2026-08-04","totalAmount":32450}'
+
+# 7. Duplicate same branch+day → 409
+curl -s -b cookies.txt -X POST localhost:4000/api/daily-sales \
+  -H "Content-Type: application/json" \
+  -d '{"branchId":"<BRANCH_ID>","saleDate":"2026-08-04","totalAmount":100}'
+
+# 8. Manager records for their own branch (no branchId needed)
+curl -s -b mgr.txt -X POST localhost:4000/api/daily-sales \
+  -H "Content-Type: application/json" \
+  -d '{"saleDate":"2026-08-04","totalAmount":18000}'
+
+# 9. Manager editing an older entry → 403 (same-day rule)
+# 10. Manager DELETE → 403 (admin-only)
+```
+
+Admin-only vs manager-only behaviour is enforced by `@Roles()` plus data-level
+branch scoping in the service. Remaining modules (per `docs/05`) follow the
+same shape.
 
 ## Creating users
 
 - **Dev**: `POST /api/auth/sign-up/email` is open (bootstrap) — body needs
   `email, password, name, role`, plus `organizationId` (admin/manager) and
-  `storeId` (manager).
+  `branchId` (manager).
 - **Prod**: sign-up requires an admin session (or a one-time `ALLOW_SIGNUP=true`
   to create the first admin). Normal user creation moves to `POST /api/users`
   when the Users module lands.
