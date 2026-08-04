@@ -1,18 +1,35 @@
 /**
- * DEMO MODE — uploads, deletes, and logo fetches are simulated locally.
+ * Real delete/upload helpers. Organization-logo endpoints are not part of the
+ * current backend scope, so those two helpers return null and components fall
+ * back to the built-in logo mark.
  */
-import { apiFetch } from "@/service/client";
+import { getApiBaseUrl } from "@/lib/api-base-url";
+import { throwIfNotOk } from "@/service/client";
 
 export async function apiDelete<T>(path: string): Promise<T> {
-  return apiFetch<T>(path, { method: "DELETE" });
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  await throwIfNotOk(res);
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
 }
 
 export async function apiUpload<T>(
   path: string,
-  _formData: FormData,
+  formData: FormData,
   init?: Omit<RequestInit, "body">,
 ): Promise<T> {
-  return apiFetch<T>(path, { method: init?.method ?? "POST" });
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
+    method: init?.method ?? "POST",
+    credentials: "include",
+    body: formData,
+  });
+  await throwIfNotOk(res);
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
 }
 
 export function organizationLogoUrl(
@@ -20,7 +37,6 @@ export function organizationLogoUrl(
   _organizationId?: string,
   _logoUpdatedAt?: string | null,
 ): string | null {
-  // Demo: no uploaded logo — components fall back to the built-in logo mark.
   return null;
 }
 
