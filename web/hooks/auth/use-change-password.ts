@@ -1,12 +1,9 @@
 "use client";
 
-/**
- * DEMO MODE — password change is simulated, then signs the user out
- * like the real flow would.
- */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authClient } from "@/lib/auth/client";
+import { getAuthClientErrorMessage } from "@/lib/auth/auth-error";
 import { clearClientSession } from "@/lib/auth/query-cache";
-import { clearMockSession } from "@/service/mock/handlers";
 import { useAppStore } from "@/store/app";
 
 export interface ChangePasswordInput {
@@ -19,12 +16,30 @@ export function useChangePassword() {
   const clearUser = useAppStore((s) => s.clearUser);
 
   return useMutation({
-    mutationFn: async (_input: ChangePasswordInput) => {
-      await new Promise((r) => setTimeout(r, 400));
+    mutationFn: async ({
+      currentPassword,
+      newPassword,
+    }: ChangePasswordInput) => {
+      const result = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true,
+      });
+
+      if (result.error) {
+        throw new Error(
+          getAuthClientErrorMessage(
+            result.error,
+            "Failed to change password.",
+          ),
+        );
+      }
+
       clearUser();
       clearClientSession(queryClient);
-      clearMockSession();
-      return { status: true };
+      await authClient.signOut();
+
+      return result.data;
     },
   });
 }
