@@ -24,7 +24,7 @@ import {
 type SignUpBody = {
   password?: string;
   role?: string;
-  storeId?: string;
+  branchId?: string;
   organizationId?: string;
   email?: string;
   name?: string;
@@ -69,7 +69,7 @@ export class AuthSignUpHook {
     }
 
     const organizationId = body?.organizationId?.trim() || undefined;
-    const storeId = body?.storeId?.trim() || undefined;
+    const branchId = body?.branchId?.trim() || undefined;
 
     if (role === UserRole.super_admin) {
       if (organizationId) {
@@ -77,17 +77,17 @@ export class AuthSignUpHook {
           message: "organizationId is not allowed for super_admin users",
         });
       }
-      if (storeId) {
+      if (branchId) {
         throw new APIError("BAD_REQUEST", {
-          message: "storeId is not allowed for super_admin users",
+          message: "branchId is not allowed for super_admin users",
         });
       }
     }
 
     if (role === UserRole.admin) {
-      if (storeId) {
+      if (branchId) {
         throw new APIError("BAD_REQUEST", {
-          message: "storeId is not allowed for admin users",
+          message: "branchId is not allowed for admin users",
         });
       }
       if (!isBootstrap && !organizationId) {
@@ -103,9 +103,9 @@ export class AuthSignUpHook {
           message: "organizationId is required for branch managers",
         });
       }
-      if (!storeId) {
+      if (!branchId) {
         throw new APIError("BAD_REQUEST", {
-          message: "storeId is required for branch managers",
+          message: "branchId is required for branch managers",
         });
       }
 
@@ -125,7 +125,7 @@ export class AuthSignUpHook {
         });
       }
 
-      await this.assertStoreInOrganization(storeId, organizationId);
+      await this.assertBranchInOrganization(branchId, organizationId);
     }
 
     if (!isBootstrap && organizationId) {
@@ -148,7 +148,7 @@ export class AuthSignUpHook {
         name: true,
         email: true,
         role: true,
-        storeId: true,
+        branchId: true,
         organizationId: true,
         phone: true,
         isActive: true,
@@ -249,18 +249,18 @@ export class AuthSignUpHook {
     return session?.user?.id ?? createdUserId;
   }
 
-  private async assertStoreInOrganization(
-    storeId: string,
+  private async assertBranchInOrganization(
+    branchId: string,
     organizationId: string,
   ): Promise<void> {
-    const store = await this.prisma.store.findFirst({
-      where: { id: storeId, organizationId, isActive: true },
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, organizationId, isActive: true },
       select: { id: true },
     });
 
-    if (!store) {
+    if (!branch) {
       throw new APIError("BAD_REQUEST", {
-        message: `Store with id "${storeId}" not found in this organization`,
+        message: `Branch with id "${branchId}" not found in this organization`,
       });
     }
   }
@@ -322,12 +322,12 @@ export class AuthUserDatabaseHook {
           : (user.organizationId as string | null) ?? null;
     }
 
-    let storeId: string | null = null;
+    let branchId: string | null = null;
     if (role === UserRole.branch_manager) {
-      storeId =
-        typeof user.storeId === "string"
-          ? user.storeId.trim() || null
-          : (user.storeId as string | null) ?? null;
+      branchId =
+        typeof user.branchId === "string"
+          ? user.branchId.trim() || null
+          : (user.branchId as string | null) ?? null;
     }
 
     return {
@@ -335,7 +335,7 @@ export class AuthUserDatabaseHook {
         ...user,
         isActive: true,
         organizationId,
-        storeId,
+        branchId,
       },
     };
   }
