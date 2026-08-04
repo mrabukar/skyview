@@ -1,11 +1,8 @@
 "use client";
 
-/**
- * DEMO MODE — sign-out clears the local demo session.
- */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authClient } from "@/lib/auth/client";
 import { clearClientSession } from "@/lib/auth/query-cache";
-import { clearMockSession } from "@/service/mock/handlers";
 import { useAppStore } from "@/store/app";
 
 export function useSignOut() {
@@ -18,7 +15,11 @@ export function useSignOut() {
       clearClientSession(queryClient);
     },
     mutationFn: async () => {
-      clearMockSession();
+      const result = await authClient.signOut();
+
+      if (result.error) {
+        throw new Error(result.error.message ?? "Sign out failed");
+      }
     },
     onSettled: () => {
       clearClientSession(queryClient);
