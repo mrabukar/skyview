@@ -1,32 +1,36 @@
-export interface PayrollRunUser {
+export interface PayrollStaff {
+  id: string;
+  name: string;
+  salary: number;
+  /** Branch name (API `branchName`, bridged to `storeName` on the wire). */
+  storeName: string | null;
+  /** Already paid for the current month? */
+  paid: boolean;
+}
+
+export interface PayrollHistoryUser {
   id: string;
   name: string;
   salary: number;
   storeName: string | null;
+  paidAt: string;
 }
 
-/** One salary payment run for a calendar month. */
-export interface PayrollRun {
-  id: string;
-  monthKey: string; // YYYY-MM
-  monthLabel: string; // e.g. "July 2026"
+export interface PayrollHistoryMonth {
+  monthKey: string;
+  monthLabel: string;
   totalAmount: number;
   userCount: number;
-  paidAt: string;
-  paidById: string;
-  paidBy: { id: string; name: string };
-  users: PayrollRunUser[];
+  users: PayrollHistoryUser[];
 }
 
 export interface PayrollStatus {
   currentMonthKey: string;
   currentMonthLabel: string;
   currentMonthPaid: boolean;
-  monthlyTotal: number; // sum of active users' salaries
+  monthlyTotal: number;
   activeUserCount: number;
-  runs: PayrollRun[];
-}
-
-export interface RunPayrollInput {
-  monthKey: string;
+  remainingCount: number;
+  users: PayrollStaff[];
+  history: PayrollHistoryMonth[];
 }
