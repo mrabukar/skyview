@@ -55,7 +55,7 @@ export function createAuth(prisma: PrismaClient) {
           type: "boolean",
           input: false,
         },
-        storeId: {
+        branchId: {
           type: "string",
           input: true,
           required: false,
