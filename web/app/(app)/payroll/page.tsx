@@ -8,56 +8,82 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
-import { usePayrollStatus, useRunPayroll } from "@/hooks/payroll/use-payroll";
-import { useUsers } from "@/hooks/users/use-users";
+import {
+  usePayrollStatus,
+  usePayUser,
+  useRunPayroll,
+} from "@/hooks/payroll/use-payroll";
 import { fmt } from "@/lib/utils";
 import { useAppStore } from "@/store/app";
+import type { PayrollStaff } from "@/types/payroll/payroll";
 
 export default function PayrollPage() {
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAll, setConfirmAll] = useState(false);
+  const [confirmUser, setConfirmUser] = useState<PayrollStaff | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const { data: status, isPending, isError, error } = usePayrollStatus();
-  const { data: usersData } = useUsers({ limit: 100, isActive: true });
   const runPayroll = useRunPayroll();
+  const payUser = usePayUser();
 
-  const activeUsers = (usersData?.data ?? []).filter((u) => u.isActive);
+  console.log("Status:", status);
 
-  const handleRun = async () => {
-    if (!status) return;
+  const handleRunAll = async () => {
     try {
-      const run = await runPayroll.mutateAsync({ monthKey: status.currentMonthKey });
+      const res = await runPayroll.mutateAsync();
       addToast({
-        title: `Salaries paid for ${run.monthLabel}`,
-        sub: `${run.userCount} staff · ${fmt(run.totalAmount)} recorded as expenses`,
+        title: `Salaries paid for ${res.currentMonthLabel}`,
+        sub: "Recorded as Salaries expenses",
       });
-      setConfirmOpen(false);
+      setConfirmAll(false);
     } catch (e) {
       addErrorToast({
         title: "Payroll failed",
         sub: e instanceof Error ? e.message : "Something went wrong",
       });
-      setConfirmOpen(false);
+      setConfirmAll(false);
     }
   };
+
+  const handlePayUser = async (staff: PayrollStaff) => {
+    setPayingId(staff.id);
+    try {
+      await payUser.mutateAsync(staff.id);
+      addToast({ title: `Paid ${staff.name}`, sub: fmt(staff.salary) });
+      setConfirmUser(null);
+    } catch (e) {
+      addErrorToast({
+        title: `Could not pay ${staff.name}`,
+        sub: e instanceof Error ? e.message : "Something went wrong",
+      });
+    } finally {
+      setPayingId(null);
+    }
+  };
+
+  const remaining = status?.remainingCount ?? 0;
 
   return (
     <>
       <PageHeader
         title="Payroll"
-        desc="Pay monthly salaries — one run per month, recorded as Salaries expenses"
+        desc="Pay monthly salaries — per staff or all at once, recorded as Salaries expenses"
         action={
           status ? (
             status.currentMonthPaid ? (
-              <Button disabled title="Already paid — unlocks next month">
+              <Button disabled title="Everyone is paid — unlocks next month">
                 <BadgeCheck className="size-4" />
                 {status.currentMonthLabel} paid
               </Button>
             ) : (
-              <Button onClick={() => setConfirmOpen(true)} disabled={runPayroll.isPending}>
+              <Button
+                onClick={() => setConfirmAll(true)}
+                disabled={runPayroll.isPending}
+              >
                 <Banknote className="size-4" />
-                Pay salaries — {status.currentMonthLabel}
+                Pay all remaining ({remaining}) — {status.currentMonthLabel}
               </Button>
             )
           ) : null
@@ -70,7 +96,6 @@ export default function PayrollPage() {
         </div>
       )}
 
-      {/* Summary cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Card className="p-5">
           <div className="flex items-center gap-3">
@@ -104,13 +129,15 @@ export default function PayrollPage() {
               <BadgeCheck className="size-5 text-secondary-foreground" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{status?.currentMonthLabel ?? "This month"}</p>
+              <p className="text-sm text-muted-foreground">
+                {status?.currentMonthLabel ?? "This month"}
+              </p>
               <p className="text-xl font-bold">
                 {status ? (
                   status.currentMonthPaid ? (
-                    <Badge color="emerald">Paid</Badge>
+                    <Badge color="emerald">All paid</Badge>
                   ) : (
-                    <Badge color="amber">Not paid yet</Badge>
+                    <Badge color="amber">{remaining} unpaid</Badge>
                   )
                 ) : (
                   "—"
@@ -122,27 +149,44 @@ export default function PayrollPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Staff salaries */}
+        {/* Staff salaries with per-user Pay */}
         <Card className="p-5">
-          <h3 className="mb-3 text-sm font-semibold">Staff salaries</h3>
-          {activeUsers.length === 0 && !isPending ? (
+          <h3 className="mb-3 text-sm font-semibold">
+            Staff salaries — {status?.currentMonthLabel ?? "this month"}
+          </h3>
+          {(status?.users.length ?? 0) === 0 && !isPending ? (
             <p className="text-sm text-muted-foreground">No active staff.</p>
           ) : (
             <div className="grid gap-1.5">
-              {activeUsers.map((u) => (
+              {(status?.users ?? []).map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{u.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {u.store?.name ?? "Head office"}
+                      {u.storeName ?? "Head office"}
                     </p>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums">
-                    {fmt(u.salary ?? 0)}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="text-sm font-semibold tabular-nums">
+                      {fmt(u.salary)}
+                    </span>
+                    {u.paid ? (
+                      <Badge color="emerald">Paid</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => setConfirmUser(u)}
+                        disabled={payUser.isPending && payingId === u.id}
+                      >
+                        {payUser.isPending && payingId === u.id
+                          ? "Paying…"
+                          : "Pay"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -157,27 +201,26 @@ export default function PayrollPage() {
           <h3 className="mb-3 text-sm font-semibold">Payment history</h3>
           {isPending ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : (status?.runs.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">No payroll runs yet.</p>
+          ) : (status?.history.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No salary payments yet.
+            </p>
           ) : (
             <div className="grid gap-1.5">
-              {status!.runs.map((run) => (
+              {status!.history.map((run) => (
                 <div
-                  key={run.id}
+                  key={run.monthKey}
                   className="flex items-center justify-between rounded-md border border-border px-3 py-2"
                 >
                   <div>
                     <p className="text-sm font-medium">{run.monthLabel}</p>
                     <p className="text-xs text-muted-foreground">
-                      {run.userCount} staff · paid {run.paidAt.slice(0, 10)} by {run.paidBy.name}
+                      {run.userCount} staff paid
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold tabular-nums">
-                      {fmt(run.totalAmount)}
-                    </span>
-                    <Badge color="emerald">Paid</Badge>
-                  </div>
+                  <span className="text-sm font-semibold tabular-nums">
+                    {fmt(run.totalAmount)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -185,14 +228,25 @@ export default function PayrollPage() {
         </Card>
       </div>
 
-      {confirmOpen && status ? (
+      {confirmAll && status ? (
         <ConfirmDialog
-          title={`Pay salaries for ${status.currentMonthLabel}?`}
-          message={`This records a Salaries expense for each of the ${status.activeUserCount} active staff (total ${fmt(status.monthlyTotal)}). It can only be done once per month.`}
-          confirmLabel="Pay salaries"
+          title={`Pay all remaining staff for ${status.currentMonthLabel}?`}
+          message={`This records a Salaries expense for each of the ${remaining} unpaid staff. Already-paid staff are skipped.`}
+          confirmLabel={`Pay ${remaining} staff`}
           isLoading={runPayroll.isPending}
-          onConfirm={() => void handleRun()}
-          onClose={() => setConfirmOpen(false)}
+          onConfirm={() => void handleRunAll()}
+          onClose={() => setConfirmAll(false)}
+        />
+      ) : null}
+
+      {confirmUser && status ? (
+        <ConfirmDialog
+          title={`Pay ${confirmUser.name}?`}
+          message={`This records a Salaries expense of ${fmt(confirmUser.salary)} for ${status.currentMonthLabel}.`}
+          confirmLabel={`Pay ${fmt(confirmUser.salary)}`}
+          isLoading={payUser.isPending}
+          onConfirm={() => void handlePayUser(confirmUser)}
+          onClose={() => setConfirmUser(null)}
         />
       ) : null}
     </>
