@@ -1,0 +1,19 @@
+/// Branch — a Bubble Tea Palace location.
+model Branch {
+  id             String       @id @default(cuid())
+  name           String
+  address        String
+  isActive       Boolean      @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  users      User[]
+  dailySales DailySale[]
+  purchases  Purchase[]
+  expenses   Expense[]
+
+  @@unique([name, organizationId])
+  @@map("branch")
+}
