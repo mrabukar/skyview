@@ -8,6 +8,16 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { envValidationSchema } from "./config/env.validation";
 import { BetterAuthNestModule } from "./modules/auth/auth.module";
+import { DailySalesModule } from "./modules/daily-sales/daily-sales.module";
+import { VendorsModule } from "./modules/vendors/vendors.module";
+import { PurchasesModule } from "./modules/purchases/purchases.module";
+import { ExpenseCategoriesModule } from "./modules/expense-categories/expense-categories.module";
+import { ExpensesModule } from "./modules/expenses/expenses.module";
+import { PayrollModule } from "./modules/payroll/payroll.module";
+import { BranchesModule } from "./modules/branches/branches.module";
+import { UsersModule } from "./modules/users/users.module";
+import { AuditLogsModule } from "./modules/audit-logs/audit-logs.module";
+import { ReportsModule } from "./modules/reports/reports.module";
 import { HealthModule } from "./modules/health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { TenantModule } from "./common/tenant/tenant.module";
@@ -52,6 +62,16 @@ import { TenantModule } from "./common/tenant/tenant.module";
     TenantModule,
     HealthModule,
     BetterAuthNestModule,
+    DailySalesModule,
+    VendorsModule,
+    PurchasesModule,
+    ExpenseCategoriesModule,
+    ExpensesModule,
+    PayrollModule,
+    BranchesModule,
+    UsersModule,
+    AuditLogsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
