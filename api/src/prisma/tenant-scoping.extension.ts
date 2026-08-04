@@ -4,13 +4,13 @@ import type { TenantContextService } from "../common/tenant/tenant-context.servi
 /** Models carrying `organizationId`, auto-scoped to the current tenant. */
 const TENANT_MODELS = new Set([
   "User",
-  "Store",
+  "Branch",
   "Vendor",
   "DailySale",
   "Purchase",
   "ExpenseCategory",
   "Expense",
-  "PayrollRun",
+  "SalaryPayment",
   "AuditLog",
 ]);
 
