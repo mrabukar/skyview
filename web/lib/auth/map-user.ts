@@ -15,8 +15,10 @@ export function mapApiUserToAppUser(apiUser: ApiUser): AppUser {
     email: apiUser.email,
     phone: apiUser.phone ?? null,
     role,
-    storeId: apiUser.storeId,
-    store: apiUser.store?.name ?? null,
+    // AppUser keeps `storeId`/`store` as its internal field names; the API
+    // now speaks `branchId`/`branch`, so we bridge here.
+    storeId: apiUser.branchId,
+    store: apiUser.branch?.name ?? null,
     organizationId: apiUser.organization?.id ?? apiUser.organizationId ?? null,
     organizationName: apiUser.organization?.name ?? null,
     hasStores: apiUser.organization?.hasStores ?? null,
