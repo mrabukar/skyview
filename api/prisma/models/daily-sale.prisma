@@ -1,8 +1,8 @@
 /// One sales total per branch per calendar day (BR-2).
 model DailySale {
   id             String       @id @default(cuid())
-  storeId        String
-  store          Store        @relation(fields: [storeId], references: [id])
+  branchId       String
+  branch         Branch       @relation(fields: [branchId], references: [id])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   saleDate       DateTime     @db.Date
@@ -13,10 +13,9 @@ model DailySale {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  /// BR-2.1 — exactly one entry per branch per day.
-  @@unique([storeId, saleDate])
+  // Multiple sales entries per branch per day are allowed.
   @@index([organizationId])
   @@index([saleDate])
-  @@index([storeId, saleDate])
+  @@index([branchId, saleDate])
   @@map("daily_sale")
 }
