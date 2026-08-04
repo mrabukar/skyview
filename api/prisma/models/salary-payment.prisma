@@ -1,0 +1,21 @@
+/// One salary payment per user per calendar month (BR-6, per-user model).
+/// A user is "paid" for month M iff a row exists for (org, userId, M).
+model SalaryPayment {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  userName       String
+  salary         Decimal  @db.Decimal(12, 2)
+  branchId       String?
+  branchName     String?
+  /// Calendar month covered, `YYYY-MM`.
+  monthKey       String
+  /// The generated Salaries expense (soft reference).
+  expenseId      String?
+  paidAt         DateTime @default(now())
+  paidById       String
+
+  @@unique([organizationId, userId, monthKey])
+  @@index([organizationId, monthKey])
+  @@map("salary_payment")
+}
