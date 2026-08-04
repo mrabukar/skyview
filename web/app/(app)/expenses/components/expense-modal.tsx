@@ -38,6 +38,8 @@ interface Props {
   categories: ExpenseCategory[];
   categoriesLoading?: boolean;
   storeItems: { value: string; label: string }[];
+  /** Managers don't choose a branch — their own is used automatically. */
+  showBranchField?: boolean;
   onClose: () => void;
   onSave: (data: ExpenseFormValues) => void;
   isSaving: boolean;
@@ -103,6 +105,7 @@ export function ExpenseModal({
   categories,
   categoriesLoading = false,
   storeItems,
+  showBranchField = true,
   onClose,
   onSave,
   isSaving,
@@ -204,23 +207,26 @@ export function ExpenseModal({
                     error={!!err.categoryId}
                     onSeeAll={onSeeAllCategories}
                     onAddNew={() => setShowCreateCategory(true)}
+                    canCreate={showBranchField}
                   />
                 </FormField>
               </div>
 
-              <FormField label="Branch">
-                <Combobox
-                  value={form.storeId}
-                  onValueChange={(value) => set("storeId", value)}
-                  items={storeItems}
-                  clearOption={{ label: "Company-wide" }}
-                  placeholder="Company-wide"
-                  searchPlaceholder="Search branches…"
-                  emptyText="No branches found."
-                  className="w-full"
-                  popoverClassName="z-[200]"
-                />
-              </FormField>
+              {showBranchField ? (
+                <FormField label="Branch">
+                  <Combobox
+                    value={form.storeId}
+                    onValueChange={(value) => set("storeId", value)}
+                    items={storeItems}
+                    clearOption={{ label: "Company-wide" }}
+                    placeholder="Company-wide"
+                    searchPlaceholder="Search branches…"
+                    emptyText="No branches found."
+                    className="w-full"
+                    popoverClassName="z-[200]"
+                  />
+                </FormField>
+              ) : null}
 
               <FormField label="Expense date" required error={err.expenseDate}>
                 <input
