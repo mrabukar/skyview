@@ -29,6 +29,8 @@ interface Props {
   error?: boolean;
   onSeeAll: () => void;
   onAddNew: () => void;
+  /** Managers can pick but not create categories. */
+  canCreate?: boolean;
 }
 
 export function ExpenseCategoryPicker({
@@ -40,6 +42,7 @@ export function ExpenseCategoryPicker({
   error = false,
   onSeeAll,
   onAddNew,
+  canCreate = true,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -115,19 +118,21 @@ export function ExpenseCategoryPicker({
               ))}
             </CommandGroup>
           </CommandList>
-          <div className="border-t border-border p-2">
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-primary hover:bg-accent"
-              onClick={() => {
-                setOpen(false);
-                onAddNew();
-              }}
-            >
-              <Plus className="size-4 shrink-0" />
-              Add new category
-            </button>
-          </div>
+          {canCreate ? (
+            <div className="border-t border-border p-2">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-primary hover:bg-accent"
+                onClick={() => {
+                  setOpen(false);
+                  onAddNew();
+                }}
+              >
+                <Plus className="size-4 shrink-0" />
+                Add new category
+              </button>
+            </div>
+          ) : null}
         </Command>
       </PopoverContent>
     </Popover>
