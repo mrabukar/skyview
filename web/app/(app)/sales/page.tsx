@@ -7,7 +7,6 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { DailySaleModal, type DailySaleFormValues } from "./components/daily-sale-modal";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -26,6 +25,27 @@ import { useAppStore } from "@/store/app";
 import type { DailySale } from "@/types/daily-sales/daily-sale";
 
 type ModalState = { mode: "add" } | { mode: "edit"; sale: DailySale };
+
+/** Business day (no time), e.g. 2026-08-04. */
+function saleDay(value: string): string {
+  return value.slice(0, 10);
+}
+
+const dateTimeFmt = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Nairobi",
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/** Exact entry timestamp, e.g. 04 Aug 2026, 14:32. */
+function recordedAt(value: string): string {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : dateTimeFmt.format(d);
+}
 
 export default function DailySalesPage() {
   const user = useAppStore((s) => s.user);
@@ -75,17 +95,21 @@ export default function DailySalesPage() {
 
   const columns = useMemo<ColumnDef<DailySale>[]>(
     () => [
-      {
-        accessorKey: "saleDate",
-        meta: { label: "Date" },
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-        cell: ({ row }) => (
-          <span className="muted flex items-center gap-2">
-            {row.original.saleDate}
-            {row.original.saleDate === today ? <Badge color="teal">Today</Badge> : null}
-          </span>
-        ),
-      },
+      // "Sales day" column hidden per request (saleDate logic untouched —
+      // still used by filters/reports and the form). Uncomment to restore.
+      // {
+      //   accessorKey: "saleDate",
+      //   meta: { label: "Sales day" },
+      //   header: ({ column }) => <DataTableColumnHeader column={column} title="Sales day" />,
+      //   cell: ({ row }) => (
+      //     <span className="muted flex items-center gap-2">
+      //       {saleDay(row.original.saleDate)}
+      //       {saleDay(row.original.saleDate) === today ? (
+      //         <Badge color="teal">Today</Badge>
+      //       ) : null}
+      //     </span>
+      //   ),
+      // },
       {
         id: "branch",
         accessorFn: (row) => row.store.name,
@@ -107,6 +131,17 @@ export default function DailySalesPage() {
         meta: { label: "Entered by" },
         header: ({ column }) => <DataTableColumnHeader column={column} title="Entered by" />,
         cell: ({ row }) => <span className="muted">{row.original.enteredBy.name}</span>,
+      },
+      {
+        id: "recordedAt",
+        accessorFn: (row) => row.createdAt,
+        meta: { label: "Recorded" },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Recorded" />,
+        cell: ({ row }) => (
+          <span className="muted whitespace-nowrap tabular-nums">
+            {recordedAt(row.original.createdAt)}
+          </span>
+        ),
       },
       {
         accessorKey: "note",
@@ -233,8 +268,8 @@ export default function DailySalesPage() {
         title="Daily Sales"
         desc={
           isAdmin
-            ? "One sales total per branch per day, across all branches"
-            : `Daily sales totals for ${user?.store ?? "your branch"}`
+            ? "Sales entries across all branches — record as many per day as needed"
+            : `Sales entries for ${user?.store ?? "your branch"}`
         }
         action={
           <Button onClick={() => setModal({ mode: "add" })}>
@@ -284,7 +319,7 @@ export default function DailySalesPage() {
       {deleteTarget ? (
         <ConfirmDialog
           title="Delete sales entry?"
-          message={`Delete the ${deleteTarget.saleDate} entry for ${deleteTarget.store.name}? This cannot be undone.`}
+          message={`Delete the ${saleDay(deleteTarget.saleDate)} entry for ${deleteTarget.store.name}? This cannot be undone.`}
           confirmLabel="Delete"
           isLoading={deleteSale.isPending}
           onConfirm={() => void handleDelete()}
