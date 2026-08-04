@@ -74,7 +74,7 @@ export function DailySaleModal({
   const today = useMemo(() => dateToYmd(new Date()), []);
   const [form, setForm] = useState<DailySaleFormValues>(() => ({
     storeId: sale?.storeId ?? undefined,
-    saleDate: sale?.saleDate ?? today,
+    saleDate: sale?.saleDate ? sale.saleDate.slice(0, 10) : today,
     totalAmount: sale ? String(sale.totalAmount) : "",
     note: sale?.note ?? "",
   }));
@@ -112,7 +112,7 @@ export function DailySaleModal({
             <Dialog.Description className="text-sm text-muted-foreground">
               {isEdit
                 ? "Correct the daily sales total."
-                : "One total per branch per day."}
+                : "Record a sales entry — you can add more than one per day."}
             </Dialog.Description>
           </div>
 
