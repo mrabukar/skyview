@@ -24,7 +24,10 @@ export function AdminRevenueCharts({ charts }: Props) {
     color: DONUT_COLORS[i % DONUT_COLORS.length],
   }));
 
-  const expenseTotal = charts.expenseBreakdown.reduce((sum, row) => sum + row.amount, 0);
+  const expenseTotal = charts.expenseBreakdown.reduce(
+    (sum, row) => sum + row.amount,
+    0,
+  );
 
   return (
     <div className="dash-charts mb-16">
@@ -32,14 +35,24 @@ export function AdminRevenueCharts({ charts }: Props) {
         {revenueChart.length > 0 ? (
           <GroupedBar data={revenueChart} />
         ) : (
-          <EmptyState title="No sales data" sub="No revenue in the selected period." />
+          <EmptyState
+            title="No sales data"
+            sub="No revenue in the selected period."
+          />
         )}
       </Card>
       <Card title="Expense Breakdown" pad>
         {expenseDonut.length > 0 ? (
-          <Donut data={expenseDonut} centerLabel="Total" centerValue={fmt(expenseTotal)} />
+          <Donut
+            data={expenseDonut}
+            centerLabel="Total"
+            centerValue={fmt(expenseTotal)}
+          />
         ) : (
-          <EmptyState title="No expenses" sub="No expenses recorded in the selected period." />
+          <EmptyState
+            title="No expenses"
+            sub="No expenses recorded in the selected period."
+          />
         )}
       </Card>
     </div>
