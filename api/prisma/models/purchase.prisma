@@ -1,8 +1,8 @@
 /// Branch supply purchase — free-text item, no stock tracking (BR-3).
 model Purchase {
   id             String       @id @default(cuid())
-  storeId        String
-  store          Store        @relation(fields: [storeId], references: [id])
+  branchId       String
+  branch         Branch       @relation(fields: [branchId], references: [id])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   itemName       String
@@ -19,7 +19,7 @@ model Purchase {
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId])
-  @@index([storeId, purchaseDate])
+  @@index([branchId, purchaseDate])
   @@index([vendorId])
   @@map("purchase")
 }
