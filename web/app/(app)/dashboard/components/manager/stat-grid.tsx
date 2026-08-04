@@ -1,4 +1,4 @@
-import { ClipboardList, ShoppingCart, TrendingUp } from "lucide-react";
+import { CreditCard, ShoppingBag, ShoppingCart, TrendingUp } from "lucide-react";
 import { formatPeriodTrend } from "@/lib/reports/format";
 import { fmt } from "@/lib/utils";
 import type { ManagerPeriodComparison } from "@/types/reports/common";
@@ -12,7 +12,7 @@ interface Props {
 
 export function ManagerStatGrid({ summary: s, comparison }: Props) {
   return (
-    <div className="stat-grid grid-3 mb-16">
+    <div className="stat-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-16">
       <StatCard
         icon={ShoppingCart}
         color="indigo"
@@ -22,17 +22,29 @@ export function ManagerStatGrid({ summary: s, comparison }: Props) {
       />
       <StatCard
         icon={TrendingUp}
-        color="teal"
+        color="indigo"
         value={fmt(s.monthRevenue)}
         label="This Month's Sales"
         {...formatPeriodTrend(comparison.monthRevenue)}
       />
       <StatCard
-        icon={ClipboardList}
+        icon={ShoppingBag}
+        color="teal"
+        value={fmt(s.monthPurchases)}
+        label="Purchases (This Month)"
+      />
+      <StatCard
+        icon={CreditCard}
+        color="amber"
+        value={fmt(s.monthExpenses)}
+        label="Expenses (This Month)"
+      />
+      <StatCard
+        icon={TrendingUp}
         color="violet"
-        value={s.todayUnitsSold > 0 ? "Recorded" : "Not yet"}
-        label="Today's Entry"
-        valueColor={s.todayUnitsSold > 0 ? undefined : "var(--status-amber)"}
+        value={fmt(s.netProfit)}
+        label="Net Profit (This Month)"
+        valueColor={s.netProfit < 0 ? "var(--status-rose)" : undefined}
       />
     </div>
   );
