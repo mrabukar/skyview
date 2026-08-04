@@ -6,7 +6,7 @@ export type CurrentUserPayload = {
   email: string;
   role: UserRole;
   organizationId: string | null;
-  storeId: string | null;
+  branchId: string | null;
   isActive: boolean;
 };
 
