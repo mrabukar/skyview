@@ -1,13 +1,8 @@
 "use client";
 
-/**
- * DEMO MODE — any email/password signs in.
- * Emails containing "manager" or "catherine" sign in as the Hub Karen
- * branch manager; everything else signs in as the admin.
- */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authClient } from "@/lib/auth/client";
 import { clearTenantQueries } from "@/lib/auth/query-cache";
-import { setMockRole, setMockSignedIn } from "@/service/mock/handlers";
 import { useAppStore } from "@/store/app";
 import { fetchCurrentUser, SESSION_QUERY_KEY } from "./session";
 
@@ -21,18 +16,26 @@ export function useSignIn() {
     },
     mutationFn: async ({
       email,
+      password,
+      rememberMe = true,
     }: {
       email: string;
       password: string;
       rememberMe?: boolean;
     }) => {
-      // simulate a short network round-trip
-      await new Promise((r) => setTimeout(r, 400));
+      const result = await authClient.signIn.email({
+        email,
+        password,
+        rememberMe,
+      });
 
-      const lower = email.toLowerCase();
-      const isManager = lower.includes("manager") || lower.startsWith("catherine");
-      setMockRole(isManager ? "branch_manager" : "admin");
-      setMockSignedIn();
+      if (result.error) {
+        const message =
+          result.error.message?.trim() ||
+          result.error.statusText?.trim() ||
+          "Sign in failed.";
+        throw new Error(message);
+      }
 
       const user = await fetchCurrentUser();
       setUser(user);
