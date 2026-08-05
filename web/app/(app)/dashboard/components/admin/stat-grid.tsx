@@ -1,4 +1,4 @@
-import { CreditCard, ShoppingBag, TrendingUp } from "lucide-react";
+import { CreditCard, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
 import { StatCard } from "../stat-card";
 import { formatExpenseTrend, formatPeriodTrend } from "@/lib/reports/format";
 import { fmt } from "@/lib/utils";
@@ -34,11 +34,10 @@ export function AdminStatGrid({ summary: s, comparison }: Props) {
         {...formatExpenseTrend(comparison.totalExpenses)}
       />
       <StatCard
-        icon={TrendingUp}
+        icon={Wallet}
         color="teal"
-        value={fmt(s.grossProfit)}
-        label="Sales − Purchases"
-        {...formatPeriodTrend(comparison.grossProfit)}
+        value={fmt(s.salaries)}
+        label="Salaries"
       />
       <StatCard
         icon={TrendingUp}
