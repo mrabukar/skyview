@@ -48,6 +48,7 @@ function toUserModalUser(user: OrganizationUser): User {
     email: user.email,
     role: "admin",
     phone: user.phone,
+    salary: 0,
     isActive: user.isActive,
     storeId: user.store?.id ?? null,
     store: user.store,
