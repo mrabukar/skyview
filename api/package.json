@@ -24,6 +24,13 @@
     "prisma:migrate": "prisma migrate dev --schema=./prisma",
     "prisma:studio": "prisma studio --schema=./prisma",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "seed:full": "ts-node prisma/seed.ts",
+    "seed:org": "ts-node prisma/seed-org.ts",
+    "seed:branches": "ts-node prisma/seed-branches.ts",
+    "seed:categories": "ts-node prisma/seed-categories.ts",
+    "seed:vendors": "ts-node prisma/seed-vendors.ts",
+    "seed:admin": "ts-node prisma/seed-admin.ts",
+    "seed:manager": "ts-node prisma/seed-manager.ts",
     "smoke": "node scripts/smoke/run.mjs"
   },
   "dependencies": {
