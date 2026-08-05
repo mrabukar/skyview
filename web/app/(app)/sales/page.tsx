@@ -160,7 +160,7 @@ export default function DailySalesPage() {
         enableSorting: false,
         cell: ({ row }) => {
           const sale = row.original;
-          const editable = isAdmin || sale.saleDate === today;
+          const editable = isAdmin || saleDay(sale.saleDate) === today;
           return (
             <div className="flex items-center justify-end gap-1">
               <Button
