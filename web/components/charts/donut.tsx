@@ -19,7 +19,8 @@ export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
   }, [data]);
 
   const total = data.reduce((s, d) => s + d.value, 0);
-  const R = 70, r = 46, C = 90;
+  // Wider inner hole (thinner ring) so the center value isn't crowded.
+  const R = 70, r = 57, C = 90;
   const singleSlice = data.length === 1 && total > 0;
   let acc = 0;
 
@@ -59,7 +60,7 @@ export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
           segs.map((s, i) => <path key={i} d={s.path} fill={s.color} />)
         )}
         {centerValue != null && (
-          <text x="90" y="84" textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--fg1)" fontFamily="var(--font-sans)">{centerValue}</text>
+          <text x="90" y="86" textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--fg1)" fontFamily="var(--font-sans)">{centerValue}</text>
         )}
         {centerLabel && (
           <text x="90" y="102" textAnchor="middle" fontSize="11" fill="var(--fg3)" fontFamily="var(--font-sans)">{centerLabel}</text>
