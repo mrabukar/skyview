@@ -5,6 +5,7 @@ import { Dialog } from "radix-ui";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useCreateVendor,
   useDeleteVendor,
@@ -40,6 +41,7 @@ export function VendorListModal({ open, onClose }: Props) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<Vendor | null>(null);
 
   const vendors = data ?? [];
 
@@ -80,6 +82,7 @@ export function VendorListModal({ open, onClose }: Props) {
     try {
       await deleteVendor.mutateAsync(vendor.id);
       addToast({ title: "Vendor removed" });
+      setConfirmDelete(null);
     } catch (e) {
       addErrorToast({
         title: "Failed to remove vendor",
@@ -189,7 +192,7 @@ export function VendorListModal({ open, onClose }: Props) {
                           variant="ghost"
                           size="icon"
                           title="Remove (deactivates if used by purchases)"
-                          onClick={() => void handleDelete(vendor)}
+                          onClick={() => setConfirmDelete(vendor)}
                           disabled={deleteVendor.isPending}
                         >
                           <Trash2 className="size-4 text-destructive" />
@@ -212,6 +215,21 @@ export function VendorListModal({ open, onClose }: Props) {
           </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
+
+      {confirmDelete ? (
+        <ConfirmDialog
+          title={`Remove ${confirmDelete.name}?`}
+          message={
+            (confirmDelete._count?.purchases ?? 0) > 0
+              ? `"${confirmDelete.name}" is used by existing purchases, so it will be deactivated (hidden from new purchases) rather than deleted.`
+              : `"${confirmDelete.name}" will be permanently removed.`
+          }
+          confirmLabel="Remove"
+          isLoading={deleteVendor.isPending}
+          onConfirm={() => void handleDelete(confirmDelete)}
+          onClose={() => setConfirmDelete(null)}
+        />
+      ) : null}
     </Dialog.Root>
   );
 }
