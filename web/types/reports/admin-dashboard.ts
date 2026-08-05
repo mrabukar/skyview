@@ -12,6 +12,7 @@ export interface AdminDashboardSummary {
   cogs: number;
   grossProfit: number;
   totalExpenses: number;
+  salaries: number;
   netProfit: number;
   currentStockValue: number;
   inStockBalance: number;
