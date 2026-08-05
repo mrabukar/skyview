@@ -30,6 +30,11 @@ import { fmt } from "@/lib/utils";
 import { useAppStore } from "@/store/app";
 import type { PurchaseEntry } from "@/types/purchases/purchase-entry";
 
+/** Purchase day as a clean date, e.g. 2026-08-04 (drops any time part). */
+function purchaseDay(value: string): string {
+  return value.slice(0, 10);
+}
+
 type ModalState = { mode: "add" } | { mode: "edit"; entry: PurchaseEntry };
 
 export default function PurchasesPage() {
@@ -98,7 +103,9 @@ export default function PurchasesPage() {
         accessorKey: "purchaseDate",
         meta: { label: "Date" },
         header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-        cell: ({ row }) => <span className="muted">{row.original.purchaseDate}</span>,
+        cell: ({ row }) => (
+          <span className="muted">{purchaseDay(row.original.purchaseDate)}</span>
+        ),
       },
       {
         accessorKey: "itemName",
@@ -342,7 +349,7 @@ export default function PurchasesPage() {
       {deleteTarget ? (
         <ConfirmDialog
           title="Delete purchase?"
-          message={`Delete "${deleteTarget.itemName}" (${deleteTarget.purchaseDate}, ${deleteTarget.store.name})? This cannot be undone.`}
+          message={`Delete "${deleteTarget.itemName}" (${purchaseDay(deleteTarget.purchaseDate)}, ${deleteTarget.store.name})? This cannot be undone.`}
           confirmLabel="Delete"
           isLoading={deleteEntry.isPending}
           onConfirm={() => void handleDelete()}
