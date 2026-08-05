@@ -37,7 +37,7 @@ export function ConfirmDialog({
   }, [onClose]);
 
   const content = (
-    <div className="dialog" style={{ zIndex: 200 }}>
+    <div className="dialog" style={{ zIndex: 300 }}>
       <div className="overlay" onClick={onClose} />
       <div className="dialog-box">
         <h2>{title}</h2>
