@@ -28,8 +28,6 @@ export default function PayrollPage() {
   const runPayroll = useRunPayroll();
   const payUser = usePayUser();
 
-  console.log("Status:", status);
-
   const handleRunAll = async () => {
     try {
       const res = await runPayroll.mutateAsync();
