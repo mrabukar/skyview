@@ -34,6 +34,32 @@ Seed prints the credentials, defaults:
 - Admin — `admin@skyviewcoffee.co.ke` / `Admin123!`
 - Manager — `catherine@skyviewcoffee.co.ke` / `Manager123!`
 
+### Seeding — full or individual
+
+`pnpm prisma:seed` (a.k.a. `pnpm seed:full`) runs the whole baseline in
+dependency order: organization → branches → categories → vendors → admin →
+manager. Everything is idempotent (safe to re-run).
+
+To seed just one piece — e.g. a client only wants an admin and will build their
+own branches/vendors/categories in-app — use the individual scripts:
+
+| Script | Seeds | Requires |
+|---|---|---|
+| `pnpm seed:org` | the organization (the only script that creates it) | — |
+| `pnpm seed:branches` | the 4 branches | org exists |
+| `pnpm seed:categories` | expense categories (Salaries = system) | org exists |
+| `pnpm seed:vendors` | vendors | org exists |
+| `pnpm seed:admin` | the admin user | org exists |
+| `pnpm seed:manager` | the branch manager | org **and** the manager's branch exist |
+
+Every partial seed **requires the organization to already exist** and fails
+with a clear message telling you to run `pnpm seed:org` first (the manager seed
+likewise points you to `pnpm seed:branches`). All names/credentials are
+configurable via `SEED_*` env vars (see `.env.example`).
+
+Typical "admin-only" start: `pnpm seed:org` then `pnpm seed:admin` — the admin
+logs in and builds branches, vendors, categories, and staff from the app.
+
 ## What exists in this phase
 
 | Area | Detail |
