@@ -160,7 +160,7 @@ export default function PurchasesPage() {
         enableSorting: false,
         cell: ({ row }) => {
           const entry = row.original;
-          const editable = isAdmin || entry.purchaseDate === today;
+          const editable = isAdmin || purchaseDay(entry.purchaseDate) === today;
           return (
             <div className="flex items-center justify-end gap-1">
               <Button
