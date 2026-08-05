@@ -101,29 +101,6 @@ export function LoginForm() {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
-    if (signIn.isPending) return;
-    setErrorMessage(null);
-    // autofill the form so the client sees the credentials go in
-    setEmail(demoEmail);
-    setPw(demoPassword);
-    await new Promise((r) => setTimeout(r, 450));
-    try {
-      await signIn.mutateAsync({
-        email: demoEmail,
-        password: demoPassword,
-        rememberMe,
-      });
-      router.push(returnUrl);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Sign in failed.",
-      );
-    }
-  };
-
   if (!isFetched || authLoading) {
     return (
       <LoginPageBackground>
@@ -155,31 +132,6 @@ export function LoginForm() {
               <p className="mt-0.5 text-[13px] italic text-[#9c6430]">
                 “Good Tea. Good Time. All the Time!”
               </p>
-            </div>
-
-            {/* Demo credential badges — click to autofill and sign in */}
-            <div className="mb-6 rounded-xl border border-dashed border-[#e8c98f] bg-[#fdf6e8] px-4 py-3">
-              <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wide text-[#9c6430]">
-                Demo access — click to sign in
-              </p>
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleDemoLogin("admin@skyviewcoffee.co.ke", "Admin123!")}
-                  disabled={signIn.isPending}
-                  className="rounded-full border border-[#3f201b]/15 bg-[#3f201b] px-3.5 py-1.5 text-[12px] font-semibold text-[#fdf6ec] transition-transform hover:scale-[1.03] hover:bg-[#55321c] disabled:opacity-50"
-                >
-                  ☕ Admin (Head Office)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDemoLogin("catherine@skyviewcoffee.co.ke", "Manager123!")}
-                  disabled={signIn.isPending}
-                  className="rounded-full border border-[#e08e12]/30 bg-[#f9a72a] px-3.5 py-1.5 text-[12px] font-semibold text-[#3f201b] transition-transform hover:scale-[1.03] hover:bg-[#e08e12] disabled:opacity-50"
-                >
-                  🧋 Branch Manager
-                </button>
-              </div>
             </div>
 
             {errorMessage ? (
