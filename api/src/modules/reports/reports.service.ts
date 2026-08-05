@@ -66,6 +66,9 @@ export class ReportsService {
     const revenue = this.sum(sales, "totalAmount");
     const cogs = this.sum(purchases, "totalCost");
     const totalExpenses = this.sum(expenses, "amount");
+    const salaries = expenses
+      .filter((e) => e.category.name === "Salaries")
+      .reduce((a, e) => a + Number(e.amount), 0);
 
     // previous period — same length immediately before
     const spanDays = eachCalendarDate(range.fromCalendar, range.toCalendar).length - 1;
@@ -90,6 +93,7 @@ export class ReportsService {
         cogs: Math.round(cogs),
         grossProfit: Math.round(revenue - cogs),
         totalExpenses: Math.round(totalExpenses),
+        salaries: Math.round(salaries),
         netProfit: Math.round(revenue - cogs - totalExpenses),
         currentStockValue: 0,
         inStockBalance: 0,
