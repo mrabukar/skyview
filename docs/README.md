@@ -13,6 +13,8 @@ change of scope should be reflected here first.
 | [05-api-design.md](05-api-design.md) | REST endpoints, permissions, request/response shapes, errors |
 | [06-non-functional.md](06-non-functional.md) | Auth, roles, audit, timezone, money, validation, pagination |
 | [07-tech-stack.md](07-tech-stack.md) | Stack & versions (same platform as the inventory product) |
+| [08-super-admin.md](08-super-admin.md) | Super-admin / platform administration — **design only, not built** |
+| [09-production-readiness.md](09-production-readiness.md) | Production checklist — done, just-hardened, and remaining items |
 
 ## Context
 
