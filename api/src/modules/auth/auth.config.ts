@@ -72,9 +72,23 @@ export function createAuth(prisma: PrismaClient) {
       },
     },
 
+    // Per-IP rate limiting on auth endpoints (brute-force protection).
+    // Enabled in all environments here (Better-Auth defaults to prod-only).
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 30,
+      customRules: {
+        "/sign-in/email": { window: 60, max: 10 },
+        "/sign-up/email": { window: 60, max: 5 },
+        "/change-password": { window: 60, max: 5 },
+      },
+    },
+
     session: {
-      expiresIn: 60 * 5,
-      updateAge: 60 * 2,
+      // 7-day session, refreshed (sliding) once older than a day.
+      expiresIn: 60 * 60 * 24 * 7,
+      updateAge: 60 * 60 * 24,
     },
 
     advanced: {
