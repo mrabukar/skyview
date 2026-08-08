@@ -1,0 +1,24 @@
+/// Receipt image/PDF attached to a purchase (Feature 2). The bytes live in
+/// Cloudflare R2; the DB holds only metadata + the R2 object key.
+model Receipt {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  purchaseId     String
+  purchase       Purchase     @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  branchId       String
+  branch         Branch       @relation(fields: [branchId], references: [id])
+  /// R2 object key, e.g. receipts/{orgId}/{purchaseId}/{uuid}.jpg
+  key            String
+  originalName   String
+  contentType    String
+  size           Int
+  uploadedById   String
+  uploadedBy     User         @relation("ReceiptsUploadedBy", fields: [uploadedById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([purchaseId])
+  @@index([branchId])
+  @@map("receipt")
+}
