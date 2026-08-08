@@ -30,6 +30,7 @@ const userSelect = {
   organizationId: true,
   isActive: true,
   phone: true,
+  disabledPages: true,
 } as const;
 
 export type MeBranch = {
