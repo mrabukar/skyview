@@ -5,6 +5,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { buildLoginUrl } from "@/lib/auth/redirect";
 import { isRouteAllowedForRole } from "@/lib/auth/routes";
 import { firstEnabledManagerRoute, pageKeyForPath } from "@/lib/auth/pages";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useAppStore } from "@/store/app";
 import { formatDocumentTitle, resolvePageTitle } from "@/lib/page-title";
 import { Sidebar } from "./sidebar";
@@ -19,6 +20,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
   const collapsed = useAppStore((s) => s.collapsed);
   const setCollapsed = useAppStore((s) => s.setCollapsed);
+  const mobileNavOpen = useAppStore((s) => s.mobileNavOpen);
+  const setMobileNavOpen = useAppStore((s) => s.setMobileNavOpen);
+  const isMobile = useMediaQuery("(max-width: 1023px)");
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname, setMobileNavOpen]);
+
+  const handleToggleNav = () => {
+    if (isMobile) {
+      setMobileNavOpen(!mobileNavOpen);
+    } else {
+      setCollapsed(!collapsed);
+    }
+  };
 
   const roleDenied =
     isFetched &&
@@ -80,14 +97,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar
         role={user.role}
         collapsed={collapsed}
+        mobileOpen={mobileNavOpen}
         storeName={user.store}
         hasStores={user.hasStores}
       />
+      {isMobile && mobileNavOpen ? (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden
+        />
+      ) : null}
       <div className="app-main">
         <Navbar
           title={title}
           collapsed={collapsed}
-          onToggle={() => setCollapsed(!collapsed)}
+          onToggle={handleToggleNav}
         />
         <div className="app-content">
           <div className="app-content-inner">
