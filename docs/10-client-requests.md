@@ -268,28 +268,42 @@ parameterizing existing code + a month picker.
 
 ## To-do checklist (build order)
 
-Payroll (previous months)
-- [ ] Service: parameterize `monthKey` in getStatus/runAll/payUser; validate no future month
-- [ ] Controller: accept `month` on GET/POST/pay-user
-- [ ] Frontend: month picker + wire status/pay to selected month; confirm shows month
-- [ ] Smoke: month param + future-month reject
-- [ ] Verify (build + smoke green)
+Payroll (previous months) — **code complete**
+- [x] Service: parameterize `monthKey` in getStatus/runAll/payUser; validate no future month
+- [x] Controller: accept `month` on GET/POST/pay-user
+- [x] Frontend: month picker + wire status/pay to selected month; confirm shows month
+- [x] Smoke: month param + future-month reject (payroll suite)
+- [ ] Verify (build + smoke green — run locally)
 
-Page access (per-manager, any page)
-- [ ] Page registry (shared source of truth: key → label/route/endpoints)
-- [ ] Schema: `User.disabledPages String[]` + migration `add_disabled_pages`
-- [ ] Auth additionalFields + Users DTOs expose `disabledPages`; session payload includes it
-- [ ] Backend: `@Page('<key>')` decorator + `PageAccessGuard` (403 for disabled manager); tag registry endpoints
-- [ ] Frontend: `useCanAccess` helper; edit-user checklist; hide nav + redirect for disabled pages; all-disabled screen
-- [ ] Smoke: `disabledPages` round-trip + 403 on a disabled page's endpoint
-- [ ] Verify
+Page access (per-manager, any page) — **code complete**
+- [x] Page registry (backend `common/page-access/pages.ts` + frontend `lib/auth/pages.ts`)
+- [x] Schema: `User.disabledPages String[]` (migration `add_disabled_pages` — run locally)
+- [x] Users DTOs expose `disabledPages`; `me` returns it; session payload carries it
+- [x] Backend: `@Page('<key>')` decorator + `PageAccessGuard` (403); tagged sales/purchases/expenses/vendors/receipts/manager-dashboard
+- [x] Frontend: page gating in app-shell (redirect + all-disabled screen), nav filter, edit-user checklist
+- [x] Smoke: `disabledPages` round-trip + 403 on a disabled page (users suite)
+- [ ] Verify (build + smoke green — run locally)
 
-Receipts (Cloudflare R2)
-- [ ] R2 bucket + token + CORS (client) ; env vars wired
-- [ ] Deps: `@aws-sdk/client-s3` + presigner; `R2Service` wrapper
-- [ ] Schema: `Receipt` model + relations + migration `add_receipts`
-- [ ] Receipts module: upload-url, persist, list, centre feed, get-url, delete (branch-scoped)
-- [ ] Frontend: purchase form file/camera input + preview/upload
-- [ ] Frontend: Receipt Centre page + nav item + filters
-- [ ] Smoke: receipts suite
-- [ ] Verify
+Receipts (Cloudflare R2) — **code complete; needs R2 creds + deps + migration**
+- [ ] R2 bucket + token + CORS (client) → set `R2_*` env vars
+- [x] Deps declared: `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`; `R2Service` wrapper (`common/r2`)
+- [x] Schema: `Receipt` model + relations (migration `add_receipts` — run locally)
+- [x] Receipts module: upload-url, persist, list, centre feed, get-url, delete (branch-scoped, `@Page("receipts")`)
+- [x] Frontend: purchase form file/camera input (`capture="environment"`) + ReceiptManager (list/view/delete)
+- [x] Frontend: Receipt Centre page + nav item + date/branch filters
+- [ ] Smoke: receipts suite (deferred — needs a test R2 bucket)
+- [ ] Verify (build + smoke green — run locally)
+
+## Run prerequisites (local, one-time)
+
+1. **Install new deps** (API): `pnpm install` (adds the two `@aws-sdk` packages).
+2. **Regenerate Prisma client + migrate** (API):
+   `pnpm prisma:generate` then `pnpm prisma:migrate --name client_requests`
+   (creates `user.disabledPages` + the `receipt` table in one migration).
+3. **R2 (for receipts only):** create a Cloudflare R2 bucket + API token, set
+   bucket CORS to allow `PUT`/`GET` from the web origin, and set
+   `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` in
+   `api/.env`. Until set, the app boots fine but receipt upload/view returns a
+   clear "storage not configured" error.
+4. **Verify:** `pnpm build` (api + web) green, then `pnpm smoke` (payroll +
+   users suites cover the new backend behavior).
