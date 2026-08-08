@@ -148,7 +148,8 @@ export function UserModal({
       if (!form.password) next.password = "Password is required";
       else if (form.password.length < 8)
         next.password = "Password must be at least 8 characters";
-      else if (!isStrongPassword(form.password)) next.password = STRONG_PASSWORD_MESSAGE;
+      else if (!isStrongPassword(form.password))
+        next.password = STRONG_PASSWORD_MESSAGE;
     } else if (form.password) {
       if (form.password.length < 8)
         next.password = "Password must be at least 8 characters";
@@ -166,9 +167,17 @@ export function UserModal({
 
     setErr(next);
     let nextConfirmErr: string | undefined;
-    if (withPasswordConfirm && form.password && form.password !== confirmPassword) {
+    if (
+      withPasswordConfirm &&
+      form.password &&
+      form.password !== confirmPassword
+    ) {
       nextConfirmErr = "Passwords do not match";
-    } else if (withPasswordConfirm && !isEdit && form.password !== confirmPassword) {
+    } else if (
+      withPasswordConfirm &&
+      !isEdit &&
+      form.password !== confirmPassword
+    ) {
       nextConfirmErr = "Passwords do not match";
     }
     setConfirmErr(nextConfirmErr);
@@ -216,7 +225,10 @@ export function UserModal({
 
             <FormField label="Email" required error={err.email}>
               <input
-                className={cn(inputClassName, err.email && "border-destructive")}
+                className={cn(
+                  inputClassName,
+                  err.email && "border-destructive",
+                )}
                 type="email"
                 value={form.email}
                 onChange={(e) => set("email", e.target.value)}
@@ -311,7 +323,9 @@ export function UserModal({
               <FormField label="Role" required>
                 <Combobox
                   value={form.role}
-                  onValueChange={(value) => setRole(value as UserRole | undefined)}
+                  onValueChange={(value) =>
+                    setRole(value as UserRole | undefined)
+                  }
                   items={roleItems}
                   placeholder="Select role"
                   searchPlaceholder="Search roles…"
@@ -339,8 +353,8 @@ export function UserModal({
 
             {showStoreField && form.role === "branch_manager" ? (
               <FormField
-                label="Pages this manager can access"
-                helper="Unchecked pages are hidden from this manager."
+                label="Modules this manager can access"
+                helper="Unchecked modules are hidden from this manager."
               >
                 <div className="grid gap-1.5">
                   {MANAGER_PAGES.map((page) => {
@@ -379,7 +393,10 @@ export function UserModal({
               helper="Used by the monthly payroll run."
             >
               <input
-                className={cn(inputClassName, err.salary && "border-destructive")}
+                className={cn(
+                  inputClassName,
+                  err.salary && "border-destructive",
+                )}
                 type="number"
                 min="0"
                 step="1"
