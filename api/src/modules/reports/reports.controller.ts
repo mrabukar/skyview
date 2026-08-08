@@ -5,6 +5,7 @@ import {
   type CurrentUserPayload,
 } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { Page } from "../../common/page-access/page.decorator";
 import { ReportQueryDto } from "./dto/report-query.dto";
 import { ReportsService } from "./reports.service";
 
@@ -22,6 +23,7 @@ export class ReportsController {
     return this.reportsService.adminDashboard(query, user);
   }
 
+  @Page("dashboard")
   @Get("manager-dashboard")
   managerDashboard(@CurrentUser() user: CurrentUserPayload) {
     return this.reportsService.managerDashboard(user);
