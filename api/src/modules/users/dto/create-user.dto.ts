@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsEmail,
   IsIn,
   IsNotEmpty,
@@ -10,6 +11,7 @@ import {
   Min,
   MinLength,
 } from "class-validator";
+import { MANAGER_PAGES } from "../../../common/page-access/pages";
 
 export class CreateUserDto {
   @IsString()
@@ -42,4 +44,10 @@ export class CreateUserDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   salary?: number;
+
+  /** Page keys to hide from this branch manager (see page registry). */
+  @IsOptional()
+  @IsArray()
+  @IsIn(MANAGER_PAGES, { each: true })
+  disabledPages?: string[];
 }
