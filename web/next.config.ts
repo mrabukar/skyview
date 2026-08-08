@@ -12,8 +12,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Standalone output for a small production Docker image.
-  output: "standalone",
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
