@@ -5,57 +5,103 @@ built yet** — this is the agreed spec and the to-do list. Build order is
 bottom-up by effort: Payroll (3) → Dashboard toggle (1) → Receipts (2).
 
 Decisions locked with the client:
-- **#1 dashboard toggle** → **per-manager** (not org-wide).
+- **#1 page access** → **per-manager, any page** (generalized; not just the
+  dashboard). Client's first ask is the Dashboard, but the admin must be able to
+  disable *any* manager-accessible page for *any* manager, now and in future,
+  with no new code per page.
 - **#2 receipt storage** → **Cloudflare R2** (S3-compatible object storage).
 
 ---
 
-## Feature 1 — Admin can disable the Dashboard per branch manager
+## Feature 1 — Admin can disable ANY page per branch manager
 
 ### Intent
-The admin can turn the Dashboard **off for an individual branch manager**. When
-off, that manager can't see or reach the Dashboard; they land on Daily Sales
-instead. Other managers are unaffected.
+The admin can switch individual pages **on/off for a specific branch manager**.
+Today they only need to hide the Dashboard, but the same control must cover any
+manager-accessible page (Daily Sales, Purchases, Expenses, Vendors, Receipt
+Centre, …) without shipping new code each time. Disabling a page hides it from
+that manager's nav and blocks the underlying API for them.
 
-### Logic / rules
-- New per-user flag `dashboardEnabled` (default **true**) on the `User` model.
-- Only meaningful for `branch_manager`. Admins always have the dashboard.
-- Enforced in **two places** (never trust the client alone):
-  - **Backend:** `GET /api/reports/manager-dashboard` returns **403** when the
-    calling manager has `dashboardEnabled = false`.
-  - **Frontend:** hide the Dashboard nav item and redirect `/dashboard` →
-    `/sales` for a disabled manager.
-- Admin sets the flag from the **Users** screen (edit user), and/or a quick
-  toggle in the users table row.
+### Design — page-access list + central registry (best approach)
+Rather than a boolean column per page (a migration every time a page is added),
+store a **single array of disabled page keys per user**, driven by one **page
+registry** that both the frontend and backend read from.
+
+**Store *disabled*, not *allowed*.** With a disabled-list, any page added later
+is **on by default** — matching "for now only the dashboard." An allowed-list
+would silently hide every new page until every manager is edited. So:
+disabled-list wins.
+
+- New field on `User`: `disabledPages String[]` (default `[]` = everything on).
+  To hide the dashboard for one manager, their list becomes `["dashboard"]`.
+  **One migration, ever** — new pages never need a schema change.
+- Only meaningful for `branch_manager`. `admin` / `super_admin` always have full
+  access (their `disabledPages` is ignored).
+- **Never lock a manager out completely:** if a manager's *current* route is
+  disabled, redirect to their first enabled page. If somehow every page is
+  disabled, show a friendly "No pages assigned — contact your admin" screen
+  rather than a redirect loop.
+
+### The page registry (single source of truth)
+One shared definition lists every **toggleable (manager-accessible)** page. It
+maps a stable `key` → label, route, and the API endpoint(s) that page guards.
+Admin-only pages (payroll, users, branches, audit, admin dashboard, financial)
+are **not** in the registry and can't be toggled.
+
+| key | label | route | guards endpoint(s) |
+|---|---|---|---|
+| `dashboard` | Dashboard | `/dashboard` | `GET /api/reports/manager-dashboard` |
+| `sales` | Daily Sales | `/sales` | `/api/daily-sales*` |
+| `purchases` | Purchases | `/purchases` | `/api/purchases*` |
+| `expenses` | Expenses | `/expenses` | `/api/expenses*` |
+| `vendors` | Vendors | `/vendors` | `/api/vendors*` |
+| `receipts` | Receipt Centre | `/receipts` | `/api/receipts*` (Feature 2) |
+
+Adding a future toggleable page = add one row here (+ tag its controller). No
+schema change, no per-page flag.
+
+### Enforced in two layers (never trust the client alone)
+- **Backend:** a small `@Page('<key>')` decorator on protected controllers/
+  routes plus a `PageAccessGuard`. If the caller is a `branch_manager` whose
+  `disabledPages` contains that key → **403**. This is the real lock.
+- **Frontend:** a `useCanAccess(pageKey)` helper reads the current user's
+  `disabledPages` (already present in the session payload). Nav hides disabled
+  items; a route guard redirects a disabled page → first enabled page.
 
 ### Data model
 `api/prisma/models/auth.prisma` → `User`:
 ```prisma
-/// When false, hide the dashboard from this branch manager (admin-controlled).
-dashboardEnabled Boolean @default(true)
+/// Page keys hidden from this branch manager (admin-controlled). Empty = all on.
+/// Only applies to branch_manager; ignored for admin/super_admin. See page registry.
+disabledPages String[] @default([])
 ```
-Migration: `add_dashboard_enabled`.
+Migration: `add_disabled_pages`.
 
 Better-Auth `additionalFields` in `auth.config.ts` and the `/api/users` DTOs
-must expose `dashboardEnabled` so it round-trips through create/update and the
-session payload.
+must expose `disabledPages` so it round-trips through create/update and rides on
+the session payload.
 
 ### API
-- `PATCH /api/users/:id` — accept `dashboardEnabled` (admin only).
-- `GET /api/users` / `GET /api/users/:id` — include `dashboardEnabled`.
-- `GET /api/reports/manager-dashboard` — 403 if the caller's flag is false.
-- Surface the flag on the current-user/session response so the frontend can
-  gate nav without an extra call.
+- `PATCH /api/users/:id` — accept `disabledPages` (admin only; values validated
+  against the registry keys).
+- `GET /api/users` / `GET /api/users/:id` — include `disabledPages`.
+- Every registry-listed endpoint carries `@Page('<key>')`; the guard 403s a
+  manager who has that key disabled.
+- Surface `disabledPages` on the current-user/session response so the frontend
+  gates nav without an extra call.
 
 ### Frontend
-- Users table: a toggle (or a field in the edit-user form) labelled
-  "Show dashboard".
-- Sidebar/nav: hide Dashboard for a manager whose flag is false.
-- Route guard: redirect `/dashboard` → `/sales` for that manager.
-- Bridge (`web/service/client.ts`): pass `dashboardEnabled` through untouched
-  (no store/branch renaming needed for this field).
+- Edit-user form: a **checklist** "Pages this manager can access" — one checkbox
+  per registry entry (checked = enabled). Toggling Dashboard off is the client's
+  current ask; the same UI covers every future page for free.
+- Sidebar/nav: hide any page whose key is in the manager's `disabledPages`.
+- Route guard: redirect a disabled route → first enabled page; all-disabled →
+  "no pages assigned" screen.
+- Bridge (`web/service/client.ts`): pass `disabledPages` through untouched (no
+  store/branch renaming needed for this field).
 
-### Effort: **Easy–Medium** (1 migration, small DTO/guard/nav changes).
+### Effort: **Easy–Medium** (1 migration, registry + one decorator/guard, small
+DTO/nav/form changes). Same effort as the single flag, but future-proof.
 
 ---
 
@@ -209,12 +255,13 @@ parameterizing existing code + a month picker.
 
 ## Cross-cutting
 
-- **Migrations (client runs on deploy):** `add_dashboard_enabled`,
-  `add_receipts`, (payroll needs **no** migration).
+- **Migrations (run on deploy):** `add_disabled_pages`, `add_receipts`,
+  (payroll needs **no** migration).
 - **Smoke tests:** extend suites — payroll month param + future-month reject;
-  users `dashboardEnabled` round-trip + manager-dashboard 403; new receipts
-  suite (upload-url shape, metadata persist, list/scope, delete). R2 calls in
-  smoke can be mocked or pointed at a test bucket.
+  users `disabledPages` round-trip + a disabled manager gets 403 on that page's
+  endpoint (e.g. manager-dashboard); new receipts suite (upload-url shape,
+  metadata persist, list/scope, delete). R2 calls in smoke can be mocked or
+  pointed at a test bucket.
 - **Env additions:** the four `R2_*` secrets (+ optional public base URL).
 - **Client to provide:** R2 bucket + API token + bucket CORS for the web origin.
 - **No changes to the `inventory` repo** (read-only reference, as always).
@@ -228,12 +275,13 @@ Payroll (previous months)
 - [ ] Smoke: month param + future-month reject
 - [ ] Verify (build + smoke green)
 
-Dashboard toggle (per-manager)
-- [ ] Schema: `User.dashboardEnabled` + migration `add_dashboard_enabled`
-- [ ] Auth additionalFields + Users DTOs expose the flag; session payload includes it
-- [ ] Guard: `manager-dashboard` 403 when disabled
-- [ ] Frontend: users toggle/edit field; hide nav + redirect for disabled manager
-- [ ] Smoke: flag round-trip + 403
+Page access (per-manager, any page)
+- [ ] Page registry (shared source of truth: key → label/route/endpoints)
+- [ ] Schema: `User.disabledPages String[]` + migration `add_disabled_pages`
+- [ ] Auth additionalFields + Users DTOs expose `disabledPages`; session payload includes it
+- [ ] Backend: `@Page('<key>')` decorator + `PageAccessGuard` (403 for disabled manager); tag registry endpoints
+- [ ] Frontend: `useCanAccess` helper; edit-user checklist; hide nav + redirect for disabled pages; all-disabled screen
+- [ ] Smoke: `disabledPages` round-trip + 403 on a disabled page's endpoint
 - [ ] Verify
 
 Receipts (Cloudflare R2)
