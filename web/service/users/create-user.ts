@@ -23,6 +23,9 @@ export function createUser(
         : {}),
       ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
       ...(input.salary != null ? { salary: input.salary } : {}),
+      ...(input.role === "branch_manager" && input.disabledPages
+        ? { disabledPages: input.disabledPages }
+        : {}),
     }),
   });
 }
