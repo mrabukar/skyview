@@ -18,8 +18,10 @@ import { BranchesModule } from "./modules/branches/branches.module";
 import { UsersModule } from "./modules/users/users.module";
 import { AuditLogsModule } from "./modules/audit-logs/audit-logs.module";
 import { ReportsModule } from "./modules/reports/reports.module";
+import { ReceiptsModule } from "./modules/receipts/receipts.module";
 import { HealthModule } from "./modules/health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { R2Module } from "./common/r2/r2.module";
 import { TenantModule } from "./common/tenant/tenant.module";
 
 @Module({
@@ -60,6 +62,7 @@ import { TenantModule } from "./common/tenant/tenant.module";
     }),
     PrismaModule,
     TenantModule,
+    R2Module,
     HealthModule,
     BetterAuthNestModule,
     DailySalesModule,
@@ -72,6 +75,7 @@ import { TenantModule } from "./common/tenant/tenant.module";
     UsersModule,
     AuditLogsModule,
     ReportsModule,
+    ReceiptsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
