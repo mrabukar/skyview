@@ -13,6 +13,7 @@ model Branch {
   dailySales DailySale[]
   purchases  Purchase[]
   expenses   Expense[]
+  receipts   Receipt[]
 
   @@unique([name, organizationId])
   @@map("branch")
