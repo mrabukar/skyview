@@ -4,10 +4,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/service/client";
 import type { PayrollStatus } from "@/types/payroll/payroll";
 
-export function usePayrollStatus() {
+/** `?month=YYYY-MM` suffix, or "" for the current month. */
+function monthQuery(month: string): string {
+  return month ? `?month=${month}` : "";
+}
+
+export function usePayrollStatus(month: string) {
   return useQuery({
-    queryKey: ["payroll"] as const,
-    queryFn: () => apiFetch<PayrollStatus>("/api/payroll"),
+    queryKey: ["payroll", month || "current"] as const,
+    queryFn: () => apiFetch<PayrollStatus>(`/api/payroll${monthQuery(month)}`),
   });
 }
 
@@ -17,22 +22,27 @@ function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["reports"] });
 }
 
-/** Pay all staff not yet paid this month. */
-export function useRunPayroll() {
+/** Pay all staff not yet paid for the selected month. */
+export function useRunPayroll(month: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiFetch<PayrollStatus>("/api/payroll", { method: "POST" }),
+      apiFetch<PayrollStatus>(`/api/payroll${monthQuery(month)}`, {
+        method: "POST",
+      }),
     onSuccess: () => invalidate(queryClient),
   });
 }
 
-/** Pay a single staff member for this month. */
-export function usePayUser() {
+/** Pay a single staff member for the selected month. */
+export function usePayUser(month: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) =>
-      apiFetch<PayrollStatus>(`/api/payroll/pay-user/${userId}`, { method: "POST" }),
+      apiFetch<PayrollStatus>(
+        `/api/payroll/pay-user/${userId}${monthQuery(month)}`,
+        { method: "POST" },
+      ),
     onSuccess: () => invalidate(queryClient),
   });
 }
