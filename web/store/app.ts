@@ -6,10 +6,13 @@ import type { AppUser, Toast } from "@/lib/types";
 interface AppState {
   user: AppUser | null;
   collapsed: boolean;
+  /** Mobile off-canvas sidebar drawer (not persisted). */
+  mobileNavOpen: boolean;
   toasts: Toast[];
   setUser: (user: AppUser) => void;
   clearUser: () => void;
   setCollapsed: (v: boolean) => void;
+  setMobileNavOpen: (v: boolean) => void;
   addToast: (t: Omit<Toast, "id" | "createdAt" | "kind">) => void;
   addErrorToast: (t: Omit<Toast, "id" | "createdAt" | "kind">) => void;
   removeToast: (id: number) => void;
@@ -20,11 +23,13 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       user: null,
       collapsed: false,
+      mobileNavOpen: false,
       toasts: [],
 
       setUser: (user) => set({ user }),
       clearUser: () => set({ user: null }),
       setCollapsed: (v) => set({ collapsed: v }),
+      setMobileNavOpen: (v) => set({ mobileNavOpen: v }),
 
       addToast: (t) => {
         const id = Date.now() + Math.random();
