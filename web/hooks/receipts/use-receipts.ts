@@ -26,6 +26,8 @@ export function useReceiptCentre(query: ReceiptCentreQuery) {
 
 function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["receipts"] });
+  // Purchases table embeds each row's receipts, so it goes stale too.
+  queryClient.invalidateQueries({ queryKey: ["purchase-entries"] });
 }
 
 export function useUploadReceipt() {
