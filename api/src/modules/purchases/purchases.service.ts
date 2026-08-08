@@ -23,6 +23,7 @@ import {
 import { requireOrganizationId } from "../../common/utils/require-organization-id.util";
 import { withOrganizationId } from "../../common/utils/with-organization-id.util";
 import { PrismaService } from "../../prisma/prisma.service";
+import { R2Service } from "../../common/r2/r2.service";
 import { VendorsService } from "../vendors/vendors.service";
 import { CreatePurchaseDto } from "./dto/create-purchase.dto";
 import { PurchaseQueryDto } from "./dto/purchase-query.dto";
@@ -32,11 +33,33 @@ const purchaseInclude = {
   branch: { select: { id: true, name: true } },
   vendor: { select: { id: true, name: true } },
   createdBy: { select: { id: true, name: true, email: true } },
+  receipts: {
+    select: {
+      id: true,
+      key: true,
+      contentType: true,
+      originalName: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "asc" },
+  },
 } satisfies Prisma.PurchaseInclude;
 
-export type PurchaseWithDetails = Prisma.PurchaseGetPayload<{
+type PurchaseRow = Prisma.PurchaseGetPayload<{
   include: typeof purchaseInclude;
 }>;
+
+interface ReceiptThumb {
+  id: string;
+  contentType: string;
+  originalName: string;
+  /** Short-lived pre-signed GET URL, or "" if storage is unconfigured. */
+  url: string;
+}
+
+export type PurchaseWithDetails = Omit<PurchaseRow, "receipts"> & {
+  receipts: ReceiptThumb[];
+};
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -52,7 +75,23 @@ export class PurchasesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly vendorsService: VendorsService,
+    private readonly r2: R2Service,
   ) {}
+
+  /** Replace each receipt's storage key with a short-lived view URL. */
+  private async withReceiptUrls(
+    purchase: PurchaseRow,
+  ): Promise<PurchaseWithDetails> {
+    const receipts: ReceiptThumb[] = await Promise.all(
+      purchase.receipts.map(async (r) => ({
+        id: r.id,
+        contentType: r.contentType,
+        originalName: r.originalName,
+        url: this.r2.isConfigured ? await this.r2.presignGet(r.key) : "",
+      })),
+    );
+    return { ...purchase, receipts };
+  }
 
   async findAll(
     query: PurchaseQueryDto,
@@ -90,7 +129,7 @@ export class PurchasesService {
     ]);
 
     return {
-      data,
+      data: await Promise.all(data.map((p) => this.withReceiptUrls(p))),
       meta: {
         total,
         page: query.page,
@@ -112,7 +151,7 @@ export class PurchasesService {
       throw new NotFoundException(`Purchase with id "${id}" not found`);
     }
     assertBranchAccess(purchase.branchId, user);
-    return purchase;
+    return this.withReceiptUrls(purchase);
   }
 
   async create(
