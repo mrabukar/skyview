@@ -14,6 +14,8 @@ export interface User {
   isActive: boolean;
   storeId: string | null;
   store: Pick<Store, "id" | "name"> | null;
+  /** Page keys hidden from this branch manager (empty = all visible). */
+  disabledPages: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +38,7 @@ export interface CreateUserInput {
   storeId?: string;
   phone?: string;
   salary?: number;
+  disabledPages?: string[];
 }
 
 export interface UpdateUserInput {
@@ -46,6 +49,7 @@ export interface UpdateUserInput {
   storeId?: string | null;
   phone?: string | null;
   salary?: number;
+  disabledPages?: string[];
 }
 
 export const ROLE_ITEMS = [
