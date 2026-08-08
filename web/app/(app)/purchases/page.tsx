@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Plus, Settings2, Trash2 } from "lucide-react";
+import { FileText, Pencil, Plus, Settings2, Trash2 } from "lucide-react";
 
 import {
   PurchaseEntryModal,
   type PurchaseEntryFormValues,
 } from "./components/purchase-entry-modal";
+import { ReceiptLightbox } from "./components/receipt-lightbox";
 import { VendorListModal } from "./components/vendor-list-modal";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
@@ -25,10 +26,14 @@ import {
 import { useStores } from "@/hooks/stores/list-stores";
 import { useVendors } from "@/hooks/vendors/use-vendors";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { uploadReceipt } from "@/service/receipts/receipts";
 import { dateToYmd, getCurrentMonthRange } from "@/lib/filters/dates";
 import { fmt } from "@/lib/utils";
 import { useAppStore } from "@/store/app";
-import type { PurchaseEntry } from "@/types/purchases/purchase-entry";
+import type {
+  PurchaseEntry,
+  PurchaseReceiptThumb,
+} from "@/types/purchases/purchase-entry";
 
 /** Purchase day as a clean date, e.g. 2026-08-04 (drops any time part). */
 function purchaseDay(value: string): string {
@@ -54,6 +59,10 @@ export default function PurchasesPage() {
   const [toDate, setToDate] = useState(defaultRange.toDate);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PurchaseEntry | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    receipts: PurchaseReceiptThumb[];
+    index: number;
+  } | null>(null);
   const [showVendors, setShowVendors] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -155,6 +164,40 @@ export default function PurchasesPage() {
         cell: ({ row }) => <span className="muted">{row.original.createdBy.name}</span>,
       },
       {
+        id: "receipt",
+        header: "Receipt",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const receipts = row.original.receipts ?? [];
+          if (receipts.length === 0) {
+            return <span className="muted text-xs">—</span>;
+          }
+          const first = receipts[0];
+          const isImage =
+            first.contentType.startsWith("image/") && Boolean(first.url);
+          return (
+            <button
+              type="button"
+              title="View receipt"
+              className="relative flex size-10 items-center justify-center overflow-hidden rounded-md border border-border bg-muted"
+              onClick={() => setLightbox({ receipts, index: 0 })}
+            >
+              {isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={first.url} alt="" className="size-full object-cover" />
+              ) : (
+                <FileText className="size-4 text-muted-foreground" />
+              )}
+              {receipts.length > 1 ? (
+                <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1 text-[10px] font-medium leading-4 text-primary-foreground">
+                  +{receipts.length - 1}
+                </span>
+              ) : null}
+            </button>
+          );
+        },
+      },
+      {
         id: "actions",
         header: "",
         enableSorting: false,
@@ -203,10 +246,20 @@ export default function PurchasesPage() {
         await updateEntry.mutateAsync({ id: modal.entry.id, input: base });
         addToast({ title: "Purchase updated" });
       } else {
-        await createEntry.mutateAsync({
+        const created = await createEntry.mutateAsync({
           ...base,
           ...(isAdmin ? { storeId: form.storeId } : {}),
         });
+        if (form.receiptFile && created?.id) {
+          try {
+            await uploadReceipt(created.id, form.receiptFile);
+          } catch {
+            addErrorToast({
+              title: "Purchase saved, but the receipt didn't upload",
+              sub: "You can attach it later by editing the purchase.",
+            });
+          }
+        }
         addToast({ title: "Purchase recorded" });
       }
       setModal(null);
@@ -354,6 +407,14 @@ export default function PurchasesPage() {
           isLoading={deleteEntry.isPending}
           onConfirm={() => void handleDelete()}
           onClose={() => setDeleteTarget(null)}
+        />
+      ) : null}
+
+      {lightbox ? (
+        <ReceiptLightbox
+          receipts={lightbox.receipts}
+          startIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
         />
       ) : null}
     </>
