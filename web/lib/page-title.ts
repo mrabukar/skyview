@@ -5,6 +5,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/sales": "Daily Sales",
   "/purchases": "Purchases",
   "/expenses": "Expenses",
+  "/receipts": "Receipt Centre",
   "/payroll": "Payroll",
   "/financial": "Financial Summary",
   "/branches": "Branches",
