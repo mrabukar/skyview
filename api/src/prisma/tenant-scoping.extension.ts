@@ -12,6 +12,7 @@ const TENANT_MODELS = new Set([
   "Expense",
   "SalaryPayment",
   "AuditLog",
+  "Receipt",
 ]);
 
 const WHERE_OPERATIONS = new Set([
