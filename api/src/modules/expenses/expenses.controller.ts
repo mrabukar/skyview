@@ -16,11 +16,13 @@ import {
   type CurrentUserPayload,
 } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { Page } from "../../common/page-access/page.decorator";
 import { CreateExpenseDto } from "./dto/create-expense.dto";
 import { ExpenseQueryDto } from "./dto/expense-query.dto";
 import { UpdateExpenseDto } from "./dto/update-expense.dto";
 import { ExpensesService } from "./expenses.service";
 
+@Page("expenses")
 @Roles(UserRole.admin, UserRole.branch_manager)
 @Controller("expenses")
 export class ExpensesController {
