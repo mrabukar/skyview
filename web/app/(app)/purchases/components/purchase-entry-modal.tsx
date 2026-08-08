@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
-import { X } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { dateToYmd } from "@/lib/filters/dates";
 import { cn, fmt } from "@/lib/utils";
+import { useAppStore } from "@/store/app";
 import type { PurchaseEntry } from "@/types/purchases/purchase-entry";
+import { RECEIPT_ACCEPT, RECEIPT_MAX_SIZE } from "@/types/receipts/receipt";
+import { ReceiptManager } from "./receipt-manager";
 
 const inputClassName =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -27,6 +30,8 @@ export interface PurchaseEntryFormValues {
   vendorId: string | undefined;
   purchaseDate: string;
   note: string;
+  /** Optional receipt to attach on create (add mode only). */
+  receiptFile?: File | null;
 }
 
 interface Props {
@@ -81,6 +86,9 @@ export function PurchaseEntryModal({
 }: Props) {
   const isEdit = mode === "edit";
   const today = useMemo(() => dateToYmd(new Date()), []);
+  const addErrorToast = useAppStore((s) => s.addErrorToast);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [form, setForm] = useState<PurchaseEntryFormValues>(() => ({
     storeId: entry?.storeId ?? undefined,
     itemName: entry?.itemName ?? "",
@@ -94,6 +102,24 @@ export function PurchaseEntryModal({
 
   const set = (key: keyof PurchaseEntryFormValues, value: string | undefined) =>
     setForm((state) => ({ ...state, [key]: value }));
+
+  const pickReceipt = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    e.target.value = "";
+    if (!file) return;
+    if (!RECEIPT_ACCEPT.split(",").includes(file.type)) {
+      addErrorToast({
+        title: "Unsupported file",
+        sub: "Use a JPG, PNG, WebP image or a PDF.",
+      });
+      return;
+    }
+    if (file.size > RECEIPT_MAX_SIZE) {
+      addErrorToast({ title: "File too large", sub: "Maximum size is 10 MB." });
+      return;
+    }
+    setReceiptFile(file);
+  };
 
   const total =
     Number(form.quantity) > 0 && Number(form.unitPrice) > 0
@@ -111,7 +137,7 @@ export function PurchaseEntryModal({
     else if (form.purchaseDate > today) next.purchaseDate = "Date cannot be in the future";
     setErr(next);
     if (Object.keys(next).length) return;
-    onSave(form);
+    onSave({ ...form, receiptFile });
   };
 
   return (
@@ -238,6 +264,44 @@ export function PurchaseEntryModal({
                 maxLength={300}
               />
             </FormField>
+
+            {isEdit && entry ? (
+              <ReceiptManager purchaseId={entry.id} />
+            ) : (
+              <FormField label="Receipt">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => receiptInputRef.current?.click()}
+                  >
+                    <Paperclip className="size-4" />
+                    {receiptFile ? "Change" : "Attach / photo"}
+                  </Button>
+                  <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                    {receiptFile ? receiptFile.name : "Optional — image or PDF"}
+                  </span>
+                  {receiptFile ? (
+                    <button
+                      type="button"
+                      className="rounded-md p-1 text-muted-foreground hover:text-destructive"
+                      onClick={() => setReceiptFile(null)}
+                      aria-label="Remove selected file"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  ) : null}
+                  <input
+                    ref={receiptInputRef}
+                    type="file"
+                    accept={RECEIPT_ACCEPT}
+                    capture="environment"
+                    className="hidden"
+                    onChange={pickReceipt}
+                  />
+                </div>
+              </FormField>
+            )}
           </div>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
