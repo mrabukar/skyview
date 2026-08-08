@@ -24,4 +24,10 @@ export const envValidationSchema = Joi.object({
   ALLOW_SIGNUP: Joi.string().valid("true", "false").optional(),
   /// Business calendar timezone — all "today"/"month" rules use this (BR-9.2).
   APP_TIMEZONE: Joi.string().default("Africa/Nairobi"),
+  /// Cloudflare R2 (receipt storage). All-or-nothing; receipts are disabled
+  /// until all four are set. See docs/10-client-requests.md.
+  R2_ACCOUNT_ID: Joi.string().optional(),
+  R2_ACCESS_KEY_ID: Joi.string().optional(),
+  R2_SECRET_ACCESS_KEY: Joi.string().optional(),
+  R2_BUCKET: Joi.string().optional(),
 });
