@@ -6,6 +6,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { MANAGER_PAGES } from "@/lib/auth/pages";
 import { isStrongPassword, STRONG_PASSWORD_MESSAGE } from "@/lib/auth/password";
 import { cn } from "@/lib/utils";
 import { ROLE_ITEMS, type User, type UserRole } from "@/types/users/user";
@@ -18,6 +19,8 @@ export interface UserFormValues {
   storeId: string;
   phone: string;
   salary: string;
+  /** Page keys hidden from this branch manager. */
+  disabledPages: string[];
 }
 
 interface UserModalProps {
@@ -79,6 +82,7 @@ function initialForm(user?: User): UserFormValues {
     storeId: user?.storeId ?? "",
     phone: user?.phone ?? "",
     salary: user?.salary != null ? String(user.salary) : "",
+    disabledPages: user?.disabledPages ?? [],
   };
 }
 
@@ -116,6 +120,14 @@ export function UserModal({
 
   const set = (key: keyof UserFormValues, value: string) =>
     setForm((state) => ({ ...state, [key]: value }));
+
+  const togglePage = (key: string) =>
+    setForm((state) => ({
+      ...state,
+      disabledPages: state.disabledPages.includes(key)
+        ? state.disabledPages.filter((k) => k !== key)
+        : [...state.disabledPages, key],
+    }));
 
   const setRole = (role: UserRole | undefined) => {
     const nextRole = role ?? "branch_manager";
@@ -322,6 +334,33 @@ export function UserModal({
                   className="w-full"
                   popoverClassName="z-[200]"
                 />
+              </FormField>
+            ) : null}
+
+            {showStoreField && form.role === "branch_manager" ? (
+              <FormField
+                label="Pages this manager can access"
+                helper="Unchecked pages are hidden from this manager."
+              >
+                <div className="grid gap-1.5">
+                  {MANAGER_PAGES.map((page) => {
+                    const enabled = !form.disabledPages.includes(page.key);
+                    return (
+                      <label
+                        key={page.key}
+                        className="flex items-center gap-2.5 rounded-md border border-input px-3 py-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          checked={enabled}
+                          onChange={() => togglePage(page.key)}
+                        />
+                        <span>{page.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </FormField>
             ) : null}
 
