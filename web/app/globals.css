@@ -2750,3 +2750,79 @@ table.tbl {
 .stock-report-total-card--sales {
   background: linear-gradient(135deg, #1a6578 0%, #144f5d 55%, #0f3d49 100%);
 }
+
+/* ============================================================================
+   Responsive — tablet & mobile
+   ========================================================================== */
+
+/* Use the dynamic viewport height so mobile browser chrome doesn't clip. */
+.app-frame {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Off-canvas sidebar drawer on tablet & phone (< 1024px). */
+@media (max-width: 1023px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100dvh;
+    z-index: 70;
+    width: var(--sidebar-w);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  /* In the drawer, always show the full sidebar (ignore desktop collapse). */
+  .sidebar.collapsed {
+    width: var(--sidebar-w);
+  }
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .nav-badge,
+  .sidebar.collapsed .sb-section,
+  .sidebar.collapsed .nav-group-chevron,
+  .sidebar.collapsed .nav-group-children {
+    display: revert;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(1px);
+  }
+
+  .app-content-inner {
+    padding: 16px;
+  }
+  .navbar {
+    padding: 0 12px;
+  }
+  .navbar .nb-title {
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Phone: stack page headers and their action buttons. */
+@media (max-width: 640px) {
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .page-head h1 {
+    font-size: 20px;
+  }
+  .app-content-inner {
+    padding: 14px;
+  }
+}
