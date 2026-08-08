@@ -26,6 +26,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { Role } from "@/lib/types";
+import { pageKeyForPath } from "@/lib/auth/pages";
 import { fetchOrganizationLogoBlob } from "@/service/upload";
 import { useAppStore } from "@/store/app";
 
@@ -67,6 +68,8 @@ function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
     { href: "/sales", label: "Daily Sales", icon: ShoppingCart },
     { href: "/purchases", label: "Purchases", icon: ShoppingBag },
     { href: "/expenses", label: "Expenses", icon: CreditCard },
+    // Receipt Centre retired — receipts now live in the Purchases table.
+    // { href: "/receipts", label: "Receipt Centre", icon: Receipt },
     { href: "/payroll", label: "Payroll", icon: Banknote },
     { href: "/branches", label: "Branches", icon: Store },
   ];
@@ -92,6 +95,8 @@ const MANAGER_NAV: NavLinkItem[] = [
   { href: "/sales", label: "Daily Sales", icon: ShoppingCart },
   { href: "/purchases", label: "Purchases", icon: ShoppingBag },
   { href: "/expenses", label: "Expenses", icon: CreditCard },
+  // Receipt Centre retired — receipts now live in the Purchases table.
+  // { href: "/receipts", label: "Receipt Centre", icon: Receipt },
 ];
 
 function isNavGroup(entry: AdminNavEntry): entry is NavGroupItem {
@@ -369,6 +374,11 @@ export function Sidebar({
 }: Props) {
   const pathname = usePathname();
   const adminNav = buildAdminNav(hasStores !== false);
+  const disabledPages = useAppStore((s) => s.user?.disabledPages ?? []);
+  const managerNav = MANAGER_NAV.filter((item) => {
+    const key = pageKeyForPath(item.href);
+    return !key || !disabledPages.includes(key);
+  });
 
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
@@ -405,7 +415,7 @@ export function Sidebar({
                   />
                 ),
               )
-            : MANAGER_NAV.map((item) => (
+            : managerNav.map((item) => (
                 <SidebarNavLink
                   key={item.href}
                   item={item}
