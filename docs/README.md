@@ -15,6 +15,7 @@ change of scope should be reflected here first.
 | [07-tech-stack.md](07-tech-stack.md) | Stack & versions (same platform as the inventory product) |
 | [08-super-admin.md](08-super-admin.md) | Super-admin / platform administration — **design only, not built** |
 | [09-production-readiness.md](09-production-readiness.md) | Production checklist — done, just-hardened, and remaining items |
+| [10-client-requests.md](10-client-requests.md) | Aug 2026 client requests — dashboard toggle, receipt centre (R2), previous-month payroll — spec + to-do |
 
 ## Context
 
