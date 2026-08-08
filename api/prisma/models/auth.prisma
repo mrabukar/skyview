@@ -22,12 +22,16 @@ model User {
   /// Branch assignment. Required for branch_manager, null for admin (BR-7.3).
   branchId       String?
   branch         Branch?       @relation(fields: [branchId], references: [id])
+  /// Page keys hidden from this branch_manager (admin-controlled). Empty = all
+  /// pages visible. Ignored for admin/super_admin. See page registry (doc 10).
+  disabledPages  String[]      @default([])
 
   sessions        Session[]
   accounts        Account[]
   dailySales      DailySale[]      @relation("DailySalesEnteredBy")
   purchases       Purchase[]       @relation("PurchasesCreatedBy")
   expenses        Expense[]        @relation("ExpensesCreatedBy")
+  receipts        Receipt[]        @relation("ReceiptsUploadedBy")
   auditLogs       AuditLog[]
 
   @@unique([email])
