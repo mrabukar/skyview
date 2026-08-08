@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
 import { buildLoginUrl } from "@/lib/auth/redirect";
 import { isRouteAllowedForRole } from "@/lib/auth/routes";
+import { firstEnabledManagerRoute, pageKeyForPath } from "@/lib/auth/pages";
 import { useAppStore } from "@/store/app";
 import { formatDocumentTitle, resolvePageTitle } from "@/lib/page-title";
 import { Sidebar } from "./sidebar";
@@ -28,6 +29,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       hasStores: user.hasStores,
     });
 
+  // Per-manager page access: a disabled page is blocked even though the role
+  // would normally allow it.
+  const ready = isFetched && !authLoading && isAuthenticated && user != null;
+  const pageKey = ready ? pageKeyForPath(pathname) : null;
+  const pageDenied =
+    ready &&
+    !roleDenied &&
+    user!.role === "manager" &&
+    pageKey != null &&
+    user!.disabledPages.includes(pageKey);
+  const pageFallback =
+    pageDenied && user ? firstEnabledManagerRoute(user.disabledPages) : null;
+
   useEffect(() => {
     if (isFetched && !authLoading && !isAuthenticated) {
       const query = searchParams.toString();
@@ -44,6 +58,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [roleDenied, router, user?.role]);
 
+  useEffect(() => {
+    if (pageDenied && pageFallback) {
+      router.replace(pageFallback);
+    }
+  }, [pageDenied, pageFallback, router]);
+
   const title = resolvePageTitle(pathname);
 
   useEffect(() => {
@@ -52,6 +72,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [title, isFetched, authLoading, user, roleDenied]);
 
   if (!isFetched || authLoading || !user || roleDenied) return null;
+  // Redirecting to an allowed page — render nothing to avoid a flash.
+  if (pageDenied && pageFallback) return null;
 
   return (
     <div className="app-frame">
@@ -68,10 +90,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onToggle={() => setCollapsed(!collapsed)}
         />
         <div className="app-content">
-          <div className="app-content-inner">{children}</div>
+          <div className="app-content-inner">
+            {pageDenied ? <NoAccessScreen /> : children}
+          </div>
         </div>
       </div>
       <ToastHost />
+    </div>
+  );
+}
+
+/** Shown when every page has been disabled for a manager. */
+function NoAccessScreen() {
+  return (
+    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 text-center">
+      <h2 className="text-lg font-semibold">No pages assigned</h2>
+      <p className="max-w-sm text-sm text-muted-foreground">
+        Your account doesn&apos;t have access to any pages yet. Please contact
+        your administrator.
+      </p>
     </div>
   );
 }
