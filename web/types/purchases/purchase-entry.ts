@@ -8,6 +8,14 @@ export interface PurchaseEntryUser {
   email: string;
 }
 
+/** Receipt attached to a purchase, with a short-lived view URL. */
+export interface PurchaseReceiptThumb {
+  id: string;
+  contentType: string;
+  originalName: string;
+  url: string;
+}
+
 /** A branch supply purchase — free-text item, no stock tracking. */
 export interface PurchaseEntry {
   id: string;
@@ -23,6 +31,7 @@ export interface PurchaseEntry {
   note: string | null;
   createdById: string;
   createdBy: PurchaseEntryUser;
+  receipts: PurchaseReceiptThumb[];
   createdAt: string;
   updatedAt: string;
 }
