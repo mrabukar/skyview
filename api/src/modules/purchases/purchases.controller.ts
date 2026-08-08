@@ -16,11 +16,13 @@ import {
   type CurrentUserPayload,
 } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { Page } from "../../common/page-access/page.decorator";
 import { CreatePurchaseDto } from "./dto/create-purchase.dto";
 import { PurchaseQueryDto } from "./dto/purchase-query.dto";
 import { UpdatePurchaseDto } from "./dto/update-purchase.dto";
 import { PurchasesService } from "./purchases.service";
 
+@Page("purchases")
 @Roles(UserRole.admin, UserRole.branch_manager)
 @Controller("purchases")
 export class PurchasesController {
