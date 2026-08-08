@@ -124,6 +124,7 @@ export default function UsersPage() {
 
         if (form.role === "branch_manager") {
           input.storeId = form.storeId;
+          input.disabledPages = form.disabledPages;
         } else {
           input.storeId = null;
         }
@@ -140,6 +141,8 @@ export default function UsersPage() {
             form.role === "branch_manager" ? form.storeId : undefined,
           phone: form.phone || undefined,
           salary: form.salary ? Number(form.salary) : 0,
+          disabledPages:
+            form.role === "branch_manager" ? form.disabledPages : undefined,
         });
         addToast({ title: "User added successfully" });
       }
