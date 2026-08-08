@@ -17,16 +17,26 @@ import { fmt } from "@/lib/utils";
 import { useAppStore } from "@/store/app";
 import type { PayrollStaff } from "@/types/payroll/payroll";
 
+/** Current month (YYYY-MM) in the app's timezone. */
+function nairobiMonth(): string {
+  return new Date()
+    .toLocaleDateString("en-CA", { timeZone: "Africa/Nairobi" })
+    .slice(0, 7);
+}
+
 export default function PayrollPage() {
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const [confirmAll, setConfirmAll] = useState(false);
   const [confirmUser, setConfirmUser] = useState<PayrollStaff | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
+  // "" = current month; otherwise a selected YYYY-MM (may be a past month).
+  const [month, setMonth] = useState("");
+  const thisMonth = nairobiMonth();
 
-  const { data: status, isPending, isError, error } = usePayrollStatus();
-  const runPayroll = useRunPayroll();
-  const payUser = usePayUser();
+  const { data: status, isPending, isError, error } = usePayrollStatus(month);
+  const runPayroll = useRunPayroll(month);
+  const payUser = usePayUser(month);
 
   const handleRunAll = async () => {
     try {
@@ -71,7 +81,7 @@ export default function PayrollPage() {
         action={
           status ? (
             status.currentMonthPaid ? (
-              <Button disabled title="Everyone is paid — unlocks next month">
+              <Button disabled title="All staff are paid for this month">
                 <BadgeCheck className="size-4" />
                 {status.currentMonthLabel} paid
               </Button>
@@ -87,6 +97,28 @@ export default function PayrollPage() {
           ) : null
         }
       />
+
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <label className="text-sm text-muted-foreground" htmlFor="payroll-month">
+          Month
+        </label>
+        <input
+          id="payroll-month"
+          type="month"
+          className="flex h-9 w-[170px] rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          max={thisMonth}
+          value={month || status?.currentMonthKey || thisMonth}
+          onChange={(e) => setMonth(e.target.value)}
+        />
+        {month && month !== thisMonth ? (
+          <>
+            <Badge color="amber">Viewing a past month</Badge>
+            <Button variant="ghost" size="sm" onClick={() => setMonth("")}>
+              Back to this month
+            </Button>
+          </>
+        ) : null}
+      </div>
 
       {isError && (
         <div className="alert-error" style={{ marginBottom: 16 }}>
