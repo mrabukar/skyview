@@ -362,6 +362,7 @@ function SidebarBrand({
 interface Props {
   role: Role;
   collapsed: boolean;
+  mobileOpen?: boolean;
   storeName?: string | null;
   hasStores?: boolean | null;
 }
@@ -369,6 +370,7 @@ interface Props {
 export function Sidebar({
   role,
   collapsed,
+  mobileOpen = false,
   storeName,
   hasStores = true,
 }: Props) {
@@ -381,7 +383,9 @@ export function Sidebar({
   });
 
   return (
-    <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+    <aside
+      className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
+    >
       <SidebarBrand role={role} collapsed={collapsed} />
 
       <nav className="sb-nav">
