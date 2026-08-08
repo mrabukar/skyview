@@ -6,6 +6,7 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/sales",
   "/purchases",
   "/expenses",
+  "/receipts",
   "/payroll",
   "/financial",
   "/branches",
