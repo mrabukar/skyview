@@ -30,6 +30,7 @@ const userSelect = {
   isActive: true,
   branchId: true,
   branch: { select: { id: true, name: true } },
+  disabledPages: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -131,6 +132,9 @@ export class UsersService {
             isActive: true,
             phone: dto.phone?.trim() || null,
             salary: dto.salary ?? 0,
+            // Page restrictions only apply to managers; admins keep [].
+            disabledPages:
+              role === UserRole.branch_manager ? (dto.disabledPages ?? []) : [],
             branchId,
             accounts: {
               create: {
@@ -201,6 +205,14 @@ export class UsersService {
       throw new BadRequestException(STRONG_PASSWORD_MESSAGE);
     }
 
+    // Page restrictions only apply to managers; admins are always cleared to [].
+    let nextDisabledPages: string[] | undefined;
+    if (nextRole === UserRole.admin) {
+      nextDisabledPages = [];
+    } else if (dto.disabledPages !== undefined) {
+      nextDisabledPages = dto.disabledPages;
+    }
+
     await this.prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id },
@@ -213,6 +225,9 @@ export class UsersService {
             ? { phone: dto.phone?.trim() || null }
             : undefined),
           ...(dto.salary !== undefined ? { salary: dto.salary } : undefined),
+          ...(nextDisabledPages !== undefined
+            ? { disabledPages: nextDisabledPages }
+            : undefined),
         },
       });
 
