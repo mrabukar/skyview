@@ -36,9 +36,27 @@ type ActiveUser = {
 export class PayrollService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getStatus(user: CurrentUserPayload) {
-    requireOrganizationId(user);
+  /**
+   * Validate an optional `YYYY-MM` month, defaulting to the current month.
+   * Rejects future months (payroll can be back-dated, never forward-dated).
+   */
+  private resolveMonthKey(month?: string): string {
     const currentMonthKey = todayCalendarDate().slice(0, 7);
+    if (!month) {
+      return currentMonthKey;
+    }
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      throw new BadRequestException("month must be in YYYY-MM format");
+    }
+    if (month > currentMonthKey) {
+      throw new BadRequestException("Cannot run payroll for a future month");
+    }
+    return month;
+  }
+
+  async getStatus(user: CurrentUserPayload, month?: string) {
+    requireOrganizationId(user);
+    const monthKey = this.resolveMonthKey(month);
 
     const [activeUsers, payments] = await Promise.all([
       this.activeUsers(),
@@ -46,7 +64,7 @@ export class PayrollService {
     ]);
 
     const paidThisMonth = new Set(
-      payments.filter((p) => p.monthKey === currentMonthKey).map((p) => p.userId),
+      payments.filter((p) => p.monthKey === monthKey).map((p) => p.userId),
     );
 
     const users = activeUsers.map((u) => ({
@@ -61,8 +79,8 @@ export class PayrollService {
     const remaining = users.filter((u) => !u.paid);
 
     return {
-      currentMonthKey,
-      currentMonthLabel: monthLabel(currentMonthKey),
+      currentMonthKey: monthKey,
+      currentMonthLabel: monthLabel(monthKey),
       currentMonthPaid: remaining.length === 0,
       monthlyTotal,
       activeUserCount: users.length,
@@ -72,14 +90,14 @@ export class PayrollService {
     };
   }
 
-  /** Pay every active user not yet paid for the current month. */
-  async runAll(user: CurrentUserPayload) {
-    const currentMonthKey = todayCalendarDate().slice(0, 7);
+  /** Pay every active user not yet paid for the given month (default: current). */
+  async runAll(user: CurrentUserPayload, month?: string) {
+    const monthKey = this.resolveMonthKey(month);
     const active = await this.activeUsers();
     const alreadyPaid = new Set(
       (
         await this.prisma.salaryPayment.findMany({
-          where: { monthKey: currentMonthKey },
+          where: { monthKey },
           select: { userId: true },
         })
       ).map((p) => p.userId),
@@ -87,22 +105,22 @@ export class PayrollService {
     const toPay = active.filter((u) => !alreadyPaid.has(u.id));
     if (toPay.length === 0) {
       throw new ConflictException(
-        `All staff have already been paid for ${monthLabel(currentMonthKey)}.`,
+        `All staff have already been paid for ${monthLabel(monthKey)}.`,
       );
     }
 
     await this.prisma.$transaction(async (tx) => {
       for (const u of toPay) {
-        await this.payOne(tx, user, u, currentMonthKey);
+        await this.payOne(tx, user, u, monthKey);
       }
     });
 
-    return this.getStatus(user);
+    return this.getStatus(user, monthKey);
   }
 
-  /** Pay a single user for the current month. */
-  async payUser(userId: string, user: CurrentUserPayload) {
-    const currentMonthKey = todayCalendarDate().slice(0, 7);
+  /** Pay a single user for the given month (default: current). */
+  async payUser(userId: string, user: CurrentUserPayload, month?: string) {
+    const monthKey = this.resolveMonthKey(month);
     const target = await this.prisma.user.findFirst({
       where: { id: userId, isActive: true },
       select: {
@@ -121,18 +139,18 @@ export class PayrollService {
     }
 
     const existing = await this.prisma.salaryPayment.findFirst({
-      where: { userId, monthKey: currentMonthKey },
+      where: { userId, monthKey },
       select: { id: true },
     });
     if (existing) {
       throw new ConflictException(
-        `${target.name} has already been paid for ${monthLabel(currentMonthKey)}.`,
+        `${target.name} has already been paid for ${monthLabel(monthKey)}.`,
       );
     }
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        await this.payOne(tx, user, target, currentMonthKey);
+        await this.payOne(tx, user, target, monthKey);
       });
     } catch (error) {
       if (
@@ -140,13 +158,13 @@ export class PayrollService {
         error.code === "P2002"
       ) {
         throw new ConflictException(
-          `${target.name} has already been paid for ${monthLabel(currentMonthKey)}.`,
+          `${target.name} has already been paid for ${monthLabel(monthKey)}.`,
         );
       }
       throw error;
     }
 
-    return this.getStatus(user);
+    return this.getStatus(user, monthKey);
   }
 
   /** Create the salary expense + payment record for one user (inside a tx). */
