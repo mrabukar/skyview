@@ -1,5 +1,14 @@
 import { check, section } from "../helpers.mjs";
 
+/** Shift a `YYYY-MM` key by `delta` months. */
+function monthKey(base, delta) {
+  let [y, m] = base.split("-").map(Number);
+  const idx = (y * 12 + (m - 1)) + delta;
+  y = Math.floor(idx / 12);
+  m = (idx % 12) + 1;
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
 export async function runPayroll(ctx) {
   section("Payroll (BR-6, per-user)");
   const { admin, manager } = ctx;
@@ -19,6 +28,18 @@ export async function runPayroll(ctx) {
   check("status activeUserCount > 0", Number(status.activeUserCount) > 0, JSON.stringify(status.activeUserCount));
   check("status users have paid flags", Array.isArray(status.users) && status.users.every((u) => typeof u.paid === "boolean"), `n=${status.users?.length}`);
   check("status history is array", Array.isArray(status.history));
+
+  // previous-month selection (non-destructive: just reads status for a month)
+  const cur = status.currentMonthKey;
+  const prev = monthKey(cur, -1);
+  const next = monthKey(cur, 1);
+  r = await admin.req("GET", `/api/payroll?month=${prev}`);
+  check("GET payroll ?month=prev → 200", r.status === 200, `got ${r.status}`);
+  check("status reflects requested month", r.json?.currentMonthKey === prev, JSON.stringify(r.json?.currentMonthKey));
+  r = await admin.req("GET", `/api/payroll?month=${next}`);
+  check("GET payroll future month → 400", r.status === 400, `got ${r.status}`);
+  r = await admin.req("GET", "/api/payroll?month=2026-13");
+  check("GET payroll bad month format → 400", r.status === 400, `got ${r.status}`);
 
   // pay an unknown user → 404 (safe, no state change)
   r = await admin.req("POST", "/api/payroll/pay-user/does-not-exist");
