@@ -16,11 +16,13 @@ import {
   type CurrentUserPayload,
 } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { Page } from "../../common/page-access/page.decorator";
 import { CreateDailySaleDto } from "./dto/create-daily-sale.dto";
 import { DailySaleQueryDto } from "./dto/daily-sale-query.dto";
 import { UpdateDailySaleDto } from "./dto/update-daily-sale.dto";
 import { DailySalesService } from "./daily-sales.service";
 
+@Page("sales")
 @Roles(UserRole.admin, UserRole.branch_manager)
 @Controller("daily-sales")
 export class DailySalesController {
