@@ -15,6 +15,7 @@ model Purchase {
   note           String?
   createdById    String
   createdBy      User         @relation("PurchasesCreatedBy", fields: [createdById], references: [id])
+  receipts       Receipt[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
