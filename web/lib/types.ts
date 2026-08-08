@@ -21,6 +21,8 @@ export interface AppUser {
   email: string;
   phone: string | null;
   role: Role;
+  /** Page keys hidden from this branch manager (empty = all visible). */
+  disabledPages: string[];
   storeId: string | null;
   store: string | null;
   organizationId: string | null;
