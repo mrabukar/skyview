@@ -16,11 +16,13 @@ import {
   type CurrentUserPayload,
 } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { Page } from "../../common/page-access/page.decorator";
 import { CreateVendorDto } from "./dto/create-vendor.dto";
 import { UpdateVendorDto } from "./dto/update-vendor.dto";
 import { VendorQueryDto } from "./dto/vendor-query.dto";
 import { VendorsService } from "./vendors.service";
 
+@Page("vendors")
 @Roles(UserRole.admin, UserRole.branch_manager)
 @Controller("vendors")
 export class VendorsController {
