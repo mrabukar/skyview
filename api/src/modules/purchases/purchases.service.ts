@@ -274,6 +274,22 @@ export class PurchasesService {
     this.assertManagerSameDay(existing.purchaseDate, user, "remove");
     const organizationId = requireOrganizationId(user);
 
+    // The Receipt→Purchase FK is onDelete: Cascade, so deleting the purchase
+    // below removes the Receipt *rows* automatically — but that cascade never
+    // touches the actual files in R2. Delete those objects first (best-effort;
+    // a storage hiccup must never block removing the purchase).
+    const receipts = await this.prisma.receipt.findMany({
+      where: { purchaseId: id },
+      select: { key: true },
+    });
+    await Promise.all(
+      receipts.map((r) =>
+        this.r2.deleteObject(r.key).catch(() => {
+          // ignore storage errors — the DB rows still need to go
+        }),
+      ),
+    );
+
     await this.prisma.$transaction(async (tx) => {
       await tx.purchase.delete({ where: { id } });
       await tx.auditLog.create({
