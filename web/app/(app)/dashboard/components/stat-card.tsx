@@ -1,6 +1,13 @@
 import { LucideIcon, TrendingDown, TrendingUp } from "lucide-react";
 
-type Color = "indigo" | "teal" | "violet" | "amber" | "emerald" | "rose";
+type Color =
+  | "indigo"
+  | "teal"
+  | "violet"
+  | "amber"
+  | "emerald"
+  | "rose"
+  | "slate";
 
 const TINTS: Record<Color, [string, string]> = {
   indigo: ["var(--tint-indigo)", "var(--brand-indigo)"],
@@ -9,6 +16,7 @@ const TINTS: Record<Color, [string, string]> = {
   amber: ["var(--tint-amber)", "var(--status-amber)"],
   emerald: ["var(--tint-emerald)", "var(--status-emerald)"],
   rose: ["var(--tint-rose)", "var(--status-rose)"],
+  slate: ["var(--tint-slate)", "var(--cost-slate)"],
 };
 
 interface Props {
@@ -19,6 +27,8 @@ interface Props {
   trend?: string;
   trendDir?: "up" | "down";
   valueColor?: string;
+  /** Bolder look: tinted background wash + colored top border, matching the icon accent. */
+  colorful?: boolean;
 }
 
 export function StatCard({
@@ -29,10 +39,22 @@ export function StatCard({
   trend,
   trendDir = "up",
   valueColor,
+  colorful = false,
 }: Props) {
   const [bg, fg] = TINTS[color] ?? TINTS.indigo;
   return (
-    <div className="stat-card">
+    <div
+      className={colorful ? "stat-card stat-card--colorful" : "stat-card"}
+      style={
+        colorful
+          ? {
+              backgroundColor: "var(--surface)",
+              backgroundImage: `linear-gradient(160deg, ${bg} 0%, transparent 75%)`,
+              borderTop: `3px solid ${fg}`,
+            }
+          : undefined
+      }
+    >
       <div className="stat-top">
         <div className="stat-ic" style={{ background: bg, color: fg }}>
           <Icon size={20} />
