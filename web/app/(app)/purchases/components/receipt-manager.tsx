@@ -1,10 +1,18 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileText, ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
+import {
+  Camera,
+  FileText,
+  ImageIcon,
+  Loader2,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CameraCaptureDialog } from "@/components/receipts/camera-capture-dialog";
 import {
   useDeleteReceipt,
   usePurchaseReceipts,
@@ -22,16 +30,13 @@ export function ReceiptManager({ purchaseId }: { purchaseId: string }) {
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const inputRef = useRef<HTMLInputElement>(null);
   const [confirmDelete, setConfirmDelete] = useState<Receipt | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const { data: receipts, isPending } = usePurchaseReceipts(purchaseId);
   const upload = useUploadReceipt();
   const remove = useDeleteReceipt();
 
-  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-picking the same file
-    if (!file) return;
-
+  const uploadFile = async (file: File) => {
     if (!RECEIPT_ACCEPT.split(",").includes(file.type)) {
       addErrorToast({
         title: "Unsupported file",
@@ -55,6 +60,13 @@ export function ReceiptManager({ purchaseId }: { purchaseId: string }) {
     }
   };
 
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    await uploadFile(file);
+  };
+
   const handleDelete = async (receipt: Receipt) => {
     try {
       await remove.mutateAsync(receipt.id);
@@ -72,20 +84,32 @@ export function ReceiptManager({ purchaseId }: { purchaseId: string }) {
     <div className="grid gap-2">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium leading-none">Receipts</label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
-          disabled={upload.isPending}
-        >
-          {upload.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Upload className="size-4" />
-          )}
-          Attach / photo
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={upload.isPending}
+          >
+            {upload.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Upload className="size-4" />
+            )}
+            Attach / photo
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCameraOpen(true)}
+            disabled={upload.isPending}
+          >
+            <Camera className="size-4" />
+            Take Photo
+          </Button>
+        </div>
         <input
           ref={inputRef}
           type="file"
@@ -144,6 +168,13 @@ export function ReceiptManager({ purchaseId }: { purchaseId: string }) {
           isLoading={remove.isPending}
           onConfirm={() => void handleDelete(confirmDelete)}
           onClose={() => setConfirmDelete(null)}
+        />
+      ) : null}
+
+      {cameraOpen ? (
+        <CameraCaptureDialog
+          onClose={() => setCameraOpen(false)}
+          onCapture={(file) => void uploadFile(file)}
         />
       ) : null}
     </div>

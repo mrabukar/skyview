@@ -7,7 +7,9 @@ const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "off" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    // camera=(self): the receipt "Take Photo" capture needs it; still blocked
+    // for any third-party iframe. Mic/location remain fully disabled — unused.
+    value: "camera=(self), microphone=(), geolocation=()",
   },
 ];
 
