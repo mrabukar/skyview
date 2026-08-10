@@ -8,30 +8,30 @@ const ROWS: {
   color: string;
   emphasize?: boolean;
 }[] = [
-  { key: "revenue", label: "Revenue", op: "", color: "var(--brand-indigo)" },
+  { key: "revenue", label: "Revenue", op: "", color: "var(--fin-revenue)" },
   {
     key: "cogs",
     label: "Cost of Goods Sold",
     op: "−",
-    color: "var(--cost-slate)",
+    color: "var(--fin-cogs)",
   },
   {
     key: "grossProfit",
     label: "Gross Profit",
     op: "=",
-    color: "var(--brand-teal)",
+    color: "var(--fin-gross)",
   },
   {
     key: "expenses",
     label: "Operating Expenses",
     op: "−",
-    color: "var(--status-amber)",
+    color: "var(--fin-expenses)",
   },
   {
     key: "netProfit",
     label: "Net Profit",
     op: "=",
-    color: "var(--brand-violet)",
+    color: "var(--fin-net-pos)",
     emphasize: true,
   },
 ];
@@ -46,7 +46,11 @@ export function PnlBreakdown({ breakdown }: { breakdown: FinancialBreakdown }) {
       </h3>
       {ROWS.map((row) => {
         const value = breakdown[row.key];
-        const width = Math.min(100, Math.round((value / base) * 100));
+        const width = Math.min(100, Math.round((Math.abs(value) / base) * 100));
+        const color =
+          row.key === "netProfit" && value < 0
+            ? "var(--fin-net-neg)"
+            : row.color;
 
         return (
           <div
@@ -83,7 +87,7 @@ export function PnlBreakdown({ breakdown }: { breakdown: FinancialBreakdown }) {
                   display: "block",
                   height: "100%",
                   width: `${width}%`,
-                  background: row.color,
+                  background: color,
                   borderRadius: 4,
                 }}
               />
@@ -95,7 +99,7 @@ export function PnlBreakdown({ breakdown }: { breakdown: FinancialBreakdown }) {
                 textAlign: "right",
                 fontWeight: 600,
                 fontSize: 13,
-                color: row.emphasize ? "var(--brand-violet)" : "var(--fg1)",
+                color: row.emphasize ? color : "var(--fg1)",
               }}
             >
               {fmt(value)}
