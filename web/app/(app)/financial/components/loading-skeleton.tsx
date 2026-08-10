@@ -77,8 +77,8 @@ function ChartCardSkeleton({ height = 220 }: { height?: number }) {
 export function FinancialLoadingSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading financial summary">
-      <div className="stat-grid grid-4 mb-16">
-        {Array.from({ length: 7 }).map((_, index) => (
+      <div className="stat-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-16">
+        {Array.from({ length: 5 }).map((_, index) => (
           <StatCardSkeleton key={`stat-${index}`} />
         ))}
       </div>
