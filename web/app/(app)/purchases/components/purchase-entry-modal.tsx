@@ -6,7 +6,7 @@ import { Camera, Paperclip, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { CameraCaptureDialog } from "@/components/receipts/camera-capture-dialog";
+import { CameraCapturePanel } from "@/components/receipts/camera-capture-panel";
 import { dateToYmd } from "@/lib/filters/dates";
 import { cn, fmt } from "@/lib/utils";
 import { useAppStore } from "@/store/app";
@@ -90,7 +90,14 @@ export function PurchaseEntryModal({
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const receiptInputRef = useRef<HTMLInputElement>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  // Swaps the dialog body for `CameraCapturePanel` in place, rather than
+  // opening a second Dialog — see that component's doc comment for why.
   const [cameraOpen, setCameraOpen] = useState(false);
+  const cameraCaptureRef = useRef<(file: File) => void>(() => {});
+  const openCamera = (onCapture: (file: File) => void) => {
+    cameraCaptureRef.current = onCapture;
+    setCameraOpen(true);
+  };
   const [form, setForm] = useState<PurchaseEntryFormValues>(() => ({
     storeId: entry?.storeId ?? undefined,
     itemName: entry?.itemName ?? "",
@@ -149,242 +156,268 @@ export function PurchaseEntryModal({
   };
 
   return (
-    <>
-      <Dialog.Root
-        open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) onClose();
-        }}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Dialog.Content className={dialogContentClassName}>
-            <div className="flex flex-col gap-1.5 text-left">
-              <Dialog.Title className="text-lg font-semibold leading-none tracking-tight">
-                {isEdit ? "Edit Purchase" : "Record Purchase"}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm text-muted-foreground">
-                {isEdit
+    <Dialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) return;
+        // Escape / overlay click while the camera is up should back out
+        // to the form, not close the whole modal underneath it.
+        if (cameraOpen) {
+          setCameraOpen(false);
+          return;
+        }
+        onClose();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Content className={dialogContentClassName}>
+          <div className="flex flex-col gap-1.5 text-left">
+            <Dialog.Title className="text-lg font-semibold leading-none tracking-tight">
+              {cameraOpen
+                ? "Take Photo"
+                : isEdit
+                  ? "Edit Purchase"
+                  : "Record Purchase"}
+            </Dialog.Title>
+            <Dialog.Description
+              className={cn(
+                "text-sm text-muted-foreground",
+                cameraOpen && "sr-only",
+              )}
+            >
+              {cameraOpen
+                ? "Use your camera to take a photo of the receipt."
+                : isEdit
                   ? "Update the supply purchase details."
                   : "What was bought for the branch — e.g. 10 packs of cups."}
-              </Dialog.Description>
-            </div>
+            </Dialog.Description>
+          </div>
 
-            <div className="grid gap-4 py-2">
-              {isAdmin && !isEdit ? (
-                <FormField label="Branch" required error={err.storeId}>
-                  <Combobox
-                    value={form.storeId}
-                    onValueChange={(value) => set("storeId", value)}
-                    items={storeItems}
-                    placeholder="Select branch"
-                    searchPlaceholder="Search branches…"
-                    emptyText="No branches found."
-                    className="w-full"
-                    popoverClassName="z-[200]"
-                  />
-                </FormField>
-              ) : null}
+          {cameraOpen ? (
+            <CameraCapturePanel
+              onClose={() => setCameraOpen(false)}
+              onCapture={(file) => cameraCaptureRef.current(file)}
+            />
+          ) : (
+            <>
+              <div className="grid gap-4 py-2">
+                {isAdmin && !isEdit ? (
+                  <FormField label="Branch" required error={err.storeId}>
+                    <Combobox
+                      value={form.storeId}
+                      onValueChange={(value) => set("storeId", value)}
+                      items={storeItems}
+                      placeholder="Select branch"
+                      searchPlaceholder="Search branches…"
+                      emptyText="No branches found."
+                      className="w-full"
+                      popoverClassName="z-[200]"
+                    />
+                  </FormField>
+                ) : null}
 
-              {isEdit && entry ? (
-                <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-                  Branch:{" "}
-                  <span className="font-medium text-foreground">
-                    {entry.store.name}
-                  </span>
-                </p>
-              ) : null}
+                {isEdit && entry ? (
+                  <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                    Branch:{" "}
+                    <span className="font-medium text-foreground">
+                      {entry.store.name}
+                    </span>
+                  </p>
+                ) : null}
 
-              <FormField label="Item" required error={err.itemName}>
-                <input
-                  className={cn(
-                    inputClassName,
-                    err.itemName && "border-destructive",
-                  )}
-                  value={form.itemName}
-                  onChange={(e) => set("itemName", e.target.value)}
-                  placeholder="e.g. Paper cups 16oz (pack of 50)"
-                  maxLength={200}
-                />
-              </FormField>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Quantity" required error={err.quantity}>
+                <FormField label="Item" required error={err.itemName}>
                   <input
                     className={cn(
                       inputClassName,
-                      err.quantity && "border-destructive",
+                      err.itemName && "border-destructive",
                     )}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={form.quantity}
-                    onChange={(e) => set("quantity", e.target.value)}
-                    placeholder="e.g. 10"
+                    value={form.itemName}
+                    onChange={(e) => set("itemName", e.target.value)}
+                    placeholder="e.g. Paper cups 16oz (pack of 50)"
+                    maxLength={200}
                   />
                 </FormField>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Quantity" required error={err.quantity}>
+                    <input
+                      className={cn(
+                        inputClassName,
+                        err.quantity && "border-destructive",
+                      )}
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={form.quantity}
+                      onChange={(e) => set("quantity", e.target.value)}
+                      placeholder="e.g. 10"
+                    />
+                  </FormField>
+                  <FormField
+                    label="Unit price (KSh)"
+                    required
+                    error={err.unitPrice}
+                  >
+                    <input
+                      className={cn(
+                        inputClassName,
+                        err.unitPrice && "border-destructive",
+                      )}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.unitPrice}
+                      onChange={(e) => set("unitPrice", e.target.value)}
+                      placeholder="e.g. 450"
+                    />
+                  </FormField>
+                </div>
+
+                {total != null ? (
+                  <p className="rounded-md bg-muted px-3 py-2 text-sm">
+                    Total: <span className="font-semibold">{fmt(total)}</span>
+                  </p>
+                ) : null}
+
+                <FormField label="Vendor" required error={err.vendorId}>
+                  <div className="flex items-center gap-2">
+                    <Combobox
+                      value={form.vendorId}
+                      onValueChange={(value) => set("vendorId", value)}
+                      items={vendorItems}
+                      placeholder="Select vendor"
+                      searchPlaceholder="Search vendors…"
+                      emptyText="No vendors found."
+                      loading={vendorsLoading}
+                      className="w-full"
+                      popoverClassName="z-[200]"
+                    />
+                    {onManageVendors ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onManageVendors}
+                      >
+                        Manage
+                      </Button>
+                    ) : null}
+                  </div>
+                </FormField>
+
                 <FormField
-                  label="Unit price (KSh)"
+                  label="Purchase date"
                   required
-                  error={err.unitPrice}
+                  error={err.purchaseDate}
                 >
                   <input
                     className={cn(
                       inputClassName,
-                      err.unitPrice && "border-destructive",
+                      err.purchaseDate && "border-destructive",
                     )}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.unitPrice}
-                    onChange={(e) => set("unitPrice", e.target.value)}
-                    placeholder="e.g. 450"
+                    type="date"
+                    max={today}
+                    value={form.purchaseDate}
+                    onChange={(e) => set("purchaseDate", e.target.value)}
                   />
                 </FormField>
+
+                <FormField label="Note">
+                  <textarea
+                    className={cn(
+                      inputClassName,
+                      "min-h-[70px] resize-y py-2",
+                    )}
+                    value={form.note}
+                    onChange={(e) => set("note", e.target.value)}
+                    placeholder="Optional note (e.g. invoice number)"
+                    maxLength={300}
+                  />
+                </FormField>
+
+                {isEdit && entry ? (
+                  <ReceiptManager
+                    purchaseId={entry.id}
+                    onRequestCamera={openCamera}
+                  />
+                ) : (
+                  <FormField label="Receipt">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => receiptInputRef.current?.click()}
+                      >
+                        <Paperclip className="size-4" />
+                        {receiptFile ? "Change" : "Attach / photo"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          openCamera((file) => setReceiptFile(file))
+                        }
+                      >
+                        <Camera className="size-4" />
+                        Take Photo
+                      </Button>
+                      <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                        {receiptFile
+                          ? receiptFile.name
+                          : "Optional — image or PDF"}
+                      </span>
+                      {receiptFile ? (
+                        <button
+                          type="button"
+                          className="rounded-md p-1 text-muted-foreground hover:text-destructive"
+                          onClick={() => setReceiptFile(null)}
+                          aria-label="Remove selected file"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      ) : null}
+                      <input
+                        ref={receiptInputRef}
+                        type="file"
+                        accept={RECEIPT_ACCEPT}
+                        capture="environment"
+                        className="hidden"
+                        onChange={pickReceipt}
+                      />
+                    </div>
+                  </FormField>
+                )}
               </div>
 
-              {total != null ? (
-                <p className="rounded-md bg-muted px-3 py-2 text-sm">
-                  Total: <span className="font-semibold">{fmt(total)}</span>
-                </p>
-              ) : null}
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button type="button" onClick={save} disabled={isSaving}>
+                  {isSaving
+                    ? "Saving…"
+                    : isEdit
+                      ? "Save Changes"
+                      : "Record Purchase"}
+                </Button>
+              </div>
+            </>
+          )}
 
-              <FormField label="Vendor" required error={err.vendorId}>
-                <div className="flex items-center gap-2">
-                  <Combobox
-                    value={form.vendorId}
-                    onValueChange={(value) => set("vendorId", value)}
-                    items={vendorItems}
-                    placeholder="Select vendor"
-                    searchPlaceholder="Search vendors…"
-                    emptyText="No vendors found."
-                    loading={vendorsLoading}
-                    className="w-full"
-                    popoverClassName="z-[200]"
-                  />
-                  {onManageVendors ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={onManageVendors}
-                    >
-                      Manage
-                    </Button>
-                  ) : null}
-                </div>
-              </FormField>
-
-              <FormField
-                label="Purchase date"
-                required
-                error={err.purchaseDate}
-              >
-                <input
-                  className={cn(
-                    inputClassName,
-                    err.purchaseDate && "border-destructive",
-                  )}
-                  type="date"
-                  max={today}
-                  value={form.purchaseDate}
-                  onChange={(e) => set("purchaseDate", e.target.value)}
-                />
-              </FormField>
-
-              <FormField label="Note">
-                <textarea
-                  className={cn(inputClassName, "min-h-[70px] resize-y py-2")}
-                  value={form.note}
-                  onChange={(e) => set("note", e.target.value)}
-                  placeholder="Optional note (e.g. invoice number)"
-                  maxLength={300}
-                />
-              </FormField>
-
-              {isEdit && entry ? (
-                <ReceiptManager purchaseId={entry.id} />
-              ) : (
-                <FormField label="Receipt">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => receiptInputRef.current?.click()}
-                    >
-                      <Paperclip className="size-4" />
-                      {receiptFile ? "Change" : "Attach / photo"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCameraOpen(true)}
-                    >
-                      <Camera className="size-4" />
-                      Take Photo
-                    </Button>
-                    <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                      {receiptFile
-                        ? receiptFile.name
-                        : "Optional — image or PDF"}
-                    </span>
-                    {receiptFile ? (
-                      <button
-                        type="button"
-                        className="rounded-md p-1 text-muted-foreground hover:text-destructive"
-                        onClick={() => setReceiptFile(null)}
-                        aria-label="Remove selected file"
-                      >
-                        <X className="size-4" />
-                      </button>
-                    ) : null}
-                    <input
-                      ref={receiptInputRef}
-                      type="file"
-                      accept={RECEIPT_ACCEPT}
-                      capture="environment"
-                      className="hidden"
-                      onChange={pickReceipt}
-                    />
-                  </div>
-                </FormField>
-              )}
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button type="button" onClick={save} disabled={isSaving}>
-                {isSaving
-                  ? "Saving…"
-                  : isEdit
-                    ? "Save Changes"
-                    : "Record Purchase"}
-              </Button>
-            </div>
-
-            <Dialog.Close
-              type="button"
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              onClick={onClose}
-            >
-              <X className="size-4" />
-              <span className="sr-only">Close</span>
-            </Dialog.Close>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-      {cameraOpen ? (
-        <CameraCaptureDialog
-          onClose={() => setCameraOpen(false)}
-          onCapture={(file) => setReceiptFile(file)}
-        />
-      ) : null}
-    </>
+          <Dialog.Close
+            type="button"
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            <X className="size-4" />
+            <span className="sr-only">Close</span>
+          </Dialog.Close>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

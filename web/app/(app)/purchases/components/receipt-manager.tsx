@@ -12,7 +12,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CameraCaptureDialog } from "@/components/receipts/camera-capture-dialog";
 import {
   useDeleteReceipt,
   usePurchaseReceipts,
@@ -25,12 +24,23 @@ import {
   type Receipt,
 } from "@/types/receipts/receipt";
 
-export function ReceiptManager({ purchaseId }: { purchaseId: string }) {
+interface Props {
+  purchaseId: string;
+  /**
+   * Requests that the host open its camera capture view, calling back with
+   * the captured file. The host owns the camera UI (rendered inside its own
+   * `Dialog.Content`) rather than this component opening a second Dialog —
+   * see the comment on `CameraCapturePanel` for why nesting two modal
+   * Dialogs breaks on mobile.
+   */
+  onRequestCamera: (onCapture: (file: File) => void) => void;
+}
+
+export function ReceiptManager({ purchaseId, onRequestCamera }: Props) {
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const inputRef = useRef<HTMLInputElement>(null);
   const [confirmDelete, setConfirmDelete] = useState<Receipt | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
 
   const { data: receipts, isPending } = usePurchaseReceipts(purchaseId);
   const upload = useUploadReceipt();
@@ -103,7 +113,7 @@ export function ReceiptManager({ purchaseId }: { purchaseId: string }) {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setCameraOpen(true)}
+            onClick={() => onRequestCamera((file) => void uploadFile(file))}
             disabled={upload.isPending}
           >
             <Camera className="size-4" />
@@ -168,13 +178,6 @@ export function ReceiptManager({ purchaseId }: { purchaseId: string }) {
           isLoading={remove.isPending}
           onConfirm={() => void handleDelete(confirmDelete)}
           onClose={() => setConfirmDelete(null)}
-        />
-      ) : null}
-
-      {cameraOpen ? (
-        <CameraCaptureDialog
-          onClose={() => setCameraOpen(false)}
-          onCapture={(file) => void uploadFile(file)}
         />
       ) : null}
     </div>
