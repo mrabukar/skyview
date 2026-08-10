@@ -29,6 +29,7 @@ import type { Role } from "@/lib/types";
 import { pageKeyForPath } from "@/lib/auth/pages";
 import { fetchOrganizationLogoBlob } from "@/service/upload";
 import { useAppStore } from "@/store/app";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface NavLinkItem {
   href: string;
@@ -381,15 +382,22 @@ export function Sidebar({
     const key = pageKeyForPath(item.href);
     return !key || !disabledPages.includes(key);
   });
+  // The off-canvas drawer (<1024px) always shows the sidebar fully expanded
+  // regardless of the desktop icon-rail toggle — see the CSS override at
+  // ".sidebar.collapsed" inside the mobile media query. Mirror that here so
+  // JS-driven branches (the admin nav group, brand label, section heading)
+  // don't render their collapsed/icon-only variant on mobile.
+  const isMobile = useMediaQuery("(max-width: 1023px)");
+  const effectiveCollapsed = collapsed && !isMobile;
 
   return (
     <aside
       className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
     >
-      <SidebarBrand role={role} collapsed={collapsed} />
+      <SidebarBrand role={role} collapsed={effectiveCollapsed} />
 
       <nav className="sb-nav">
-        {!collapsed && (
+        {!effectiveCollapsed && (
           <div className="sb-section">
             {role === "super_admin"
               ? "Platform"
@@ -409,7 +417,7 @@ export function Sidebar({
                     key={entry.label}
                     group={entry}
                     pathname={pathname}
-                    collapsed={collapsed}
+                    collapsed={effectiveCollapsed}
                   />
                 ) : (
                   <SidebarNavLink
