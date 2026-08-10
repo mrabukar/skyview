@@ -95,37 +95,43 @@ export default function FinancialPage() {
     <>
       {header}
 
-      <div className="stat-grid grid-4 mb-16">
+      <div className="stat-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-16">
         <StatCard
           icon={TrendingUp}
           color="indigo"
+          colorful
           value={fmt(s.totalRevenue)}
           label="Total Revenue"
         />
         <StatCard
           icon={ShoppingBag}
-          color="violet"
+          color="slate"
+          colorful
           value={fmt(s.cogs)}
           label="Purchases"
-          valueColor="var(--cost-slate)"
         />
         <StatCard
           icon={TrendingUp}
-          color="teal"
+          color={s.grossProfit < 0 ? "rose" : "emerald"}
+          colorful
           value={fmt(s.grossProfit)}
           label="Gross Profit"
+          valueColor={s.grossProfit < 0 ? "var(--status-rose)" : undefined}
         />
         <StatCard
           icon={CreditCard}
           color="amber"
+          colorful
           value={fmt(s.totalExpenses)}
           label="Total Expenses"
         />
         <StatCard
           icon={TrendingUp}
-          color="violet"
+          color={s.netProfit < 0 ? "rose" : "emerald"}
+          colorful
           value={fmt(s.netProfit)}
           label="Net Profit"
+          valueColor={s.netProfit < 0 ? "var(--status-rose)" : undefined}
         />
       </div>
 
