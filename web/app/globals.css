@@ -47,9 +47,9 @@
   /* Financial semantics */
   --fin-revenue: var(--brand-indigo);
   --fin-cogs: var(--cost-slate);
-  --fin-gross: var(--brand-teal);
+  --fin-gross: var(--status-emerald);
   --fin-expenses: var(--status-amber);
-  --fin-net-pos: var(--brand-violet);
+  --fin-net-pos: var(--status-emerald);
   --fin-net-neg: var(--status-rose);
 
   /* Typography */
@@ -1093,6 +1093,7 @@ button {
   border-radius: var(--r-lg);
   padding: 20px;
   box-shadow: var(--shadow-sm);
+  min-width: 0;
 }
 .stat-top {
   display: flex;
@@ -1107,19 +1108,56 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .stat-val {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .stat-lbl {
   font-size: 13px;
   font-weight: 500;
   color: var(--fg2);
   margin-top: 4px;
+}
+/* Card text/padding step down as the grid packs more columns into the row
+   (md:3-col, lg:5-col — see AdminStatGrid/ManagerStatGrid) so the value
+   never wraps mid-number the way it does at a fixed 28px/20px padding. */
+@media (max-width: 1279px) {
+  .stat-card {
+    padding: 16px;
+  }
+  .stat-top {
+    margin-bottom: 10px;
+  }
+  .stat-ic {
+    width: 36px;
+    height: 36px;
+  }
+  .stat-val {
+    font-size: 19px;
+  }
+}
+@media (max-width: 767px) {
+  .stat-card {
+    padding: 14px;
+  }
+  .stat-top {
+    margin-bottom: 8px;
+  }
+  .stat-ic {
+    width: 32px;
+    height: 32px;
+  }
+  .stat-val {
+    font-size: 18px;
+  }
 }
 .trend {
   display: inline-flex;
@@ -1137,6 +1175,21 @@ button {
 .trend-dn {
   background: var(--tint-rose);
   color: #be123c;
+}
+/* Opt-in bolder variant — colored wash + accent top border (background/border
+   color are set inline per-card from the same tint used by the icon). Used
+   by the financial-summary page; other stat-grids are unaffected. */
+.stat-card--colorful {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.stat-card--colorful:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.stat-card--colorful .stat-ic {
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 10%, transparent);
 }
 
 /* ============================================================================
