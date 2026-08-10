@@ -23,10 +23,10 @@ import {
   usePurchaseEntries,
   useUpdatePurchaseEntry,
 } from "@/hooks/purchase-entries/use-purchase-entries";
+import { useUploadReceipt } from "@/hooks/receipts/use-receipts";
 import { useStores } from "@/hooks/stores/list-stores";
 import { useVendors } from "@/hooks/vendors/use-vendors";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { uploadReceipt } from "@/service/receipts/receipts";
 import { dateToYmd, getCurrentMonthRange } from "@/lib/filters/dates";
 import { fmt } from "@/lib/utils";
 import { useAppStore } from "@/store/app";
@@ -86,6 +86,7 @@ export default function PurchasesPage() {
   const createEntry = useCreatePurchaseEntry();
   const updateEntry = useUpdatePurchaseEntry();
   const deleteEntry = useDeletePurchaseEntry();
+  const uploadReceipt = useUploadReceipt();
 
   const rows = data?.data ?? [];
   const rowCount = data?.meta.total ?? 0;
@@ -252,7 +253,7 @@ export default function PurchasesPage() {
         });
         if (form.receiptFile && created?.id) {
           try {
-            await uploadReceipt(created.id, form.receiptFile);
+            await uploadReceipt.mutateAsync({ purchaseId: created.id, file: form.receiptFile });
           } catch {
             addErrorToast({
               title: "Purchase saved, but the receipt didn't upload",
@@ -392,7 +393,7 @@ export default function PurchasesPage() {
           vendorsLoading={vendorsPending}
           onClose={() => setModal(null)}
           onSave={(form) => void handleSave(form)}
-          isSaving={createEntry.isPending || updateEntry.isPending}
+          isSaving={createEntry.isPending || updateEntry.isPending || uploadReceipt.isPending}
           onManageVendors={isAdmin ? () => setShowVendors(true) : undefined}
         />
       )}
