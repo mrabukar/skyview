@@ -15,8 +15,10 @@ import {
   todayCalendarDate,
 } from "../../common/utils/app-timezone.util";
 import {
-  assertManagerHasBranch,
+  assertBranchAccess,
+  assertManagerHasBranches,
   isManager,
+  resolveWriteBranchId,
 } from "../../common/utils/branch-scope.util";
 import { requireOrganizationId } from "../../common/utils/require-organization-id.util";
 import { withOrganizationId } from "../../common/utils/with-organization-id.util";
@@ -58,8 +60,22 @@ export class ExpensesService {
 
     let branchFilter: Prisma.ExpenseWhereInput;
     if (isManager(user)) {
-      // Managers: only their own branch; company-wide excluded (BR-5.3).
-      branchFilter = { branchId: assertManagerHasBranch(user) };
+      // Managers: assigned branches only; company-wide excluded (BR-5.3).
+      const ids = assertManagerHasBranches(user);
+      const trimmed =
+        typeof query.branchId === "string" ? query.branchId.trim() : "";
+      if (trimmed) {
+        if (!ids.includes(trimmed)) {
+          throw new ForbiddenException(
+            "You can only access your assigned branches",
+          );
+        }
+        branchFilter = { branchId: trimmed };
+      } else {
+        branchFilter = {
+          branchId: ids.length === 1 ? ids[0]! : { in: ids },
+        };
+      }
     } else if (query.companyWideOnly) {
       branchFilter = { branchId: null };
     } else if (query.branchId) {
@@ -110,8 +126,13 @@ export class ExpensesService {
     if (!expense) {
       throw new NotFoundException(`Expense with id "${id}" not found`);
     }
-    if (isManager(user) && expense.branchId !== user.branchId) {
-      throw new ForbiddenException("You can only access your own branch's expenses");
+    if (isManager(user)) {
+      if (!expense.branchId) {
+        throw new ForbiddenException(
+          "You can only access your assigned branches' expenses",
+        );
+      }
+      assertBranchAccess(expense.branchId, user);
     }
     return expense;
   }
@@ -262,13 +283,13 @@ export class ExpensesService {
     });
   }
 
-  /** Manager: forced to own branch. Admin: given branch (validated) or company-wide (null). */
+  /** Manager: assigned branch (require dto when >1). Admin: given branch or company-wide (null). */
   private async resolveWriteBranch(
     user: CurrentUserPayload,
     dtoBranchId?: string,
   ): Promise<string | null> {
     if (isManager(user)) {
-      return assertManagerHasBranch(user);
+      return resolveWriteBranchId(user, dtoBranchId);
     }
     const trimmed = typeof dtoBranchId === "string" ? dtoBranchId.trim() : "";
     if (!trimmed) return null;
