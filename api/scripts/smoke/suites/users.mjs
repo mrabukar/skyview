@@ -33,7 +33,16 @@ export async function runUsers(ctx) {
   });
   check("admin create manager → 201", r.status === 201, `got ${r.status} ${(r.text ?? "").slice(0, 140)}`);
   const userId = r.json?.id;
-  check("new user has branch + salary", r.json?.branch?.id === branchId && Number(r.json?.salary) === 24000, JSON.stringify({ b: r.json?.branch?.id, s: r.json?.salary }));
+  check(
+    "new user has branch + salary",
+    r.json?.branch?.id === branchId && Number(r.json?.salary) === 24000,
+    JSON.stringify({ b: r.json?.branch?.id, s: r.json?.salary }),
+  );
+  check(
+    "new manager has branchIds backfilled",
+    Array.isArray(r.json?.branchIds) && r.json.branchIds.includes(branchId),
+    JSON.stringify(r.json?.branchIds),
+  );
   check("new manager disabledPages round-trips", Array.isArray(r.json?.disabledPages) && r.json.disabledPages.includes("dashboard"), JSON.stringify(r.json?.disabledPages));
 
   // invalid page key rejected
