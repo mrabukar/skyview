@@ -18,6 +18,8 @@ model Organization {
   expenses          Expense[]
   auditLogs         AuditLog[]
   receipts          Receipt[]
+  userAttachments   UserAttachment[]
+  branchManagerAssignments BranchManagerAssignment[]
 
   @@map("organization")
 }
