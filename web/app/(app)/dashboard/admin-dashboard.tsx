@@ -10,6 +10,7 @@ import { AdminRevenueCharts } from "./components/admin/revenue-charts";
 import { AdminStatGrid } from "./components/admin/stat-grid";
 import { DashboardError, DashboardLoading } from "./components/admin/status";
 import { DashboardPageHeader } from "./components/admin/page-header";
+import { TopVendorsCard } from "./components/top-vendors-card";
 import { Card } from "@/components/ui/card";
 
 export function AdminDashboard() {
@@ -53,9 +54,16 @@ export function AdminDashboard() {
       <AdminStatGrid summary={summary} comparison={comparison} />
       <AdminRevenueCharts charts={charts} />
       <AdminPerformanceCharts charts={charts} />
-      <Card title="Recent Daily Sales" pad>
-        <AdminRecentSalesTable sales={recentSales} />
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title="Recent Daily Sales" pad>
+          <AdminRecentSalesTable sales={recentSales} />
+        </Card>
+        <TopVendorsCard
+          fromDate={dashboardQuery.fromDate}
+          toDate={dashboardQuery.toDate}
+          storeId={dashboardQuery.storeId}
+        />
+      </div>
     </>
   );
 }
