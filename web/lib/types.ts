@@ -25,6 +25,9 @@ export interface AppUser {
   disabledPages: string[];
   storeId: string | null;
   store: string | null;
+  /** All assigned branch ids (managers); primary is storeId / first. */
+  storeIds: string[];
+  stores: { id: string; name: string }[];
   organizationId: string | null;
   organizationName: string | null;
   hasStores: boolean | null;
