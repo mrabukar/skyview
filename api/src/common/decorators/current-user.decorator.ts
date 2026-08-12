@@ -7,6 +7,8 @@ export type CurrentUserPayload = {
   role: UserRole;
   organizationId: string | null;
   branchId: string | null;
+  /** Enriched per-request for branch_manager (assignments ∪ primary). */
+  branchIds?: string[];
   isActive: boolean;
 };
 
