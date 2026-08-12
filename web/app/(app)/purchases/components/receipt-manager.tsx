@@ -71,10 +71,9 @@ export function ReceiptManager({ purchaseId, onRequestCamera }: Props) {
   };
 
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-picking the same file
-    if (!file) return;
-    await uploadFile(file);
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-picking the same file(s)
+    for (const file of files) await uploadFile(file);
   };
 
   const handleDelete = async (receipt: Receipt) => {
@@ -124,7 +123,7 @@ export function ReceiptManager({ purchaseId, onRequestCamera }: Props) {
           ref={inputRef}
           type="file"
           accept={RECEIPT_ACCEPT}
-          capture="environment"
+          multiple
           className="hidden"
           onChange={(e) => void onPick(e)}
         />
