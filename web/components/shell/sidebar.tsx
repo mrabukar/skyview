@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   CreditCard,
   TrendingUp,
+  Truck,
   Users,
   ClipboardList,
   ShieldCheck,
@@ -86,6 +87,7 @@ function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
       ],
     },
     { href: "/financial", label: "Financial Summary", icon: TrendingUp },
+    { href: "/vendor-spend", label: "Vendor Spend", icon: Truck },
   );
 
   return nav;
