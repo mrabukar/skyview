@@ -12,7 +12,7 @@ import {
   startOfMonthCalendarDate,
   todayCalendarDate,
 } from "../../common/utils/app-timezone.util";
-import { resolveBranchFilter } from "../../common/utils/branch-scope.util";
+import { resolveBranchFilter, type BranchIdFilter } from "../../common/utils/branch-scope.util";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ReportQueryDto } from "./dto/report-query.dto";
 
@@ -122,15 +122,15 @@ export class ReportsService {
   }
 
   async managerDashboard(user: CurrentUserPayload) {
-    const branchId = resolveBranchFilter(user, undefined);
+    const branchFilter = resolveBranchFilter(user, undefined);
     const today = todayCalendarDate();
     const monthStart = startOfMonthCalendarDate(today);
 
-    // month-to-date sales, purchases and expenses for the branch P&L
+    // month-to-date sales, purchases and expenses across assigned branches
     const month = await this.collect(
       calendarDateToDbDate(monthStart),
       calendarDateToDbDate(today),
-      branchId,
+      branchFilter,
     );
     const monthRows = month.sales;
     const todayRows = monthRows.filter((s) => ymd(s.saleDate) === today);
@@ -142,21 +142,24 @@ export class ReportsService {
 
     // deltas
     const yesterday = calendarDateDaysAgo(1, today);
-    const yesterdayRows = await this.salesInRange(yesterday, yesterday, branchId);
+    const yesterdayRows = await this.salesInRange(yesterday, yesterday, branchFilter);
     const prevMonthSameDay = calendarDateMonthsAgo(1, today);
     const prevMonthStart = startOfMonthCalendarDate(prevMonthSameDay);
-    const prevMonthRows = await this.salesInRange(prevMonthStart, prevMonthSameDay, branchId);
+    const prevMonthRows = await this.salesInRange(prevMonthStart, prevMonthSameDay, branchFilter);
 
     // 14-day trend
     const salesTrend: Array<{ date: string; revenue: number }> = [];
     for (let d = 13; d >= 0; d--) {
       const date = calendarDateDaysAgo(d, today);
-      const rows = await this.salesInRange(date, date, branchId);
+      const rows = await this.salesInRange(date, date, branchFilter);
       salesTrend.push({ date, revenue: Math.round(this.sum(rows, "totalAmount")) });
     }
 
     return {
-      storeId: branchId ?? null,
+      storeId:
+        typeof branchFilter === "string"
+          ? branchFilter
+          : (user.branchId ?? null),
       summary: {
         todayRevenue: Math.round(todayRevenue),
         todayUnitsSold: todayRows.length,
@@ -222,7 +225,7 @@ export class ReportsService {
 
   /* ---------------- data ---------------- */
 
-  private async collect(from: Date, to: Date, branchId?: string) {
+  private async collect(from: Date, to: Date, branchId?: BranchIdFilter) {
     const [sales, purchases, expenses] = await Promise.all([
       this.prisma.dailySale.findMany({
         where: { saleDate: { gte: from, lte: to }, ...(branchId ? { branchId } : undefined) },
@@ -255,7 +258,7 @@ export class ReportsService {
   private async salesInRange(
     fromCal: string,
     toCal: string,
-    branchId?: string,
+    branchId?: BranchIdFilter,
   ): Promise<SaleRow[]> {
     const rows = await this.prisma.dailySale.findMany({
       where: {
