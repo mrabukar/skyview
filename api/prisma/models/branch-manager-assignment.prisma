@@ -1,0 +1,17 @@
+/// Many-to-many: a branch_manager may oversee multiple branches.
+/// User.branchId remains the primary/default branch (payroll + write default).
+model BranchManagerAssignment {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId       String
+  branch         Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, branchId])
+  @@index([organizationId])
+  @@index([branchId])
+  @@map("branch_manager_assignment")
+}
