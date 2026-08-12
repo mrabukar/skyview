@@ -123,10 +123,12 @@ export default function UsersPage() {
         if (form.password) input.password = form.password;
 
         if (form.role === "branch_manager") {
-          input.storeId = form.storeId;
+          input.storeIds = form.storeIds;
+          input.storeId = form.storeIds[0];
           input.disabledPages = form.disabledPages;
         } else {
           input.storeId = null;
+          input.storeIds = [];
         }
 
         await updateUser.mutateAsync({ id: modal.user.id, input });
@@ -137,8 +139,10 @@ export default function UsersPage() {
           email: form.email,
           password: form.password,
           role: form.role,
+          storeIds:
+            form.role === "branch_manager" ? form.storeIds : undefined,
           storeId:
-            form.role === "branch_manager" ? form.storeId : undefined,
+            form.role === "branch_manager" ? form.storeIds[0] : undefined,
           phone: form.phone || undefined,
           salary: form.salary ? Number(form.salary) : 0,
           disabledPages:
