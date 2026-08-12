@@ -9,14 +9,21 @@ import { ManagerRecentSalesTable } from "./components/manager/recent-sales-table
 import { ManagerStatGrid } from "./components/manager/stat-grid";
 
 export function ManagerDashboard({ user }: { user: AppUser }) {
-  const label = user.store?.split(" — ")[0] ?? "My Branch";
+  const label =
+    (user.storeIds?.length ?? 0) > 1
+      ? "Your branches"
+      : (user.store?.split(" — ")[0] ?? "My Branch");
   const { data, isLoading, isError, error } = useManagerDashboard();
 
   const header = (
     <PageHeader
       className="page-head--band"
       title={`Dashboard — ${label}`}
-      desc="Your branch at a glance"
+      desc={
+        (user.storeIds?.length ?? 0) > 1
+          ? "All assigned branches at a glance"
+          : "Your branch at a glance"
+      }
     />
   );
 
