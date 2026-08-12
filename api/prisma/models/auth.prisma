@@ -20,19 +20,23 @@ model User {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   /// Branch assignment. Required for branch_manager, null for admin (BR-7.3).
+  /// For multi-branch managers this is the primary/default branch.
   branchId       String?
   branch         Branch?       @relation(fields: [branchId], references: [id])
   /// Page keys hidden from this branch_manager (admin-controlled). Empty = all
   /// pages visible. Ignored for admin/super_admin. See page registry (doc 10).
   disabledPages  String[]      @default([])
 
-  sessions        Session[]
-  accounts        Account[]
-  dailySales      DailySale[]      @relation("DailySalesEnteredBy")
-  purchases       Purchase[]       @relation("PurchasesCreatedBy")
-  expenses        Expense[]        @relation("ExpensesCreatedBy")
-  receipts        Receipt[]        @relation("ReceiptsUploadedBy")
-  auditLogs       AuditLog[]
+  sessions               Session[]
+  accounts               Account[]
+  dailySales             DailySale[]               @relation("DailySalesEnteredBy")
+  purchases              Purchase[]                @relation("PurchasesCreatedBy")
+  expenses               Expense[]                 @relation("ExpensesCreatedBy")
+  receipts               Receipt[]                 @relation("ReceiptsUploadedBy")
+  attachments            UserAttachment[]          @relation("UserAttachments")
+  uploadedAttachments    UserAttachment[]          @relation("UserAttachmentsUploadedBy")
+  branchAssignments      BranchManagerAssignment[]
+  auditLogs              AuditLog[]
 
   @@unique([email])
   @@map("user")
