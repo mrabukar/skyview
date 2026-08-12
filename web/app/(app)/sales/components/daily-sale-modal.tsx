@@ -30,7 +30,8 @@ interface Props {
   open: boolean;
   mode: "add" | "edit";
   sale?: DailySale;
-  isAdmin: boolean;
+  /** Show required branch picker on create (admin, or multi-branch manager). */
+  showStoreField: boolean;
   storeItems: { value: string; label: string }[];
   onClose: () => void;
   onSave: (data: DailySaleFormValues) => void;
@@ -64,7 +65,7 @@ export function DailySaleModal({
   open,
   mode,
   sale,
-  isAdmin,
+  showStoreField,
   storeItems,
   onClose,
   onSave,
@@ -85,7 +86,7 @@ export function DailySaleModal({
 
   const save = () => {
     const next: Partial<Record<keyof DailySaleFormValues, string>> = {};
-    if (isAdmin && !isEdit && !form.storeId) next.storeId = "Branch is required";
+    if (showStoreField && !isEdit && !form.storeId) next.storeId = "Branch is required";
     if (!form.saleDate) next.saleDate = "Date is required";
     else if (form.saleDate > today) next.saleDate = "Date cannot be in the future";
     if (!form.totalAmount || Number(form.totalAmount) <= 0)
@@ -117,7 +118,7 @@ export function DailySaleModal({
           </div>
 
           <div className="grid gap-4 py-2">
-            {isAdmin && !isEdit ? (
+            {showStoreField && !isEdit ? (
               <FormField label="Branch" required error={err.storeId}>
                 <Combobox
                   value={form.storeId}
