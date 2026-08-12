@@ -37,4 +37,13 @@ export class ReportsController {
   ) {
     return this.reportsService.financialSummary(query, user);
   }
+
+  // Total purchased per vendor (admin org-wide / manager branch-scoped).
+  @Get("vendor-spend")
+  vendorSpend(
+    @Query() query: ReportQueryDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.reportsService.vendorSpend(query, user);
+  }
 }
