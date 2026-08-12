@@ -6,6 +6,7 @@ import { KeyRound } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { UserAttachmentsManager } from "@/app/(app)/users/components/user-attachments-manager";
 import { useSession } from "@/hooks/auth/session";
 import { useUpdateMe } from "@/hooks/auth/use-update-me";
 import { appRoleLabel } from "@/lib/types";
@@ -157,6 +158,15 @@ export default function ProfileSettingsPage() {
                 Change password
               </Link>
             </Button>
+          </div>
+        </Card>
+
+        <Card title="My documents" pad>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Documents and photos attached to your account by an administrator.
+            </p>
+            <UserAttachmentsManager userId={user.id} readOnly />
           </div>
         </Card>
       </div>
