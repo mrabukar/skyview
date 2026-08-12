@@ -34,6 +34,13 @@ export class CreateUserDto {
   @IsNotEmpty()
   branchId?: string;
 
+  /** Assigned branches for branch_manager (≥1). Primary = first id. */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  branchIds?: string[];
+
   @IsOptional()
   @IsString()
   @MaxLength(30)
