@@ -37,4 +37,29 @@ export async function runReports(ctx) {
   // branch filter accepted
   r = await admin.req("GET", `/api/reports/admin-dashboard?fromDate=${from}&toDate=${to}&branchId=${ctx.branchId}`);
   check("admin-dashboard branch filter → 200", r.status === 200, `got ${r.status}`);
+
+  // vendor spend (admin, org-wide)
+  r = await admin.req("GET", `/api/reports/vendor-spend?fromDate=${from}&toDate=${to}`);
+  check("vendor-spend → 200", r.status === 200, `got ${r.status}`);
+  const vs = r.json ?? {};
+  check("vendor-spend shape", Array.isArray(vs.vendors) && typeof vs.totalAmount === "number" && typeof vs.vendorCount === "number", JSON.stringify(Object.keys(vs)));
+  check(
+    "vendor-spend rows have amount + count + percent",
+    (vs.vendors ?? []).every((v) => typeof v.totalAmount === "number" && typeof v.purchaseCount === "number" && typeof v.percent === "number" && typeof v.vendorName === "string"),
+    `n=${vs.vendors?.length}`,
+  );
+  check(
+    "vendor-spend sorted desc by amount",
+    (vs.vendors ?? []).every((v, i, a) => i === 0 || a[i - 1].totalAmount >= v.totalAmount),
+    "not sorted",
+  );
+  check(
+    "vendor-spend total = sum of rows",
+    vs.totalAmount === (vs.vendors ?? []).reduce((s, v) => s + v.totalAmount, 0),
+    `total=${vs.totalAmount}`,
+  );
+
+  // vendor spend visible to managers (branch-scoped, not 403)
+  r = await manager.req("GET", `/api/reports/vendor-spend?fromDate=${from}&toDate=${to}`);
+  check("manager vendor-spend → 200", r.status === 200, `got ${r.status}`);
 }
