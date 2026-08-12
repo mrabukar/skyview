@@ -121,6 +121,64 @@ export class ReportsService {
     };
   }
 
+  /**
+   * Total purchased per vendor, ranked high→low. Branch-scoped (manager → their
+   * assigned branches; admin → all, or one branch via `branchId`). Includes
+   * inactive vendors that still have historical purchases.
+   */
+  async vendorSpend(query: ReportQueryDto, user: CurrentUserPayload) {
+    const branchId = resolveBranchFilter(user, query.branchId);
+    const range = resolveReportDateRange(query.fromDate, query.toDate);
+
+    const grouped = await this.prisma.purchase.groupBy({
+      by: ["vendorId"],
+      where: {
+        purchaseDate: { gte: range.fromDate, lte: range.toDate },
+        ...(branchId ? { branchId } : undefined),
+      },
+      _sum: { totalCost: true },
+      _count: true,
+    });
+
+    const vendorIds = grouped.map((g) => g.vendorId);
+    const vendors = vendorIds.length
+      ? await this.prisma.vendor.findMany({
+          where: { id: { in: vendorIds } },
+          select: { id: true, name: true, isActive: true },
+        })
+      : [];
+    const byId = new Map(vendors.map((v) => [v.id, v]));
+
+    const rows = grouped
+      .map((g) => ({
+        vendorId: g.vendorId,
+        vendorName: byId.get(g.vendorId)?.name ?? "(unknown vendor)",
+        isActive: byId.get(g.vendorId)?.isActive ?? false,
+        totalAmount: Math.round(Number(g._sum.totalCost ?? 0)),
+        purchaseCount: g._count,
+      }))
+      .sort((a, b) => b.totalAmount - a.totalAmount);
+
+    const totalAmount = rows.reduce((sum, r) => sum + r.totalAmount, 0);
+
+    return {
+      period: {
+        from: range.fromCalendar,
+        to: range.toCalendar,
+        timezone: "Africa/Nairobi",
+      },
+      totalAmount,
+      vendorCount: rows.length,
+      vendors: rows.map((r) => ({
+        ...r,
+        percent:
+          totalAmount > 0
+            ? Math.round((r.totalAmount / totalAmount) * 1000) / 10
+            : 0,
+      })),
+    };
+  }
+
   async managerDashboard(user: CurrentUserPayload) {
     const branchFilter = resolveBranchFilter(user, undefined);
     const today = todayCalendarDate();
