@@ -52,6 +52,9 @@ export default function DailySalesPage() {
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const isAdmin = user?.role === "admin";
+  const managerMulti =
+    user?.role === "manager" && (user.storeIds?.length ?? 0) > 1;
+  const showStoreField = isAdmin || managerMulti;
   const today = useMemo(() => dateToYmd(new Date()), []);
   const defaultRange = useMemo(() => getCurrentMonthRange(), []);
 
@@ -67,11 +70,11 @@ export default function DailySalesPage() {
     () => ({
       page: pageIndex + 1,
       limit: pageSize,
-      storeId: isAdmin ? storeId : undefined,
+      storeId: showStoreField ? storeId : undefined,
       fromDate,
       toDate,
     }),
-    [pageIndex, pageSize, storeId, fromDate, toDate, isAdmin],
+    [pageIndex, pageSize, storeId, fromDate, toDate, showStoreField],
   );
 
   const { data: storesData } = useStores({ limit: 100 });
@@ -84,14 +87,18 @@ export default function DailySalesPage() {
   const rowCount = data?.meta.total ?? 0;
   const isLoading = isPending || (isFetching && rows.length === 0);
 
-  const storeItems = useMemo(
-    () =>
-      (storesData?.data ?? []).map((store) => ({
+  const storeItems = useMemo(() => {
+    if (isAdmin) {
+      return (storesData?.data ?? []).map((store) => ({
         value: store.id,
         label: store.name,
-      })),
-    [storesData],
-  );
+      }));
+    }
+    return (user?.stores ?? []).map((store) => ({
+      value: store.id,
+      label: store.name,
+    }));
+  }, [isAdmin, storesData?.data, user?.stores]);
 
   const columns = useMemo<ColumnDef<DailySale>[]>(
     () => [
@@ -204,7 +211,7 @@ export default function DailySalesPage() {
         addToast({ title: "Sales entry updated" });
       } else {
         await createSale.mutateAsync({
-          ...(isAdmin ? { storeId: form.storeId } : {}),
+          ...(showStoreField ? { storeId: form.storeId } : {}),
           saleDate: form.saleDate,
           totalAmount: Number(form.totalAmount),
           note: form.note.trim() || undefined,
@@ -245,7 +252,7 @@ export default function DailySalesPage() {
           setPageIndex(0);
         }}
       />
-      {isAdmin ? (
+      {showStoreField ? (
         <Combobox
           value={storeId}
           onValueChange={(value) => {
@@ -269,7 +276,9 @@ export default function DailySalesPage() {
         desc={
           isAdmin
             ? "Sales entries across all branches — record as many per day as needed"
-            : `Sales entries for ${user?.store ?? "your branch"}`
+            : managerMulti
+              ? "Sales entries for your assigned branches"
+              : `Sales entries for ${user?.store ?? "your branch"}`
         }
         action={
           <Button onClick={() => setModal({ mode: "add" })}>
@@ -308,7 +317,7 @@ export default function DailySalesPage() {
           open
           mode={modal.mode}
           sale={modal.mode === "edit" ? modal.sale : undefined}
-          isAdmin={isAdmin}
+          showStoreField={showStoreField}
           storeItems={storeItems}
           onClose={() => setModal(null)}
           onSave={(form) => void handleSave(form)}
