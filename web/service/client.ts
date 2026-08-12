@@ -39,8 +39,20 @@ export async function throwIfNotOk(res: Response): Promise<void> {
 
 /* ---------------- branch ↔ store bridge ---------------- */
 
-const REQ_KEYS: Record<string, string> = { storeId: "branchId", store: "branch", storeName: "branchName" };
-const RES_KEYS: Record<string, string> = { branchId: "storeId", branch: "store", branchName: "storeName" };
+const REQ_KEYS: Record<string, string> = {
+  storeId: "branchId",
+  store: "branch",
+  storeName: "branchName",
+  storeIds: "branchIds",
+  stores: "branches",
+};
+const RES_KEYS: Record<string, string> = {
+  branchId: "storeId",
+  branch: "store",
+  branchName: "storeName",
+  branchIds: "storeIds",
+  branches: "stores",
+};
 
 function renameKeys(value: unknown, map: Record<string, string>): unknown {
   if (Array.isArray(value)) return value.map((v) => renameKeys(v, map));
