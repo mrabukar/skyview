@@ -31,15 +31,20 @@ export interface PurchaseEntryFormValues {
   vendorId: string | undefined;
   purchaseDate: string;
   note: string;
-  /** Optional receipt to attach on create (add mode only). */
-  receiptFile?: File | null;
+  /** Optional receipts to attach on create (add mode only). */
+  receiptFiles: File[];
 }
+
+/** The text form fields (receipts are tracked in their own state). */
+type FormFields = Omit<PurchaseEntryFormValues, "receiptFiles">;
 
 interface Props {
   open: boolean;
   mode: "add" | "edit";
   entry?: PurchaseEntry;
   isAdmin: boolean;
+  /** Show required branch picker on create (admin, or multi-branch manager). */
+  showStoreField?: boolean;
   storeItems: { value: string; label: string }[];
   vendorItems: { value: string; label: string }[];
   vendorsLoading?: boolean;
@@ -77,6 +82,7 @@ export function PurchaseEntryModal({
   mode,
   entry,
   isAdmin,
+  showStoreField,
   storeItems,
   vendorItems,
   vendorsLoading = false,
@@ -86,38 +92,13 @@ export function PurchaseEntryModal({
   onManageVendors,
 }: Props) {
   const isEdit = mode === "edit";
+  const pickStore = showStoreField ?? isAdmin;
   const today = useMemo(() => dateToYmd(new Date()), []);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const receiptInputRef = useRef<HTMLInputElement>(null);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  // Swaps the dialog body for `CameraCapturePanel` in place, rather than
-  // opening a second Dialog — see that component's doc comment for why.
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const cameraCaptureRef = useRef<(file: File) => void>(() => {});
-  const openCamera = (onCapture: (file: File) => void) => {
-    cameraCaptureRef.current = onCapture;
-    setCameraOpen(true);
-  };
-  const [form, setForm] = useState<PurchaseEntryFormValues>(() => ({
-    storeId: entry?.storeId ?? undefined,
-    itemName: entry?.itemName ?? "",
-    quantity: entry ? String(entry.quantity) : "",
-    unitPrice: entry ? String(entry.unitPrice) : "",
-    vendorId: entry?.vendorId ?? undefined,
-    purchaseDate: entry?.purchaseDate ?? today,
-    note: entry?.note ?? "",
-  }));
-  const [err, setErr] = useState<
-    Partial<Record<keyof PurchaseEntryFormValues, string>>
-  >({});
+  const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
 
-  const set = (key: keyof PurchaseEntryFormValues, value: string | undefined) =>
-    setForm((state) => ({ ...state, [key]: value }));
-
-  const pickReceipt = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    e.target.value = "";
-    if (!file) return;
+  const addReceiptFile = (file: File): void => {
     if (!RECEIPT_ACCEPT.split(",").includes(file.type)) {
       addErrorToast({
         title: "Unsupported file",
@@ -129,7 +110,37 @@ export function PurchaseEntryModal({
       addErrorToast({ title: "File too large", sub: "Maximum size is 10 MB." });
       return;
     }
-    setReceiptFile(file);
+    setReceiptFiles((prev) => [...prev, file]);
+  };
+
+  const removeReceiptAt = (index: number) =>
+    setReceiptFiles((prev) => prev.filter((_, i) => i !== index));
+  // Swaps the dialog body for `CameraCapturePanel` in place, rather than
+  // opening a second Dialog — see that component's doc comment for why.
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const cameraCaptureRef = useRef<(file: File) => void>(() => {});
+  const openCamera = (onCapture: (file: File) => void) => {
+    cameraCaptureRef.current = onCapture;
+    setCameraOpen(true);
+  };
+  const [form, setForm] = useState<FormFields>(() => ({
+    storeId: entry?.storeId ?? undefined,
+    itemName: entry?.itemName ?? "",
+    quantity: entry ? String(entry.quantity) : "",
+    unitPrice: entry ? String(entry.unitPrice) : "",
+    vendorId: entry?.vendorId ?? undefined,
+    purchaseDate: entry?.purchaseDate ?? today,
+    note: entry?.note ?? "",
+  }));
+  const [err, setErr] = useState<Partial<Record<keyof FormFields, string>>>({});
+
+  const set = (key: keyof FormFields, value: string | undefined) =>
+    setForm((state) => ({ ...state, [key]: value }));
+
+  const pickReceipt = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-picking the same file(s)
+    for (const file of files) addReceiptFile(file);
   };
 
   const total =
@@ -139,7 +150,7 @@ export function PurchaseEntryModal({
 
   const save = () => {
     const next: Partial<Record<keyof PurchaseEntryFormValues, string>> = {};
-    if (isAdmin && !isEdit && !form.storeId)
+    if (pickStore && !isEdit && !form.storeId)
       next.storeId = "Branch is required";
     if (!form.itemName.trim()) next.itemName = "Item name is required";
     if (!form.quantity || Number(form.quantity) <= 0)
@@ -152,7 +163,7 @@ export function PurchaseEntryModal({
       next.purchaseDate = "Date cannot be in the future";
     setErr(next);
     if (Object.keys(next).length) return;
-    onSave({ ...form, receiptFile });
+    onSave({ ...form, receiptFiles });
   };
 
   return (
@@ -202,7 +213,7 @@ export function PurchaseEntryModal({
           ) : (
             <>
               <div className="grid gap-4 py-2">
-                {isAdmin && !isEdit ? (
+                {pickStore && !isEdit ? (
                   <FormField label="Branch" required error={err.storeId}>
                     <Combobox
                       value={form.storeId}
@@ -341,46 +352,65 @@ export function PurchaseEntryModal({
                     onRequestCamera={openCamera}
                   />
                 ) : (
-                  <FormField label="Receipt">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => receiptInputRef.current?.click()}
-                      >
-                        <Paperclip className="size-4" />
-                        {receiptFile ? "Change" : "Attach / photo"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          openCamera((file) => setReceiptFile(file))
-                        }
-                      >
-                        <Camera className="size-4" />
-                        Take Photo
-                      </Button>
-                      <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                        {receiptFile
-                          ? receiptFile.name
-                          : "Optional — image or PDF"}
-                      </span>
-                      {receiptFile ? (
-                        <button
+                  <FormField label="Receipts">
+                    <div className="grid gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
                           type="button"
-                          className="rounded-md p-1 text-muted-foreground hover:text-destructive"
-                          onClick={() => setReceiptFile(null)}
-                          aria-label="Remove selected file"
+                          variant="outline"
+                          onClick={() => receiptInputRef.current?.click()}
                         >
-                          <X className="size-4" />
-                        </button>
+                          <Paperclip className="size-4" />
+                          Add files
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            openCamera((file) => addReceiptFile(file))
+                          }
+                        >
+                          <Camera className="size-4" />
+                          Take Photo
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          {receiptFiles.length > 0
+                            ? `${receiptFiles.length} selected`
+                            : "Optional — attach several images or PDFs"}
+                        </span>
+                      </div>
+
+                      {receiptFiles.length > 0 ? (
+                        <div className="grid gap-1.5">
+                          {receiptFiles.map((file, index) => (
+                            <div
+                              key={`${file.name}-${index}`}
+                              className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+                            >
+                              <span
+                                className="min-w-0 flex-1 truncate text-sm"
+                                title={file.name}
+                              >
+                                {file.name}
+                              </span>
+                              <button
+                                type="button"
+                                className="rounded-md p-1 text-muted-foreground hover:text-destructive"
+                                onClick={() => removeReceiptAt(index)}
+                                aria-label="Remove file"
+                              >
+                                <X className="size-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       ) : null}
+
                       <input
                         ref={receiptInputRef}
                         type="file"
                         accept={RECEIPT_ACCEPT}
-                        capture="environment"
+                        multiple
                         className="hidden"
                         onChange={pickReceipt}
                       />
