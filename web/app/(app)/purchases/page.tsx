@@ -47,6 +47,9 @@ export default function PurchasesPage() {
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const isAdmin = user?.role === "admin";
+  const managerMulti =
+    user?.role === "manager" && (user.storeIds?.length ?? 0) > 1;
+  const showStoreField = isAdmin || managerMulti;
   const today = useMemo(() => dateToYmd(new Date()), []);
   const defaultRange = useMemo(() => getCurrentMonthRange(), []);
 
@@ -72,12 +75,21 @@ export default function PurchasesPage() {
       page: pageIndex + 1,
       limit: pageSize,
       search: debouncedSearch || undefined,
-      storeId: isAdmin ? storeId : undefined,
+      storeId: showStoreField ? storeId : undefined,
       vendorId,
       fromDate,
       toDate,
     }),
-    [pageIndex, pageSize, debouncedSearch, storeId, vendorId, fromDate, toDate, isAdmin],
+    [
+      pageIndex,
+      pageSize,
+      debouncedSearch,
+      storeId,
+      vendorId,
+      fromDate,
+      toDate,
+      showStoreField,
+    ],
   );
 
   const { data: storesData } = useStores({ limit: 100 });
@@ -93,14 +105,18 @@ export default function PurchasesPage() {
   const isLoading = isPending || (isFetching && rows.length === 0);
   const vendors = vendorsData ?? [];
 
-  const storeItems = useMemo(
-    () =>
-      (storesData?.data ?? []).map((store) => ({
+  const storeItems = useMemo(() => {
+    if (isAdmin) {
+      return (storesData?.data ?? []).map((store) => ({
         value: store.id,
         label: store.name,
-      })),
-    [storesData],
-  );
+      }));
+    }
+    return (user?.stores ?? []).map((store) => ({
+      value: store.id,
+      label: store.name,
+    }));
+  }, [isAdmin, storesData?.data, user?.stores]);
 
   const vendorItems = useMemo(
     () => vendors.map((v) => ({ value: v.id, label: v.name })),
@@ -249,15 +265,19 @@ export default function PurchasesPage() {
       } else {
         const created = await createEntry.mutateAsync({
           ...base,
-          ...(isAdmin ? { storeId: form.storeId } : {}),
+          ...(showStoreField ? { storeId: form.storeId } : {}),
         });
-        if (form.receiptFile && created?.id) {
-          try {
-            await uploadReceipt.mutateAsync({ purchaseId: created.id, file: form.receiptFile });
-          } catch {
+        if (form.receiptFiles.length > 0 && created?.id) {
+          const results = await Promise.allSettled(
+            form.receiptFiles.map((file) =>
+              uploadReceipt.mutateAsync({ purchaseId: created.id, file }),
+            ),
+          );
+          const failed = results.filter((r) => r.status === "rejected").length;
+          if (failed > 0) {
             addErrorToast({
-              title: "Purchase saved, but the receipt didn't upload",
-              sub: "You can attach it later by editing the purchase.",
+              title: `${failed} of ${form.receiptFiles.length} receipts didn't upload`,
+              sub: "You can attach them later by editing the purchase.",
             });
           }
         }
@@ -310,7 +330,7 @@ export default function PurchasesPage() {
         emptyText="No vendors found."
         loading={vendorsPending}
       />
-      {isAdmin ? (
+      {showStoreField ? (
         <Combobox
           value={storeId}
           onValueChange={(value) => {
@@ -334,7 +354,9 @@ export default function PurchasesPage() {
         desc={
           isAdmin
             ? "Supplies bought for each branch — cups, syrups, milk, packaging"
-            : `Supplies bought for ${user?.store ?? "your branch"}`
+            : managerMulti
+              ? "Supplies bought for your assigned branches"
+              : `Supplies bought for ${user?.store ?? "your branch"}`
         }
         action={
           <div className="flex items-center gap-2">
@@ -388,6 +410,7 @@ export default function PurchasesPage() {
           mode={modal.mode}
           entry={modal.mode === "edit" ? modal.entry : undefined}
           isAdmin={isAdmin}
+          showStoreField={showStoreField}
           storeItems={storeItems}
           vendorItems={vendorItems}
           vendorsLoading={vendorsPending}
