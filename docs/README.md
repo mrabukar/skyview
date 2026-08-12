@@ -16,6 +16,7 @@ change of scope should be reflected here first.
 | [08-super-admin.md](08-super-admin.md) | Super-admin / platform administration — **design only, not built** |
 | [09-production-readiness.md](09-production-readiness.md) | Production checklist — done, just-hardened, and remaining items |
 | [10-client-requests.md](10-client-requests.md) | Aug 2026 client requests — per-manager page access, receipt centre (R2), previous-month payroll — spec + to-do |
+| [11-client-requests-round2.md](11-client-requests-round2.md) | Aug 2026 round 2 — multi-receipt per purchase, multi-branch managers, user document attachments — developer handoff spec |
 
 ## Context
 
