@@ -38,8 +38,10 @@ interface Props {
   categories: ExpenseCategory[];
   categoriesLoading?: boolean;
   storeItems: { value: string; label: string }[];
-  /** Managers don't choose a branch — their own is used automatically. */
+  /** Show branch picker (admin always; multi-branch manager on create/edit). */
   showBranchField?: boolean;
+  /** When true, branch may be cleared to company-wide (admin only). */
+  allowCompanyWide?: boolean;
   onClose: () => void;
   onSave: (data: ExpenseFormValues) => void;
   isSaving: boolean;
@@ -106,6 +108,7 @@ export function ExpenseModal({
   categoriesLoading = false,
   storeItems,
   showBranchField = true,
+  allowCompanyWide = true,
   onClose,
   onSave,
   isSaving,
@@ -136,6 +139,8 @@ export function ExpenseModal({
     if (!form.amount || Number(form.amount) <= 0)
       next.amount = "Enter a positive amount";
     if (form.categoryId == null) next.categoryId = "Category is required";
+    if (showBranchField && !allowCompanyWide && !form.storeId)
+      next.storeId = "Branch is required";
     if (!form.expenseDate) next.expenseDate = "Date is required";
     else if (form.expenseDate > today)
       next.expenseDate = "Expense date cannot be in the future";
@@ -213,13 +218,23 @@ export function ExpenseModal({
               </div>
 
               {showBranchField ? (
-                <FormField label="Branch">
+                <FormField
+                  label="Branch"
+                  required={!allowCompanyWide}
+                  error={err.storeId}
+                >
                   <Combobox
                     value={form.storeId}
                     onValueChange={(value) => set("storeId", value)}
                     items={storeItems}
-                    clearOption={{ label: "Company-wide" }}
-                    placeholder="Company-wide"
+                    clearOption={
+                      allowCompanyWide
+                        ? { label: "Company-wide" }
+                        : undefined
+                    }
+                    placeholder={
+                      allowCompanyWide ? "Company-wide" : "Select branch"
+                    }
                     searchPlaceholder="Search branches…"
                     emptyText="No branches found."
                     className="w-full"
