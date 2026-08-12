@@ -41,6 +41,11 @@ export async function runAuth(ctx) {
   );
   const branch = r.json?.user?.branch;
   check("manager /api/me → has branch", !!branch?.id, JSON.stringify(branch));
+  check(
+    "manager /api/me → has branchIds",
+    Array.isArray(r.json?.user?.branchIds) && r.json.user.branchIds.includes(branch?.id),
+    JSON.stringify(r.json?.user?.branchIds),
+  );
 
   ctx.admin = admin;
   ctx.manager = manager;
