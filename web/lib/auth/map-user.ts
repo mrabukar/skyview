@@ -20,6 +20,10 @@ export function mapApiUserToAppUser(apiUser: ApiUser): AppUser {
     // now speaks `branchId`/`branch`, so we bridge here.
     storeId: apiUser.branchId,
     store: apiUser.branch?.name ?? null,
+    storeIds: apiUser.branchIds ?? (apiUser.branchId ? [apiUser.branchId] : []),
+    stores: (apiUser.branches ?? (apiUser.branch ? [apiUser.branch] : [])).map(
+      (b) => ({ id: b.id, name: b.name }),
+    ),
     organizationId: apiUser.organization?.id ?? apiUser.organizationId ?? null,
     organizationName: apiUser.organization?.name ?? null,
     hasStores: apiUser.organization?.hasStores ?? null,
