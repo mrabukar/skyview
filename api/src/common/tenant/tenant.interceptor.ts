@@ -6,13 +6,14 @@ import {
   NestInterceptor,
 } from "@nestjs/common";
 import { UserRole } from "@prisma/client";
-import { Observable } from "rxjs";
+import { Observable, from, switchMap } from "rxjs";
+import { BranchAccessService } from "../branch-access/branch-access.service";
 import type { CurrentUserPayload } from "../decorators/current-user.decorator";
 import { TenantContextService } from "./tenant-context.service";
 
 interface SessionRequest {
   user?: CurrentUserPayload | null;
-  session?: { user?: Record<string, unknown> };
+  session?: { user?: CurrentUserPayload & Record<string, unknown> };
 }
 
 function resolveOrganizationId(
@@ -42,16 +43,48 @@ function resolveOrganizationId(
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
-  constructor(private readonly tenantContext: TenantContextService) {}
+  constructor(
+    private readonly tenantContext: TenantContextService,
+    private readonly branchAccess: BranchAccessService,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<SessionRequest>();
     const organizationId = resolveOrganizationId(request);
 
-    if (organizationId === undefined) {
-      return next.handle();
+    if (organizationId !== undefined) {
+      // enterWith so the rest of the request (including async handlers) sees the org.
+      this.tenantContext.set(organizationId);
     }
 
-    return this.tenantContext.run(organizationId, () => next.handle());
+    return from(this.enrichBranchIds(request)).pipe(
+      switchMap(() => next.handle()),
+    );
+  }
+
+  private async enrichBranchIds(request: SessionRequest): Promise<void> {
+    const user = request.user ?? request.session?.user;
+    if (!user?.id) return;
+
+    const role = user.role as UserRole;
+    const primary =
+      typeof user.branchId === "string" ? user.branchId : null;
+
+    let branchIds: string[] = [];
+    if (role === UserRole.branch_manager) {
+      branchIds = await this.branchAccess.getBranchIds(
+        user.id,
+        role,
+        primary,
+      );
+    }
+
+    const enriched = { ...user, branchIds } as CurrentUserPayload;
+    if (request.user) {
+      request.user = enriched;
+    }
+    if (request.session?.user) {
+      request.session.user = enriched;
+    }
   }
 }
