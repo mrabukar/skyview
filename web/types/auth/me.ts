@@ -27,6 +27,8 @@ export interface ApiUser {
   /** Page keys hidden from this branch manager (empty/absent = all visible). */
   disabledPages?: string[] | null;
   branch?: MeBranch | null;
+  branchIds?: string[];
+  branches?: MeBranch[];
   organization?: MeOrganization | null;
 }
 
