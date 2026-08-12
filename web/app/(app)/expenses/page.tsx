@@ -57,6 +57,9 @@ interface ProfitWarningState {
 export default function ExpensesPage() {
   const user = useAppStore((s) => s.user);
   const isAdmin = user?.role === "admin";
+  const managerMulti =
+    user?.role === "manager" && (user.storeIds?.length ?? 0) > 1;
+  const showStoreField = isAdmin || managerMulti;
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
   const defaultRange = useMemo(() => getCurrentMonthRange(), []);
@@ -121,14 +124,18 @@ export default function ExpensesPage() {
     isPending || (isFetching && (data?.data.length ?? 0) === 0);
   const categories = categoriesData ?? [];
 
-  const storeItems = useMemo(
-    () =>
-      (storesData?.data ?? []).map((store) => ({
+  const storeItems = useMemo(() => {
+    if (isAdmin) {
+      return (storesData?.data ?? []).map((store) => ({
         value: store.id,
         label: store.name,
-      })),
-    [storesData],
-  );
+      }));
+    }
+    return (user?.stores ?? []).map((store) => ({
+      value: store.id,
+      label: store.name,
+    }));
+  }, [isAdmin, storesData?.data, user?.stores]);
 
   const categoryFilterItems = useMemo(
     () =>
@@ -373,7 +380,7 @@ export default function ExpensesPage() {
         emptyText="No categories found."
         loading={categoriesPending}
       />
-      {isAdmin ? (
+      {showStoreField ? (
         <>
           <Combobox
             value={storeId}
@@ -386,20 +393,22 @@ export default function ExpensesPage() {
             placeholder="All branches"
             searchPlaceholder="Search branches…"
             emptyText="No branches found."
-            disabled={companyWideOnly}
+            disabled={isAdmin && companyWideOnly}
           />
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              checked={companyWideOnly}
-              onCheckedChange={(checked) => {
-                const next = checked === true;
-                setCompanyWideOnly(next);
-                if (next) setStoreId(undefined);
-                resetPage();
-              }}
-            />
-            Company-wide only
-          </label>
+          {isAdmin ? (
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={companyWideOnly}
+                onCheckedChange={(checked) => {
+                  const next = checked === true;
+                  setCompanyWideOnly(next);
+                  if (next) setStoreId(undefined);
+                  resetPage();
+                }}
+              />
+              Company-wide only
+            </label>
+          ) : null}
         </>
       ) : null}
     </div>
@@ -412,7 +421,9 @@ export default function ExpensesPage() {
         desc={
           isAdmin
             ? "Operating costs, company-wide and per branch"
-            : `Operating costs for ${user?.store ?? "your branch"}`
+            : managerMulti
+              ? "Operating costs for your assigned branches"
+              : `Operating costs for ${user?.store ?? "your branch"}`
         }
         action={
           <Button onClick={() => setModal({ mode: "add" })}>
@@ -458,7 +469,8 @@ export default function ExpensesPage() {
           categories={categories}
           categoriesLoading={categoriesPending}
           storeItems={storeItems}
-          showBranchField={isAdmin}
+          showBranchField={showStoreField}
+          allowCompanyWide={isAdmin}
           onClose={() => setModal(null)}
           onSave={(form) => void handleSaveExpense(form)}
           isSaving={isSaving}
