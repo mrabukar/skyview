@@ -14,6 +14,9 @@ export interface User {
   isActive: boolean;
   storeId: string | null;
   store: Pick<Store, "id" | "name"> | null;
+  /** All assigned branch ids (managers); primary is first / storeId. */
+  storeIds: string[];
+  stores: Pick<Store, "id" | "name">[];
   /** Page keys hidden from this branch manager (empty = all visible). */
   disabledPages: string[];
   createdAt: string;
@@ -36,6 +39,7 @@ export interface CreateUserInput {
   password: string;
   role: UserRole;
   storeId?: string;
+  storeIds?: string[];
   phone?: string;
   salary?: number;
   disabledPages?: string[];
@@ -47,6 +51,7 @@ export interface UpdateUserInput {
   password?: string;
   role?: UserRole;
   storeId?: string | null;
+  storeIds?: string[];
   phone?: string | null;
   salary?: number;
   disabledPages?: string[];
