@@ -2431,6 +2431,20 @@ table.tbl {
 .dt-cell-center {
   text-align: center;
 }
+/* Table footer (totals row) */
+.dt-foot td {
+  padding: 13px 16px;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--fg1);
+  font-weight: 600;
+  border-top: 2px solid var(--border);
+  background: color-mix(in srgb, var(--input-bg) 70%, var(--surface));
+}
+.dt-foot-total {
+  font-size: 15px;
+  font-weight: 800;
+}
 .dt-body td > .strong,
 .dt-body td > .num,
 .dt-body td > span:not(.badge) {
