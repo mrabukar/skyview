@@ -68,7 +68,7 @@ export class MeService {
       throw new NotFoundException("User not found");
     }
 
-    const [branch, organization] = await Promise.all([
+    const [branch, organization, assignments] = await Promise.all([
       user.branchId != null
         ? this.prisma.branch.findUnique({
             where: { id: user.branchId },
@@ -81,12 +81,36 @@ export class MeService {
             select: organizationSelect,
           })
         : Promise.resolve(null),
+      user.role === "branch_manager"
+        ? this.prisma.branchManagerAssignment.findMany({
+            where: { userId: user.id },
+            select: {
+              branchId: true,
+              branch: { select: { id: true, name: true, address: true, isActive: true } },
+            },
+          })
+        : Promise.resolve([]),
     ]);
+
+    const assignedBranches = assignments.map((a) => a.branch);
+    const branches =
+      branch && assignedBranches.some((b) => b.id === branch.id)
+        ? [
+            branch,
+            ...assignedBranches.filter((b) => b.id !== branch.id),
+          ]
+        : assignedBranches.length > 0
+          ? assignedBranches
+          : branch
+            ? [branch]
+            : [];
 
     return {
       user: {
         ...user,
         branch,
+        branches,
+        branchIds: branches.map((b) => b.id),
         organization,
       },
     };
@@ -127,7 +151,7 @@ export class MeService {
       });
     }
 
-    const [branch, organization] = await Promise.all([
+    const [branch, organization, assignments] = await Promise.all([
       updated.branchId != null
         ? this.prisma.branch.findUnique({
             where: { id: updated.branchId },
@@ -140,12 +164,36 @@ export class MeService {
             select: organizationSelect,
           })
         : Promise.resolve(null),
+      updated.role === "branch_manager"
+        ? this.prisma.branchManagerAssignment.findMany({
+            where: { userId: updated.id },
+            select: {
+              branchId: true,
+              branch: { select: { id: true, name: true, address: true, isActive: true } },
+            },
+          })
+        : Promise.resolve([]),
     ]);
+
+    const assignedBranches = assignments.map((a) => a.branch);
+    const branches =
+      branch && assignedBranches.some((b) => b.id === branch.id)
+        ? [
+            branch,
+            ...assignedBranches.filter((b) => b.id !== branch.id),
+          ]
+        : assignedBranches.length > 0
+          ? assignedBranches
+          : branch
+            ? [branch]
+            : [];
 
     return {
       user: {
         ...updated,
         branch,
+        branches,
+        branchIds: branches.map((b) => b.id),
         organization,
       },
     };
