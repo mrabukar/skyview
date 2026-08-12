@@ -8,6 +8,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/receipts": "Receipt Centre",
   "/payroll": "Payroll",
   "/financial": "Financial Summary",
+  "/vendor-spend": "Vendor Spend",
   "/branches": "Branches",
   "/users": "Users",
   "/audit": "Audit Log",
