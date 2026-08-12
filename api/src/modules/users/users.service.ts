@@ -30,12 +30,48 @@ const userSelect = {
   isActive: true,
   branchId: true,
   branch: { select: { id: true, name: true } },
+  branchAssignments: {
+    select: {
+      branchId: true,
+      branch: { select: { id: true, name: true } },
+    },
+  },
   disabledPages: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
 
 export type UserWithBranch = Prisma.UserGetPayload<{ select: typeof userSelect }>;
+
+export type UserClient = Omit<UserWithBranch, "branchAssignments"> & {
+  branchIds: string[];
+  branches: { id: string; name: string }[];
+};
+
+function toUserClient(user: UserWithBranch): UserClient {
+  const fromAssignments = user.branchAssignments.map((a) => ({
+    id: a.branch.id,
+    name: a.branch.name,
+  }));
+  // Ensure primary is first if present
+  const branches =
+    user.branchId && fromAssignments.some((b) => b.id === user.branchId)
+      ? [
+          fromAssignments.find((b) => b.id === user.branchId)!,
+          ...fromAssignments.filter((b) => b.id !== user.branchId),
+        ]
+      : fromAssignments.length > 0
+        ? fromAssignments
+        : user.branch
+          ? [{ id: user.branch.id, name: user.branch.name }]
+          : [];
+  const { branchAssignments: _, ...rest } = user;
+  return {
+    ...rest,
+    branchIds: branches.map((b) => b.id),
+    branches,
+  };
+}
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -46,7 +82,7 @@ export interface PaginatedResult<T> {
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: UserQueryDto): Promise<PaginatedResult<UserWithBranch>> {
+  async findAll(query: UserQueryDto): Promise<PaginatedResult<UserClient>> {
     const skip = (query.page - 1) * query.limit;
     const search = typeof query.search === "string" ? query.search.trim() : "";
 
@@ -75,7 +111,7 @@ export class UsersService {
     ]);
 
     return {
-      data,
+      data: data.map(toUserClient),
       meta: {
         total,
         page: query.page,
@@ -85,7 +121,7 @@ export class UsersService {
     };
   }
 
-  async findOne(id: string): Promise<UserWithBranch> {
+  async findOne(id: string): Promise<UserClient> {
     const found = await this.prisma.user.findUnique({
       where: { id },
       select: userSelect,
@@ -93,19 +129,24 @@ export class UsersService {
     if (!found) {
       throw new NotFoundException(`User with id "${id}" not found`);
     }
-    return found;
+    return toUserClient(found);
   }
 
   async create(
     dto: CreateUserDto,
     actor: CurrentUserPayload,
-  ): Promise<UserWithBranch> {
+  ): Promise<UserClient> {
     const organizationId = requireOrganizationId(actor);
     if (!isStrongPassword(dto.password)) {
       throw new BadRequestException(STRONG_PASSWORD_MESSAGE);
     }
     const role = dto.role as UserRole;
-    const branchId = await this.resolveBranchForRole(role, dto.branchId);
+    const branchIds = await this.resolveBranchIdsForRole(
+      role,
+      dto.branchIds,
+      dto.branchId,
+    );
+    const branchId = branchIds[0] ?? null;
 
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({
@@ -132,7 +173,6 @@ export class UsersService {
             isActive: true,
             phone: dto.phone?.trim() || null,
             salary: dto.salary ?? 0,
-            // Page restrictions only apply to managers; admins keep [].
             disabledPages:
               role === UserRole.branch_manager ? (dto.disabledPages ?? []) : [],
             branchId,
@@ -148,6 +188,16 @@ export class UsersService {
           organizationId,
         ),
       });
+      if (role === UserRole.branch_manager && branchIds.length > 0) {
+        await tx.branchManagerAssignment.createMany({
+          data: branchIds.map((bid) =>
+            withOrganizationId(
+              { userId, branchId: bid },
+              organizationId,
+            ),
+          ),
+        });
+      }
       await tx.auditLog.create({
         data: {
           userId: actor.id,
@@ -157,7 +207,14 @@ export class UsersService {
           entityId: userId,
           branchId,
           oldValue: Prisma.JsonNull,
-          newValue: { id: userId, name: dto.name.trim(), email, role, branchId },
+          newValue: {
+            id: userId,
+            name: dto.name.trim(),
+            email,
+            role,
+            branchId,
+            branchIds,
+          },
         },
       });
     });
@@ -169,7 +226,7 @@ export class UsersService {
     id: string,
     dto: UpdateUserDto,
     actor: CurrentUserPayload,
-  ): Promise<UserWithBranch> {
+  ): Promise<UserClient> {
     if (Object.keys(dto).length === 0) {
       throw new BadRequestException("At least one field must be provided");
     }
@@ -177,14 +234,29 @@ export class UsersService {
     const organizationId = requireOrganizationId(actor);
 
     const nextRole = (dto.role as UserRole | undefined) ?? existing.role;
+    let nextBranchIds: string[] | undefined;
     let nextBranchId: string | null | undefined;
-    if (dto.role !== undefined || dto.branchId !== undefined) {
-      const suppliedBranch =
-        dto.branchId !== undefined ? dto.branchId : existing.branchId;
-      nextBranchId = await this.resolveBranchForRole(
+    if (
+      dto.role !== undefined ||
+      dto.branchId !== undefined ||
+      dto.branchIds !== undefined
+    ) {
+      const idsInput =
+        dto.branchIds !== undefined
+          ? dto.branchIds
+          : dto.branchId === undefined
+            ? existing.branchIds
+            : undefined;
+      const singleInput =
+        dto.branchIds === undefined && dto.branchId !== undefined
+          ? dto.branchId
+          : undefined;
+      nextBranchIds = await this.resolveBranchIdsForRole(
         nextRole,
-        suppliedBranch ?? undefined,
+        idsInput,
+        singleInput,
       );
+      nextBranchId = nextBranchIds[0] ?? null;
     }
 
     let email: string | undefined;
@@ -205,7 +277,6 @@ export class UsersService {
       throw new BadRequestException(STRONG_PASSWORD_MESSAGE);
     }
 
-    // Page restrictions only apply to managers; admins are always cleared to [].
     let nextDisabledPages: string[] | undefined;
     if (nextRole === UserRole.admin) {
       nextDisabledPages = [];
@@ -231,13 +302,26 @@ export class UsersService {
         },
       });
 
+      if (nextBranchIds !== undefined) {
+        await tx.branchManagerAssignment.deleteMany({ where: { userId: id } });
+        if (nextRole === UserRole.branch_manager && nextBranchIds.length > 0) {
+          await tx.branchManagerAssignment.createMany({
+            data: nextBranchIds.map((bid) =>
+              withOrganizationId(
+                { userId: id, branchId: bid },
+                organizationId,
+              ),
+            ),
+          });
+        }
+      }
+
       if (dto.password !== undefined) {
         const hashed = await hashPassword(dto.password);
         await tx.account.updateMany({
           where: { userId: id, providerId: "credential" },
           data: { password: hashed },
         });
-        // password change → drop existing sessions
         await tx.session.deleteMany({ where: { userId: id } });
       }
 
@@ -249,8 +333,18 @@ export class UsersService {
           entityType: "user",
           entityId: id,
           branchId: nextBranchId ?? existing.branchId,
-          oldValue: { id: existing.id, email: existing.email, role: existing.role },
-          newValue: { id, email: email ?? existing.email, role: nextRole },
+          oldValue: {
+            id: existing.id,
+            email: existing.email,
+            role: existing.role,
+            branchIds: existing.branchIds,
+          },
+          newValue: {
+            id,
+            email: email ?? existing.email,
+            role: nextRole,
+            branchIds: nextBranchIds ?? existing.branchIds,
+          },
         },
       });
     });
@@ -262,7 +356,7 @@ export class UsersService {
     return this.setActive(id, false, actor);
   }
 
-  async activate(id: string, actor: CurrentUserPayload): Promise<UserWithBranch> {
+  async activate(id: string, actor: CurrentUserPayload): Promise<UserClient> {
     await this.setActive(id, true, actor);
     return this.findOne(id);
   }
@@ -302,25 +396,43 @@ export class UsersService {
     });
   }
 
-  /** admin → no branch; branch_manager → an active branch is required. */
-  private async resolveBranchForRole(
+  /**
+   * admin → []; branch_manager → ≥1 active org branches.
+   * Prefers `branchIds`; falls back to single `branchId`.
+   */
+  private async resolveBranchIdsForRole(
     role: UserRole,
-    branchId?: string,
-  ): Promise<string | null> {
+    branchIds?: string[],
+    branchId?: string | null,
+  ): Promise<string[]> {
     if (role === UserRole.admin) {
-      return null;
+      return [];
     }
-    const trimmed = typeof branchId === "string" ? branchId.trim() : "";
-    if (!trimmed) {
-      throw new BadRequestException("Branch is required for branch managers");
+
+    const raw =
+      Array.isArray(branchIds) && branchIds.length > 0
+        ? branchIds
+        : typeof branchId === "string" && branchId.trim()
+          ? [branchId.trim()]
+          : [];
+
+    const unique = [
+      ...new Set(raw.map((id) => id.trim()).filter(Boolean)),
+    ];
+    if (unique.length === 0) {
+      throw new BadRequestException(
+        "At least one branch is required for branch managers",
+      );
     }
-    const branch = await this.prisma.branch.findFirst({
-      where: { id: trimmed, isActive: true },
+
+    const branches = await this.prisma.branch.findMany({
+      where: { id: { in: unique }, isActive: true },
       select: { id: true },
     });
-    if (!branch) {
-      throw new BadRequestException("Branch not found or inactive");
+    if (branches.length !== unique.length) {
+      throw new BadRequestException("One or more branches are not found or inactive");
     }
-    return branch.id;
+    // Preserve caller order (first = primary).
+    return unique;
   }
 }
