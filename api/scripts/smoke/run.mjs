@@ -20,6 +20,8 @@ import { runBranches } from "./suites/branches.mjs";
 import { runUsers } from "./suites/users.mjs";
 import { runAuditLogs } from "./suites/audit-logs.mjs";
 import { runReports } from "./suites/reports.mjs";
+import { runUserAttachments } from "./suites/user-attachments.mjs";
+import { runMultiBranch } from "./suites/multi-branch.mjs";
 
 // Registry — add one line per module as it lands.
 const SUITES = {
@@ -33,6 +35,8 @@ const SUITES = {
   users: runUsers,
   "audit-logs": runAuditLogs,
   reports: runReports,
+  "user-attachments": runUserAttachments,
+  "multi-branch": runMultiBranch,
 };
 
 const requested = process.argv.slice(2).map((s) => s.toLowerCase());
