@@ -1,0 +1,21 @@
+/// Document/photo attached to a user (ID, contract, etc.). Bytes live in
+/// Cloudflare R2; the DB holds only metadata + the R2 object key.
+model UserAttachment {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation("UserAttachments", fields: [userId], references: [id], onDelete: Cascade)
+  /// R2 object key: user-docs/{orgId}/{userId}/{uuid}.{ext}
+  key            String
+  originalName   String
+  contentType    String
+  size           Int
+  uploadedById   String
+  uploadedBy     User         @relation("UserAttachmentsUploadedBy", fields: [uploadedById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("user_attachment")
+}
