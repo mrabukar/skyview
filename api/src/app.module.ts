@@ -19,6 +19,7 @@ import { UsersModule } from "./modules/users/users.module";
 import { AuditLogsModule } from "./modules/audit-logs/audit-logs.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { ReceiptsModule } from "./modules/receipts/receipts.module";
+import { UserAttachmentsModule } from "./modules/user-attachments/user-attachments.module";
 import { HealthModule } from "./modules/health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { R2Module } from "./common/r2/r2.module";
@@ -76,6 +77,7 @@ import { TenantModule } from "./common/tenant/tenant.module";
     AuditLogsModule,
     ReportsModule,
     ReceiptsModule,
+    UserAttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
