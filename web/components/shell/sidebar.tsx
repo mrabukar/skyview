@@ -87,7 +87,7 @@ function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
       ],
     },
     { href: "/financial", label: "Financial Summary", icon: TrendingUp },
-    { href: "/vendor-spend", label: "Vendor Spend", icon: Truck },
+    // { href: "/vendor-spend", label: "Vendor Spend", icon: Truck },
   );
 
   return nav;
@@ -283,13 +283,7 @@ function SidebarNavGroup({ group, pathname, collapsed }: SidebarNavGroupProps) {
   );
 }
 
-function SidebarBrand({
-  role,
-  collapsed,
-}: {
-  role: Role;
-  collapsed: boolean;
-}) {
+function SidebarBrand({ role, collapsed }: { role: Role; collapsed: boolean }) {
   const organizationName = useAppStore((s) => s.user?.organizationName ?? null);
   const organizationLogoKey = useAppStore(
     (s) => s.user?.organizationLogoKey ?? null,
