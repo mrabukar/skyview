@@ -3,12 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { getManagerDashboard } from "@/service/reports/manager-dashboard";
 
-export const managerDashboardQueryKey = () =>
-  ["reports", "manager-dashboard"] as const;
+export const managerDashboardQueryKey = (storeId?: string) =>
+  ["reports", "manager-dashboard", storeId ?? "all"] as const;
 
-export function useManagerDashboard() {
+export function useManagerDashboard(storeId?: string) {
   return useQuery({
-    queryKey: managerDashboardQueryKey(),
-    queryFn: () => getManagerDashboard(),
+    queryKey: managerDashboardQueryKey(storeId),
+    queryFn: () => getManagerDashboard(storeId),
   });
 }
