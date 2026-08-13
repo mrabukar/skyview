@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+
+import { Combobox } from "@/components/ui/combobox";
 import { PageHeader } from "@/components/ui/page-header";
 import type { AppUser } from "@/lib/types";
 import { useManagerDashboard } from "@/hooks/reports/manager-dashboard";
@@ -11,20 +14,41 @@ import { ManagerStatGrid } from "./components/manager/stat-grid";
 import { TopVendorsCard } from "./components/top-vendors-card";
 
 export function ManagerDashboard({ user }: { user: AppUser }) {
-  const label =
-    (user.storeIds?.length ?? 0) > 1
-      ? "Your branches"
-      : (user.store?.split(" — ")[0] ?? "My Branch");
-  const { data, isLoading, isError, error } = useManagerDashboard();
+  const isMulti = (user.storeIds?.length ?? 0) > 1;
+  // undefined = all assigned branches (default); otherwise a specific branch.
+  const [storeId, setStoreId] = useState<string | undefined>(undefined);
+  const selectedBranchName = storeId
+    ? user.stores.find((s) => s.id === storeId)?.name
+    : undefined;
+
+  const label = isMulti
+    ? "Your branches"
+    : (user.store?.split(" — ")[0] ?? "My Branch");
+  const { data, isLoading, isError, error } = useManagerDashboard(storeId);
 
   const header = (
     <PageHeader
       className="page-head--band"
       title={`Dashboard — ${label}`}
       desc={
-        (user.storeIds?.length ?? 0) > 1
-          ? "All assigned branches at a glance"
+        isMulti
+          ? selectedBranchName
+            ? `Showing ${selectedBranchName}`
+            : "All assigned branches at a glance"
           : "Your branch at a glance"
+      }
+      action={
+        isMulti ? (
+          <Combobox
+            value={storeId}
+            onValueChange={setStoreId}
+            items={user.stores.map((s) => ({ value: s.id, label: s.name }))}
+            clearOption={{ label: "All branches" }}
+            placeholder="All branches"
+            searchPlaceholder="Search branches…"
+            emptyText="No branches found."
+          />
+        ) : null
       }
     />
   );
@@ -63,6 +87,7 @@ export function ManagerDashboard({ user }: { user: AppUser }) {
         <TopVendorsCard
           fromDate={monthRange.fromDate}
           toDate={monthRange.toDate}
+          storeId={storeId}
         />
       </div>
     </>
