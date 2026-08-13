@@ -179,8 +179,10 @@ export class ReportsService {
     };
   }
 
-  async managerDashboard(user: CurrentUserPayload) {
-    const branchFilter = resolveBranchFilter(user, undefined);
+  async managerDashboard(user: CurrentUserPayload, branchId?: string) {
+    // Default: all assigned branches ({ in: [...] }). A supplied branchId is
+    // validated against the manager's set by resolveBranchFilter.
+    const branchFilter = resolveBranchFilter(user, branchId);
     const today = todayCalendarDate();
     const monthStart = startOfMonthCalendarDate(today);
 
