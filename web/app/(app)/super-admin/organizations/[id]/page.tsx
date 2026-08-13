@@ -52,6 +52,8 @@ function toUserModalUser(user: OrganizationUser): User {
     isActive: user.isActive,
     storeId: user.store?.id ?? null,
     store: user.store,
+    storeIds: user.store ? [user.store.id] : [],
+    stores: user.store ? [user.store] : [],
     disabledPages: [],
     createdAt: "",
     updatedAt: "",

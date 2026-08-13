@@ -256,7 +256,7 @@ export function UserModal({
                 setCameraOpen(false);
                 setCameraCapture(null);
               }}
-              onCancel={() => {
+              onClose={() => {
                 setCameraOpen(false);
                 setCameraCapture(null);
               }}
