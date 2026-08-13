@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tapioca Taste</title>
+<meta name="description" content="Tapioca Taste — multi-branch bubble tea, handcrafted fresh every day." />
+<meta name="theme-color" content="#faf7f2" />
+<link
+  rel="icon"
+  type="image/svg+xml"
+  href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%233F201B'/%3E%3Cpath d='M15 17h18l-2.4 21a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7L15 17Z' fill='%23FDF6EC'/%3E%3Cpath d='M16.2 27.5h15.6l-1.1 10.5a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7l-1.3-10.5Z' fill='%23F9A72A'/%3E%3Crect x='14' y='15' width='20' height='3.4' rx='1.7' fill='%23F9A72A'/%3E%3C/svg%3E"
+/>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap");
+
+  :root {
+    --brand-indigo: #6b4226;
+    --brand-indigo-600: #55321c;
+    --brand-indigo-900: #3f201b;
+    --brand-teal: #f9a72a;
+    --brand-teal-600: #e08e12;
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --tint-teal: #fef5e4;
+    --border: #eae1d5;
+    --fg1: #2b1b12;
+    --fg2: #8a7862;
+    --fg3: #ab9a86;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg1);
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    margin: 0;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------------------------------------------------------------------
+     Reveal-on-scroll (progressive enhancement — content is fully visible
+     with no JS; script just adds a gentle fade/rise the first time each
+     block enters the viewport).
+     ------------------------------------------------------------------ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-1 { transition-delay: 0.05s; }
+  .reveal-2 { transition-delay: 0.15s; }
+  .reveal-3 { transition-delay: 0.25s; }
+  .reveal-4 { transition-delay: 0.35s; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+  .no-js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ---------------------------------------------------------------------
+     Hero
+     ------------------------------------------------------------------ */
+  .hero {
+    position: relative;
+    min-height: 92vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 96px 24px 80px;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(
+        560px 420px at 10% -8%,
+        color-mix(in srgb, var(--brand-teal) 26%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        620px 460px at 96% 106%,
+        color-mix(in srgb, var(--brand-indigo) 16%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        420px 320px at 80% 6%,
+        color-mix(in srgb, var(--brand-teal) 14%, transparent),
+        transparent 70%
+      );
+    z-index: 0;
+  }
+  .hero-pearls {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .hero-pearls span {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    background: var(--brand-indigo-900);
+    opacity: 0.1;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .mark {
+    width: clamp(76px, 12vw, 104px);
+    height: clamp(76px, 12vw, 104px);
+    display: block;
+    filter: drop-shadow(0 12px 26px rgba(63, 32, 27, 0.2));
+  }
+
+  .hero h1 {
+    font-weight: 700;
+    font-size: clamp(38px, 8vw, 68px);
+    letter-spacing: -0.015em;
+    margin: 26px 0 14px;
+    color: var(--brand-indigo-600);
+    line-height: 1.05;
+  }
+
+  .hero .tagline {
+    font-size: clamp(15px, 2.2vw, 19px);
+    font-weight: 500;
+    color: var(--fg2);
+    margin: 0 0 30px;
+    max-width: 36ch;
+    line-height: 1.55;
+  }
+
+  .hero .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand-teal-600);
+    background: var(--tint-teal);
+    border: 1px solid color-mix(in srgb, var(--brand-teal) 35%, var(--border));
+    padding: 7px 16px;
+    border-radius: 999px;
+    margin-bottom: 22px;
+  }
+  .hero .kicker svg {
+    width: 13px;
+    height: 13px;
+    flex: none;
+  }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--fg3);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .scroll-cue svg {
+    width: 16px;
+    height: 16px;
+    animation: bob 2.2s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
+  }
+
+  /* ---------------------------------------------------------------------
+     Section scaffolding
+     ------------------------------------------------------------------ */
+  section {
+    padding: 88px 0;
+  }
+  .section-head {
+    text-align: center;
+    max-width: 560px;
+    margin: 0 auto 52px;
+  }
+  .section-head .eyebrow {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brand-teal-600);
+    margin-bottom: 12px;
+  }
+  .section-head h2 {
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--brand-indigo-600);
+    line-height: 1.2;
+  }
+  .section-head p {
+    margin: 14px 0 0;
+    color: var(--fg2);
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+
+  /* ---------------------------------------------------------------------
+     Value props
+     ------------------------------------------------------------------ */
+  .values {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .value-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 26px;
+    box-shadow: 0 1px 2px rgba(63, 32, 27, 0.04);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .value-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(63, 32, 27, 0.1);
+  }
+  .value-ic {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--tint-teal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  .value-ic svg {
+    width: 26px;
+    height: 26px;
+    color: var(--brand-indigo-600);
+  }
+  .value-card h3 {
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--fg1);
+    margin-bottom: 8px;
+  }
+  .value-card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--fg2);
+    line-height: 1.6;
+  }
+
+  /* ---------------------------------------------------------------------
+     Drinks band
+     ------------------------------------------------------------------ */
+  .drinks-band {
+    background: linear-gradient(180deg, var(--tint-teal), #fbeed4 60%, var(--tint-teal));
+    position: relative;
+  }
+  .drinks {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  .drink-card {
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 26px 18px 22px;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(63, 32, 27, 0.07);
+  }
+  .drink-cup {
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 14px;
+    display: block;
+  }
+  .drink-card h3 {
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--fg1);
+    margin-bottom: 6px;
+  }
+  .drink-card p {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--fg2);
+    line-height: 1.5;
+  }
+
+  /* ---------------------------------------------------------------------
+     Statement band (dark)
+     ------------------------------------------------------------------ */
+  .statement {
+    background: var(--brand-indigo-900);
+    color: #fdf6ec;
+    text-align: center;
+    padding: 100px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .statement::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      600px 400px at 50% 0%,
+      rgba(249, 167, 42, 0.14),
+      transparent 70%
+    );
+  }
+  .statement-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .statement blockquote {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: clamp(24px, 4.4vw, 38px);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .statement .quote-mark {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 54px;
+    color: var(--brand-teal);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .statement .quote-sub {
+    margin-top: 22px;
+    font-size: 13.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: rgba(253, 246, 236, 0.62);
+  }
+
+  /* ---------------------------------------------------------------------
+     Footer
+     ------------------------------------------------------------------ */
+  footer {
+    padding: 56px 24px 44px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  footer .mark {
+    width: 40px;
+    height: 40px;
+    filter: none;
+    margin-bottom: 14px;
+  }
+  footer .foot-word {
+    font-family: Georgia, serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--brand-indigo-600);
+    margin-bottom: 6px;
+  }
+  footer .foot-line {
+    font-size: 12.5px;
+    color: var(--fg3);
+  }
+
+  /* ---------------------------------------------------------------------
+     Responsive
+     ------------------------------------------------------------------ */
+  @media (max-width: 860px) {
+    .values {
+      grid-template-columns: 1fr 1fr;
+    }
+    .drinks {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (max-width: 560px) {
+    .hero {
+      min-height: 86vh;
+      padding: 84px 20px 64px;
+    }
+    section {
+      padding: 64px 0;
+    }
+    .values {
+      grid-template-columns: 1fr;
+    }
+    .drinks {
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .statement {
+      padding: 72px 20px;
+    }
+  }
+</style>
+</head>
+<body class="no-js">
+  <div class="hero">
+    <div class="hero-pearls" aria-hidden="true">
+      <span style="width:14px;height:14px;top:18%;left:12%;"></span>
+      <span style="width:9px;height:9px;top:28%;left:82%;"></span>
+      <span style="width:11px;height:11px;top:68%;left:8%;"></span>
+      <span style="width:16px;height:16px;top:74%;left:90%;"></span>
+      <span style="width:7px;height:7px;top:12%;left:48%;"></span>
+      <span style="width:10px;height:10px;top:82%;left:46%;"></span>
+    </div>
+    <div class="hero-content">
+      <span class="kicker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v18M5 12h14"/></svg>
+        Multi-branch bubble tea
+      </span>
+      <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tapioca Taste">
+        <rect width="48" height="48" rx="12" fill="#3F201B"></rect>
+        <rect x="24" y="5" width="4" height="14" rx="2" fill="#F9A72A" transform="rotate(14 26 12)"></rect>
+        <path d="M13 15h18l-2.4 21a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7L13 15Z" fill="#FDF6EC"></path>
+        <path d="M14.2 25.5h15.6l-1.1 10.5a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7l-1.3-10.5Z" fill="#F9A72A" fill-opacity="0.85"></path>
+        <circle cx="18.5" cy="34.5" r="1.9" fill="#3F201B"></circle>
+        <circle cx="22.5" cy="35.5" r="1.9" fill="#3F201B"></circle>
+        <circle cx="26" cy="34" r="1.9" fill="#3F201B"></circle>
+        <rect x="12" y="13" width="20" height="3.4" rx="1.7" fill="#F9A72A"></rect>
+      </svg>
+      <h1>Tapioca Taste</h1>
+      <p class="tagline">Handcrafted bubble tea, brewed fresh every day and poured with care across every branch.</p>
+    </div>
+    <div class="scroll-cue">
+      Scroll
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+
+  <section class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Why Tapioca Taste</span>
+      <h2>Every cup, made with care</h2>
+      <p>From the tea leaves to the tapioca pearls, we keep it simple: good ingredients, consistent recipes, and a warm cup every time.</p>
+    </div>
+    <div class="values">
+      <div class="value-card reveal reveal-1">
+        <div class="value-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13a1 1 0 0 1 1-1h6a7 7 0 0 1 7 7 1 1 0 0 1-1 1z"/><path d="M11 20a7 7 0 0 1-1-3.5c0-4 3-8 8-9.5C16 12 14 17 11 20z"/></svg>
+        </div>
+        <h3>Quality ingredients</h3>
+        <p>Real tea, fresh milk, and slow-cooked tapioca pearls — no shortcuts in the recipe.</p>
+      </div>
+      <div class="value-card reveal reveal-2">
+        <div class="value-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        </div>
+        <h3>Brewed fresh daily</h3>
+        <p>Every branch brews in small batches through the day, never sitting around waiting.</p>
+      </div>
+      <div class="value-card reveal reveal-3">
+        <div class="value-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>
+        </div>
+        <h3>Multiple branches</h3>
+        <p>The same taste and standard, wherever you find us — one recipe, every branch.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="drinks-band">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">On the menu</span>
+        <h2>Something for every craving</h2>
+        <p>A few of the families of drinks we shake, steep, and pour.</p>
+      </div>
+      <div class="drinks">
+        <div class="drink-card reveal reveal-1">
+          <svg class="drink-cup" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 15h18l-2.4 21a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7L13 15Z" fill="#F3E4D2"></path>
+            <path d="M14.2 25.5h15.6l-1.1 10.5a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7l-1.3-10.5Z" fill="#6B4226" fill-opacity="0.9"></path>
+            <circle cx="18.5" cy="34.5" r="1.8" fill="#3F201B"></circle>
+            <circle cx="22.5" cy="35.5" r="1.8" fill="#3F201B"></circle>
+            <circle cx="26" cy="34" r="1.8" fill="#3F201B"></circle>
+            <rect x="12" y="13" width="20" height="3.2" rx="1.6" fill="#6B4226"></rect>
+          </svg>
+          <h3>Classic Milk Tea</h3>
+          <p>Rich black tea, silky milk.</p>
+        </div>
+        <div class="drink-card reveal reveal-2">
+          <svg class="drink-cup" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 15h18l-2.4 21a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7L13 15Z" fill="#FDF1E0"></path>
+            <path d="M14.2 25.5h15.6l-1.1 10.5a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7l-1.3-10.5Z" fill="#F9A72A" fill-opacity="0.9"></path>
+            <circle cx="18.5" cy="34.5" r="1.8" fill="#B85C1E"></circle>
+            <circle cx="22.5" cy="35.5" r="1.8" fill="#B85C1E"></circle>
+            <circle cx="26" cy="34" r="1.8" fill="#B85C1E"></circle>
+            <rect x="12" y="13" width="20" height="3.2" rx="1.6" fill="#F9A72A"></rect>
+          </svg>
+          <h3>Fruit Tea</h3>
+          <p>Bright, fruity, refreshingly light.</p>
+        </div>
+        <div class="drink-card reveal reveal-3">
+          <svg class="drink-cup" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 15h18l-2.4 21a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7L13 15Z" fill="#EFDFC8"></path>
+            <path d="M14.5 18l1.4 2.6M19 17.5l1.3 3M23.5 17l1.3 3.4M28 17.6l1.2 2.8" stroke="#8A4A15" stroke-width="1.4" stroke-linecap="round"></path>
+            <path d="M14.2 25.5h15.6l-1.1 10.5a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7l-1.3-10.5Z" fill="#8A4A15" fill-opacity="0.92"></path>
+            <circle cx="18.5" cy="34.5" r="1.8" fill="#3F201B"></circle>
+            <circle cx="22.5" cy="35.5" r="1.8" fill="#3F201B"></circle>
+            <circle cx="26" cy="34" r="1.8" fill="#3F201B"></circle>
+            <rect x="12" y="13" width="20" height="3.2" rx="1.6" fill="#8A4A15"></rect>
+          </svg>
+          <h3>Brown Sugar Boba</h3>
+          <p>Deep caramel notes, chewy pearls.</p>
+        </div>
+        <div class="drink-card reveal reveal-4">
+          <svg class="drink-cup" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 15h18l-2.4 21a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7L13 15Z" fill="#F6E9DC"></path>
+            <path d="M14.2 25.5h15.6l-1.1 10.5a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7l-1.3-10.5Z" fill="#E4877C" fill-opacity="0.9"></path>
+            <circle cx="18.5" cy="34.5" r="1.8" fill="#3F201B"></circle>
+            <circle cx="22.5" cy="35.5" r="1.8" fill="#3F201B"></circle>
+            <circle cx="26" cy="34" r="1.8" fill="#3F201B"></circle>
+            <rect x="12" y="13" width="20" height="3.2" rx="1.6" fill="#E4877C"></rect>
+          </svg>
+          <h3>Fresh Smoothies</h3>
+          <p>Blended fruit, thick and cold.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="statement">
+    <div class="statement-inner reveal">
+      <span class="quote-mark">&ldquo;</span>
+      <blockquote>Good bubble tea shouldn&rsquo;t be complicated — just fresh tea, real ingredients, and a little patience.</blockquote>
+      <span class="quote-sub">The Tapioca Taste kitchen</span>
+    </div>
+  </div>
+
+  <footer>
+    <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tapioca Taste">
+      <rect width="48" height="48" rx="12" fill="#3F201B"></rect>
+      <rect x="24" y="5" width="4" height="14" rx="2" fill="#F9A72A" transform="rotate(14 26 12)"></rect>
+      <path d="M13 15h18l-2.4 21a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7L13 15Z" fill="#FDF6EC"></path>
+      <path d="M14.2 25.5h15.6l-1.1 10.5a3 3 0 0 1-3 2.7h-7.2a3 3 0 0 1-3-2.7l-1.3-10.5Z" fill="#F9A72A" fill-opacity="0.85"></path>
+      <circle cx="18.5" cy="34.5" r="1.9" fill="#3F201B"></circle>
+      <circle cx="22.5" cy="35.5" r="1.9" fill="#3F201B"></circle>
+      <circle cx="26" cy="34" r="1.9" fill="#3F201B"></circle>
+      <rect x="12" y="13" width="20" height="3.4" rx="1.7" fill="#F9A72A"></rect>
+    </svg>
+    <div class="foot-word">Tapioca Taste</div>
+    <div class="foot-line">&copy; 2026 Tapioca Taste. Multi-branch bubble tea.</div>
+  </footer>
+
+  <script>
+    document.body.classList.remove('no-js');
+    var els = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+      els.forEach(function (el) { io.observe(el); });
+    } else {
+      els.forEach(function (el) { el.classList.add('in'); });
+    }
+  </script>
+</body>
+</html>
