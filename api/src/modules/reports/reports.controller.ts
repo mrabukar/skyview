@@ -25,8 +25,11 @@ export class ReportsController {
 
   @Page("dashboard")
   @Get("manager-dashboard")
-  managerDashboard(@CurrentUser() user: CurrentUserPayload) {
-    return this.reportsService.managerDashboard(user);
+  managerDashboard(
+    @Query() query: ReportQueryDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.reportsService.managerDashboard(user, query.branchId);
   }
 
   @Roles(UserRole.admin)
