@@ -61,6 +61,29 @@ export async function runPurchases(ctx) {
   r = await admin.req("GET", `/api/purchases?vendorId=${vendorId}&limit=100`);
   check("admin vendor filter works", (r.json?.data ?? []).every((x) => x.vendor?.id === vendorId), `n=${r.json?.data?.length ?? 0}`);
 
+  // multi-vendor filter (comma-separated vendorId list)
+  r = await admin.req("POST", "/api/vendors", { body: { name: `PurVendor2-${stamp}` } });
+  check("setup: admin create second vendor → 201", r.status === 201, `got ${r.status}`);
+  const vendorId2 = r.json?.id;
+  r = await admin.req("POST", "/api/purchases", {
+    body: { branchId, itemName: `${item}-v2`, quantity: 1, unitPrice: 20, vendorId: vendorId2, purchaseDate: today },
+  });
+  check("admin create purchase for second vendor → 201", r.status === 201, `got ${r.status}`);
+  const purchaseB = r.json?.id;
+  r = await admin.req("GET", `/api/purchases?vendorId=${vendorId},${vendorId2}&limit=100`);
+  const multiRows = r.json?.data ?? [];
+  check(
+    "admin multi-vendor filter matches only the selected vendors",
+    multiRows.some((x) => x.vendor?.id === vendorId) &&
+      multiRows.some((x) => x.vendor?.id === vendorId2) &&
+      multiRows.every((x) => x.vendor?.id === vendorId || x.vendor?.id === vendorId2),
+    `n=${multiRows.length}`,
+  );
+  r = await admin.req("DELETE", `/api/purchases/${purchaseB}`);
+  check("cleanup delete second-vendor purchase → 204", r.status === 204, `got ${r.status}`);
+  r = await admin.req("DELETE", `/api/vendors/${vendorId2}`);
+  check("cleanup delete second vendor → deleted", r.status === 200 && r.json?.action === "deleted", `got ${r.status} ${JSON.stringify(r.json)}`);
+
   // manager same-day rule — create yesterday, then edit/delete must 403
   r = await manager.req("POST", "/api/purchases", {
     body: { itemName: `${item}-old`, quantity: 1, unitPrice: 50, vendorId, purchaseDate: yesterday },
