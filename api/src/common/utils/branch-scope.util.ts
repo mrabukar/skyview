@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException } from "@nestjs/common";
 import { UserRole } from "@prisma/client";
 import type { CurrentUserPayload } from "../decorators/current-user.decorator";
+import { parseIdList } from "./parse-id-list.util";
 
 /** Prisma `where.branchId` filter — string equality or `{ in: [...] }`. */
 export type BranchIdFilter = string | { in: string[] };
@@ -40,26 +41,29 @@ export function assertManagerHasBranch(user: CurrentUserPayload): string {
   return ids[0]!;
 }
 
-/** Read filter — manager: `{ in: branchIds }` (optionally intersected); admin: optional id. */
+/**
+ * Read filter. `queryBranchId` may be one id or several comma-separated ids.
+ * Manager: defaults to `{ in: branchIds }`; an explicit list is intersected
+ * with (and must be a subset of) their assigned branches. Admin: optional
+ * id(s), unrestricted.
+ */
 export function resolveBranchFilter(
   user: CurrentUserPayload,
   queryBranchId?: string,
 ): BranchIdFilter | undefined {
+  const requested = parseIdList(queryBranchId);
   if (user.role === UserRole.branch_manager) {
     const ids = assertManagerHasBranches(user);
-    const trimmed =
-      typeof queryBranchId === "string" ? queryBranchId.trim() : "";
-    if (trimmed) {
-      if (!ids.includes(trimmed)) {
+    if (requested.length > 0) {
+      if (requested.some((id) => !ids.includes(id))) {
         throw new ForbiddenException("You can only access your assigned branches");
       }
-      return trimmed;
+      return requested.length === 1 ? requested[0]! : { in: requested };
     }
     return ids.length === 1 ? ids[0]! : { in: ids };
   }
-  const trimmed =
-    typeof queryBranchId === "string" ? queryBranchId.trim() : undefined;
-  return trimmed || undefined;
+  if (requested.length === 0) return undefined;
+  return requested.length === 1 ? requested[0]! : { in: requested };
 }
 
 /**
