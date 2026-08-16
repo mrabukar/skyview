@@ -9,7 +9,10 @@ export class ReportQueryDto {
   @IsString()
   toDate?: string;
 
-  /** Admin-only; managers use their own branch. */
+  /**
+   * One id, or several comma-separated ids. Admin-only filter; managers
+   * always use their own assigned branch(es).
+   */
   @IsOptional()
   @IsString()
   branchId?: string;
