@@ -13,10 +13,11 @@ import { VendorListModal } from "./components/vendor-list-modal";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
+import { Combobox, MultiCombobox } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { PageHeader } from "@/components/ui/page-header";
+import { SummaryBar } from "@/components/ui/summary-bar";
 import {
   useCreatePurchaseEntry,
   useDeletePurchaseEntry,
@@ -24,6 +25,7 @@ import {
   useUpdatePurchaseEntry,
 } from "@/hooks/purchase-entries/use-purchase-entries";
 import { useUploadReceipt } from "@/hooks/receipts/use-receipts";
+import { useVendorSpend } from "@/hooks/reports/use-vendor-spend";
 import { useStores } from "@/hooks/stores/list-stores";
 import { useVendors } from "@/hooks/vendors/use-vendors";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -57,7 +59,7 @@ export default function PurchasesPage() {
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [storeId, setStoreId] = useState<string | undefined>();
-  const [vendorId, setVendorId] = useState<string | undefined>();
+  const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState(defaultRange.fromDate);
   const [toDate, setToDate] = useState(defaultRange.toDate);
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -76,7 +78,7 @@ export default function PurchasesPage() {
       limit: pageSize,
       search: debouncedSearch || undefined,
       storeId: showStoreField ? storeId : undefined,
-      vendorId,
+      vendorIds,
       fromDate,
       toDate,
     }),
@@ -85,7 +87,7 @@ export default function PurchasesPage() {
       pageSize,
       debouncedSearch,
       storeId,
-      vendorId,
+      vendorIds,
       fromDate,
       toDate,
       showStoreField,
@@ -95,6 +97,13 @@ export default function PurchasesPage() {
   const { data: storesData } = useStores({ limit: 100 });
   const { data: vendorsData, isPending: vendorsPending } = useVendors();
   const { data, isPending, isFetching, isError, error } = usePurchaseEntries(listQuery);
+  const vendorSpendQuery = useMemo(
+    () => ({ fromDate, toDate, storeId: showStoreField ? storeId : undefined }),
+    [fromDate, toDate, storeId, showStoreField],
+  );
+  const { data: vendorSpendData } = useVendorSpend(vendorSpendQuery, {
+    enabled: vendorIds.length > 0,
+  });
   const createEntry = useCreatePurchaseEntry();
   const updateEntry = useUpdatePurchaseEntry();
   const deleteEntry = useDeletePurchaseEntry();
@@ -122,6 +131,20 @@ export default function PurchasesPage() {
     () => vendors.map((v) => ({ value: v.id, label: v.name })),
     [vendors],
   );
+
+  const vendorTotals = useMemo(() => {
+    if (vendorIds.length === 0) return null;
+    const byId = new Map((vendorSpendData?.vendors ?? []).map((v) => [v.vendorId, v]));
+    const rows = vendorIds
+      .map((id) => {
+        const spend = byId.get(id);
+        const label = spend?.vendorName ?? vendorItems.find((v) => v.value === id)?.label ?? id;
+        return { id, label, totalAmount: spend?.totalAmount ?? 0 };
+      })
+      .sort((a, b) => b.totalAmount - a.totalAmount);
+    const total = rows.reduce((sum, r) => sum + r.totalAmount, 0);
+    return { rows, total };
+  }, [vendorIds, vendorSpendData, vendorItems]);
 
   const columns = useMemo<ColumnDef<PurchaseEntry>[]>(
     () => [
@@ -317,14 +340,13 @@ export default function PurchasesPage() {
           setPageIndex(0);
         }}
       />
-      <Combobox
-        value={vendorId}
-        onValueChange={(value) => {
-          setVendorId(value);
+      <MultiCombobox
+        values={vendorIds}
+        onValuesChange={(values) => {
+          setVendorIds(values);
           setPageIndex(0);
         }}
         items={vendorItems}
-        clearOption={{ label: "All vendors" }}
         placeholder="All vendors"
         searchPlaceholder="Search vendors…"
         emptyText="No vendors found."
@@ -377,6 +399,19 @@ export default function PurchasesPage() {
       {isError && (
         <div className="alert-error" style={{ marginBottom: 16 }}>
           {error instanceof Error ? error.message : "Failed to load purchases."}
+        </div>
+      )}
+
+      {vendorTotals && (
+        <div style={{ marginBottom: 16 }}>
+          <SummaryBar
+            items={[
+              ...vendorTotals.rows.map((r) => ({ k: r.label, v: fmt(r.totalAmount) })),
+              ...(vendorTotals.rows.length > 1
+                ? [{ k: "Total", v: fmt(vendorTotals.total) }]
+                : []),
+            ]}
+          />
         </div>
       )}
 
