@@ -20,6 +20,7 @@ import {
   resolveBranchFilter,
   resolveWriteBranchId,
 } from "../../common/utils/branch-scope.util";
+import { parseIdList } from "../../common/utils/parse-id-list.util";
 import { requireOrganizationId } from "../../common/utils/require-organization-id.util";
 import { withOrganizationId } from "../../common/utils/with-organization-id.util";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -68,19 +69,6 @@ export interface PaginatedResult<T> {
 
 function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
-}
-
-/** Parses a comma-separated id list (e.g. `?vendorId=a,b,c`) into distinct ids. */
-function parseIdList(value?: string): string[] {
-  if (!value) return [];
-  return [
-    ...new Set(
-      value
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean),
-    ),
-  ];
 }
 
 @Injectable()
