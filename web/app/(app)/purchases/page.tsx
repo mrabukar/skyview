@@ -13,7 +13,7 @@ import { VendorListModal } from "./components/vendor-list-modal";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Button } from "@/components/ui/button";
-import { Combobox, MultiCombobox } from "@/components/ui/combobox";
+import { MultiCombobox } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { PageHeader } from "@/components/ui/page-header";
@@ -58,7 +58,7 @@ export default function PurchasesPage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
-  const [storeId, setStoreId] = useState<string | undefined>();
+  const [storeIds, setStoreIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState(defaultRange.fromDate);
   const [toDate, setToDate] = useState(defaultRange.toDate);
@@ -77,7 +77,7 @@ export default function PurchasesPage() {
       page: pageIndex + 1,
       limit: pageSize,
       search: debouncedSearch || undefined,
-      storeId: showStoreField ? storeId : undefined,
+      storeIds: showStoreField ? storeIds : undefined,
       vendorIds,
       fromDate,
       toDate,
@@ -86,7 +86,7 @@ export default function PurchasesPage() {
       pageIndex,
       pageSize,
       debouncedSearch,
-      storeId,
+      storeIds,
       vendorIds,
       fromDate,
       toDate,
@@ -98,8 +98,12 @@ export default function PurchasesPage() {
   const { data: vendorsData, isPending: vendorsPending } = useVendors();
   const { data, isPending, isFetching, isError, error } = usePurchaseEntries(listQuery);
   const vendorSpendQuery = useMemo(
-    () => ({ fromDate, toDate, storeId: showStoreField ? storeId : undefined }),
-    [fromDate, toDate, storeId, showStoreField],
+    () => ({
+      fromDate,
+      toDate,
+      storeId: showStoreField && storeIds.length > 0 ? storeIds.join(",") : undefined,
+    }),
+    [fromDate, toDate, storeIds, showStoreField],
   );
   const { data: vendorSpendData } = useVendorSpend(vendorSpendQuery, {
     enabled: vendorIds.length > 0,
@@ -353,14 +357,13 @@ export default function PurchasesPage() {
         loading={vendorsPending}
       />
       {showStoreField ? (
-        <Combobox
-          value={storeId}
-          onValueChange={(value) => {
-            setStoreId(value);
+        <MultiCombobox
+          values={storeIds}
+          onValuesChange={(values) => {
+            setStoreIds(values);
             setPageIndex(0);
           }}
           items={storeItems}
-          clearOption={{ label: "All branches" }}
           placeholder="All branches"
           searchPlaceholder="Search branches…"
           emptyText="No branches found."
