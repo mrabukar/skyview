@@ -16,7 +16,9 @@ function toQueryString(params: PurchaseEntryListQuery = {}): string {
   if (params.limit != null) search.set("limit", String(params.limit));
   if (params.search) search.set("search", params.search);
   if (params.storeId) search.set("storeId", params.storeId);
-  if (params.vendorId) search.set("vendorId", params.vendorId);
+  if (params.vendorIds && params.vendorIds.length > 0) {
+    search.set("vendorId", params.vendorIds.join(","));
+  }
   if (params.fromDate) search.set("fromDate", params.fromDate);
   if (params.toDate) search.set("toDate", params.toDate);
   const qs = search.toString();
