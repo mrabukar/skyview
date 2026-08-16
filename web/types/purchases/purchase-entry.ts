@@ -41,7 +41,8 @@ export interface PurchaseEntryListQuery {
   limit?: number;
   search?: string;
   storeId?: string;
-  vendorId?: string;
+  /** One or more vendor ids — matches purchases from any of them. */
+  vendorIds?: string[];
   fromDate?: string;
   toDate?: string;
 }
