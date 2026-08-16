@@ -70,6 +70,19 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+/** Parses a comma-separated id list (e.g. `?vendorId=a,b,c`) into distinct ids. */
+function parseIdList(value?: string): string[] {
+  if (!value) return [];
+  return [
+    ...new Set(
+      value
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
 @Injectable()
 export class PurchasesService {
   constructor(
@@ -101,10 +114,15 @@ export class PurchasesService {
     const branchId = resolveBranchFilter(user, query.branchId);
     const dateRange = this.buildDateRange(query.fromDate, query.toDate);
     const search = typeof query.search === "string" ? query.search.trim() : "";
+    const vendorIds = parseIdList(query.vendorId);
 
     const where: Prisma.PurchaseWhereInput = {
       ...(branchId ? { branchId } : undefined),
-      ...(query.vendorId ? { vendorId: query.vendorId } : undefined),
+      ...(vendorIds.length === 1
+        ? { vendorId: vendorIds[0] }
+        : vendorIds.length > 1
+          ? { vendorId: { in: vendorIds } }
+          : undefined),
       ...(dateRange ? { purchaseDate: dateRange } : undefined),
       ...(search
         ? {
