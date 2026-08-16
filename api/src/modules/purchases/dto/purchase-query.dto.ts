@@ -11,6 +11,7 @@ export class PurchaseQueryDto extends PaginationQueryDto {
   @IsString()
   branchId?: string;
 
+  /** One id, or several comma-separated ids to filter by any of them. */
   @IsOptional()
   @IsString()
   vendorId?: string;
