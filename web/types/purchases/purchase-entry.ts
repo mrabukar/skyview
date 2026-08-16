@@ -40,7 +40,8 @@ export interface PurchaseEntryListQuery {
   page?: number;
   limit?: number;
   search?: string;
-  storeId?: string;
+  /** One or more branch ids — matches purchases from any of them. */
+  storeIds?: string[];
   /** One or more vendor ids — matches purchases from any of them. */
   vendorIds?: string[];
   fromDate?: string;
