@@ -122,6 +122,29 @@ export async function runMultiBranch(ctx) {
     `foreign=${rows.filter((x) => x.branchId !== branchId && x.branchId !== secondBranchId).length}`,
   );
 
+  // Explicit comma-separated branchId query — admin, unrestricted
+  r = await admin.req("GET", `/api/daily-sales?branchId=${branchId},${secondBranchId}&limit=100`);
+  const adminMultiRows = r.json?.data ?? [];
+  check(
+    "admin explicit multi-branch filter matches both branches",
+    (!!saleA && adminMultiRows.some((x) => x.id === saleA)) &&
+      (!!saleB && adminMultiRows.some((x) => x.id === saleB)),
+    `n=${adminMultiRows.length}`,
+  );
+
+  // Explicit branchId query — manager narrows to a subset of their own set
+  r = await multi.req("GET", `/api/daily-sales?branchId=${branchId}&limit=100`);
+  const managerSubsetRows = r.json?.data ?? [];
+  check(
+    "multi manager explicit filter narrows to requested branch",
+    managerSubsetRows.length > 0 && managerSubsetRows.every((x) => x.branchId === branchId),
+    `n=${managerSubsetRows.length}`,
+  );
+
+  // Explicit branchId outside the manager's assigned set → 403
+  r = await multi.req("GET", "/api/daily-sales?branchId=not-assigned-branch-id&limit=100");
+  check("multi manager filter outside set → 403", r.status === 403, `got ${r.status}`);
+
   // Cleanup
   if (saleA) await admin.req("DELETE", `/api/daily-sales/${saleA}`);
   if (saleB) await admin.req("DELETE", `/api/daily-sales/${saleB}`);
