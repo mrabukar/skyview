@@ -17,6 +17,16 @@ function managerBranchIds(user: CurrentUserPayload): string[] {
   return user.branchId ? [user.branchId] : [];
 }
 
+/**
+ * Branch IDs for any role that has a fixed set of branches: branch_manager or cashier.
+ * Cashiers always have exactly one branch (enforced at creation time).
+ */
+function assignedBranchIds(user: CurrentUserPayload): string[] {
+  if (user.role === UserRole.branch_manager) return managerBranchIds(user);
+  if (user.role === UserRole.cashier) return user.branchId ? [user.branchId] : [];
+  return [];
+}
+
 /** The manager's assigned branch set (throws if not a manager or unassigned). */
 export function assertManagerHasBranches(user: CurrentUserPayload): string[] {
   if (user.role !== UserRole.branch_manager) {
@@ -99,15 +109,21 @@ export function resolveWriteBranchId(
   return trimmed;
 }
 
-/** Ensures a manager may only touch an assigned branch's record. Admins pass. */
+/**
+ * Ensures the caller may only touch the given branch. Admins always pass.
+ * Branch managers must have the branch in their assignment set.
+ * Cashiers must have the branch set as their single assigned branch.
+ */
 export function assertBranchAccess(
   branchId: string,
   user: CurrentUserPayload,
 ): void {
-  if (isAdminLike(user)) {
-    return;
+  if (isAdminLike(user)) return;
+
+  const ids = assignedBranchIds(user);
+  if (ids.length === 0) {
+    throw new ForbiddenException("No branch assigned to your account");
   }
-  const ids = assertManagerHasBranches(user);
   if (!ids.includes(branchId)) {
     throw new ForbiddenException("You can only access your assigned branches");
   }
