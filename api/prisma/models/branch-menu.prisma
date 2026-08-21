@@ -1,0 +1,60 @@
+/// Per-branch item availability and daily stock status.
+/// Row existence = branch carries the item.
+/// isEnabled (admin/manager toggle): does this branch offer this item?
+/// isInStock (cashier/manager toggle): is it available right now?
+/// An item appears in the POS only when both are true AND the item + category are active.
+model BranchMenuItem {
+  id         String   @id @default(cuid())
+  branchId   String
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  /// Admin/manager toggle: branch carries this item.
+  isEnabled  Boolean  @default(true)
+  /// Cashier/manager toggle: item is currently in stock at this branch.
+  isInStock  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchId, menuItemId])
+  @@index([branchId])
+  @@index([menuItemId])
+  @@map("branch_menu_item")
+}
+
+/// Per-branch price override for a specific size variant.
+/// If no row exists, MenuItemSize.basePrice applies.
+/// Effective price = branchPrice ?? basePrice.
+model BranchMenuItemPrice {
+  id             String       @id @default(cuid())
+  branchId       String
+  branch         Branch       @relation(fields: [branchId], references: [id])
+  menuItemSizeId String
+  menuItemSize   MenuItemSize @relation(fields: [menuItemSizeId], references: [id], onDelete: Cascade)
+  /// Branch-specific price in KSh. Must be > 0.
+  price          Decimal      @db.Decimal(12, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([branchId, menuItemSizeId])
+  @@index([branchId])
+  @@map("branch_menu_item_price")
+}
+
+/// Per-branch topping stock toggle.
+/// No row = topping available at this branch (default on).
+/// Row with isInStock = false = topping hidden from this branch's POS.
+model BranchTopping {
+  id        String  @id @default(cuid())
+  branchId  String
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  toppingId String
+  topping   Topping @relation(fields: [toppingId], references: [id], onDelete: Cascade)
+  isInStock Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, toppingId])
+  @@index([branchId])
+  @@map("branch_topping")
+}
