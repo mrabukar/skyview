@@ -9,9 +9,13 @@ export interface ManagerDashboardSummary {
   todayRevenue: number;
   todayUnitsSold: number;
   monthRevenue: number;
+  monthSaleRevenue: number;
+  monthPosRevenue: number;
   monthPurchases: number;
   monthExpenses: number;
   netProfit: number;
+  grossMarginPercent: number;
+  expenseRatio: number;
   inStockBalance: number;
   lowStockCount: number;
   outOfStockCount: number;
@@ -19,6 +23,7 @@ export interface ManagerDashboardSummary {
 
 export interface ManagerDashboardCharts {
   salesTrend: DailyRevenueRow[];
+  expenseBreakdown: { categoryId: string; categoryName: string; amount: number }[];
   stockByCategory: StockByCategoryRow[];
 }
 
