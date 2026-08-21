@@ -1,7 +1,7 @@
 import type { PaginatedResponse } from "@/types/common/pagination";
 import type { Store } from "@/types/stores/store";
 
-export type UserRole = "admin" | "branch_manager";
+export type UserRole = "admin" | "branch_manager" | "cashier";
 
 export interface User {
   id: string;
@@ -19,6 +19,11 @@ export interface User {
   stores: Pick<Store, "id" | "name">[];
   /** Page keys hidden from this branch manager (empty = all visible). */
   disabledPages: string[];
+  // Cashier shift fields — null for non-cashier roles.
+  shiftDays: string[] | null;
+  shiftStartTime: string | null;
+  shiftEndTime: string | null;
+  maxDiscountPercent: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,6 +48,11 @@ export interface CreateUserInput {
   phone?: string;
   salary?: number;
   disabledPages?: string[];
+  // Cashier-only fields.
+  shiftDays?: string[];
+  shiftStartTime?: string;
+  shiftEndTime?: string;
+  maxDiscountPercent?: number;
 }
 
 export interface UpdateUserInput {
@@ -55,14 +65,21 @@ export interface UpdateUserInput {
   phone?: string | null;
   salary?: number;
   disabledPages?: string[];
+  // Cashier-only fields.
+  shiftDays?: string[];
+  shiftStartTime?: string | null;
+  shiftEndTime?: string | null;
+  maxDiscountPercent?: number | null;
 }
 
 export const ROLE_ITEMS = [
   { value: "admin" as const, label: "Admin" },
   { value: "branch_manager" as const, label: "Branch Manager" },
+  { value: "cashier" as const, label: "Cashier" },
 ];
 
 export function roleLabel(role: UserRole | string): string {
   if (role === "admin") return "Admin";
+  if (role === "cashier") return "Cashier";
   return "Branch Manager";
 }
