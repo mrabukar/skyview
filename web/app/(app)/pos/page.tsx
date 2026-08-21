@@ -26,7 +26,9 @@ export default function PosPage() {
       desc={
         user.role === "admin"
           ? "All POS orders across the organisation"
-          : `POS orders for ${user.store ?? "your branch"}`
+          : (user.storeIds?.length ?? 0) > 1
+            ? "POS orders for your branches"
+            : `POS orders for ${user.store ?? "your branch"}`
       }
     />
   );
