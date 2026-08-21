@@ -531,7 +531,7 @@ export class PosOrdersService {
   ): Promise<PosOrderResult> {
     const order = await this.findOne(id, user);
 
-    if (order.cashierId !== user.id) {
+    if (user.role === UserRole.cashier && order.cashierId !== user.id) {
       throw new ForbiddenException("You can only cancel your own orders");
     }
     if (order.status !== OrderStatus.pending) {
