@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 
 import { ShiftBlock } from "./shift-block";
@@ -31,6 +32,7 @@ interface SelectedItem {
  * later from Order History.
  */
 export function PosTerminal() {
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
@@ -149,6 +151,7 @@ export function PosTerminal() {
 
       clearCart();
       addToast({ title: `Order #${order.orderNumber} created` });
+      router.push("/pos/history");
     } catch (e) {
       addErrorToast({
         title: "Failed to create order",
@@ -157,7 +160,16 @@ export function PosTerminal() {
     } finally {
       setIsPlacingOrder(false);
     }
-  }, [lines, discountType, discountValue, createOrder, clearCart, addToast, addErrorToast]);
+  }, [
+    lines,
+    discountType,
+    discountValue,
+    createOrder,
+    clearCart,
+    addToast,
+    addErrorToast,
+    router,
+  ]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
