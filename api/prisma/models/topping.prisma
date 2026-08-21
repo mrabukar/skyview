@@ -1,0 +1,26 @@
+/// Org-wide POS add-on / topping (e.g. Boba Pearls, Coconut Jelly).
+/// Price is org-wide. Per-branch stock status is controlled via BranchTopping.
+/// Admins and branch managers can create; managers may edit/deactivate their own.
+model Topping {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  /// Price in KSh per unit. 0 = free topping.
+  price          Decimal      @db.Decimal(12, 2)
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  /// Tracks creator for manager ownership-based edit permissions.
+  createdById    String
+  createdBy      User         @relation("ToppingsCreatedBy", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  branchToppings    BranchTopping[]
+  orderLineToppings OrderLineTopping[]
+
+  /// Case-insensitive uniqueness enforced in app + functional index on lower(name).
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@map("topping")
+}
