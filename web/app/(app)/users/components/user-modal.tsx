@@ -11,6 +11,7 @@ import { MANAGER_PAGES } from "@/lib/auth/pages";
 import { isStrongPassword, STRONG_PASSWORD_MESSAGE } from "@/lib/auth/password";
 import { cn } from "@/lib/utils";
 import { ROLE_ITEMS, type User, type UserRole } from "@/types/users/user";
+import { SHIFT_DAY_OPTIONS } from "@/lib/format-shift";
 import { UserAttachmentsManager } from "./user-attachments-manager";
 
 export interface UserFormValues {
@@ -18,12 +19,17 @@ export interface UserFormValues {
   email: string;
   password: string;
   role: UserRole;
-  /** Assigned branches; first is primary. */
+  /** Assigned branches; first is primary. Cashiers use a single id. */
   storeIds: string[];
   phone: string;
   salary: string;
   /** Page keys hidden from this branch manager. */
   disabledPages: string[];
+  shiftDays: string[];
+  shiftStartTime: string;
+  shiftEndTime: string;
+  /** Empty string = no discount cap. */
+  maxDiscountPercent: string;
 }
 
 interface UserModalProps {
@@ -91,6 +97,11 @@ function initialForm(user?: User): UserFormValues {
     phone: user?.phone ?? "",
     salary: user?.salary != null ? String(user.salary) : "",
     disabledPages: user?.disabledPages ?? [],
+    shiftDays: user?.shiftDays ?? [],
+    shiftStartTime: user?.shiftStartTime ?? "",
+    shiftEndTime: user?.shiftEndTime ?? "",
+    maxDiscountPercent:
+      user?.maxDiscountPercent != null ? String(user.maxDiscountPercent) : "",
   };
 }
 
@@ -133,7 +144,9 @@ export function UserModal({
     }));
     return showStoreField
       ? items
-      : items.filter((item) => item.value !== "branch_manager");
+      : items.filter(
+          (item) => item.value !== "branch_manager" && item.value !== "cashier",
+        );
   }, [showStoreField]);
 
   const set = (key: keyof UserFormValues, value: string) =>
@@ -152,9 +165,23 @@ export function UserModal({
     setForm((state) => ({
       ...state,
       role: nextRole,
-      storeIds: nextRole === "admin" ? [] : state.storeIds,
+      storeIds:
+        nextRole === "admin"
+          ? []
+          : nextRole === "cashier"
+            ? state.storeIds.slice(0, 1)
+            : state.storeIds,
+      disabledPages: nextRole === "branch_manager" ? state.disabledPages : [],
     }));
   };
+
+  const toggleShiftDay = (day: string) =>
+    setForm((state) => ({
+      ...state,
+      shiftDays: state.shiftDays.includes(day)
+        ? state.shiftDays.filter((d) => d !== day)
+        : [...state.shiftDays, day],
+    }));
 
   const save = () => {
     const next: Partial<Record<keyof UserFormValues, string>> = {};
@@ -177,6 +204,22 @@ export function UserModal({
 
     if (showStoreField && form.role === "branch_manager" && form.storeIds.length === 0) {
       next.storeIds = "Select at least one branch";
+    }
+
+    if (showStoreField && form.role === "cashier") {
+      if (form.storeIds.length === 0) next.storeIds = "Select a branch";
+      if (form.shiftDays.length === 0) next.shiftDays = "Select at least one working day";
+      if (!form.shiftStartTime) next.shiftStartTime = "Start time is required";
+      if (!form.shiftEndTime) next.shiftEndTime = "End time is required";
+      else if (form.shiftStartTime && form.shiftEndTime <= form.shiftStartTime) {
+        next.shiftEndTime = "End time must be after start time";
+      }
+      if (form.maxDiscountPercent) {
+        const n = Number(form.maxDiscountPercent);
+        if (Number.isNaN(n) || n < 0 || n > 100) {
+          next.maxDiscountPercent = "Must be between 0 and 100";
+        }
+      }
     }
 
     if (form.salary && Number(form.salary) < 0) {
@@ -207,6 +250,8 @@ export function UserModal({
       name: form.name.trim(),
       email: form.email.trim(),
       phone: form.phone.trim(),
+      shiftStartTime: form.shiftStartTime.slice(0, 5),
+      shiftEndTime: form.shiftEndTime.slice(0, 5),
     });
   };
 
@@ -245,7 +290,7 @@ export function UserModal({
                 ? "Capture a document photo for this user."
                 : isEdit
                   ? "Update account details. Leave password blank to keep the current one."
-                  : "Create an admin or branch manager account."}
+                  : "Create an admin, branch manager, or cashier account."}
             </Dialog.Description>
           </div>
 
@@ -406,6 +451,26 @@ export function UserModal({
               </FormField>
             ) : null}
 
+            {showStoreField && form.role === "cashier" ? (
+              <FormField label="Branch" required error={err.storeIds}>
+                <Combobox
+                  value={form.storeIds[0]}
+                  onValueChange={(value) =>
+                    setForm((state) => ({
+                      ...state,
+                      storeIds: value ? [value] : [],
+                    }))
+                  }
+                  items={storeItems}
+                  placeholder="Select branch"
+                  searchPlaceholder="Search branches…"
+                  emptyText="No branches found."
+                  className="w-full"
+                  popoverClassName="z-[200]"
+                />
+              </FormField>
+            ) : null}
+
             {showStoreField && form.role === "branch_manager" ? (
               <FormField
                 label="Modules this manager can access"
@@ -431,6 +496,86 @@ export function UserModal({
                   })}
                 </div>
               </FormField>
+            ) : null}
+
+            {form.role === "cashier" ? (
+              <>
+                <FormField
+                  label="Working days"
+                  required
+                  error={err.shiftDays}
+                >
+                  <div className="grid gap-1.5">
+                    {SHIFT_DAY_OPTIONS.map((day) => (
+                      <label
+                        key={day.value}
+                        className="flex items-center gap-2.5 rounded-md border border-input px-3 py-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          checked={form.shiftDays.includes(day.value)}
+                          onChange={() => toggleShiftDay(day.value)}
+                        />
+                        <span>{day.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </FormField>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    label="Shift start"
+                    required
+                    error={err.shiftStartTime}
+                  >
+                    <input
+                      className={cn(
+                        inputClassName,
+                        err.shiftStartTime && "border-destructive",
+                      )}
+                      type="time"
+                      value={form.shiftStartTime}
+                      onChange={(e) => set("shiftStartTime", e.target.value)}
+                    />
+                  </FormField>
+                  <FormField
+                    label="Shift end"
+                    required
+                    error={err.shiftEndTime}
+                  >
+                    <input
+                      className={cn(
+                        inputClassName,
+                        err.shiftEndTime && "border-destructive",
+                      )}
+                      type="time"
+                      value={form.shiftEndTime}
+                      onChange={(e) => set("shiftEndTime", e.target.value)}
+                    />
+                  </FormField>
+                </div>
+
+                <FormField
+                  label="Max discount (%)"
+                  error={err.maxDiscountPercent}
+                  helper="Leave blank if this cashier cannot apply discounts."
+                >
+                  <input
+                    className={cn(
+                      inputClassName,
+                      err.maxDiscountPercent && "border-destructive",
+                    )}
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={form.maxDiscountPercent}
+                    onChange={(e) => set("maxDiscountPercent", e.target.value)}
+                    placeholder="e.g. 10"
+                  />
+                </FormField>
+              </>
             ) : null}
 
             <FormField label="Phone">
