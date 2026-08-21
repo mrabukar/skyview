@@ -5,9 +5,11 @@ export function mapApiUserToAppUser(apiUser: ApiUser): AppUser {
   const role: Role =
     apiUser.role === "branch_manager"
       ? "manager"
-      : apiUser.role === "super_admin"
-        ? "super_admin"
-        : "admin";
+      : apiUser.role === "cashier"
+        ? "cashier"
+        : apiUser.role === "super_admin"
+          ? "super_admin"
+          : "admin";
 
   return {
     id: apiUser.id,
@@ -29,5 +31,11 @@ export function mapApiUserToAppUser(apiUser: ApiUser): AppUser {
     hasStores: apiUser.organization?.hasStores ?? null,
     organizationLogoKey: apiUser.organization?.logoKey ?? null,
     organizationLogoUpdatedAt: apiUser.organization?.logoUpdatedAt ?? null,
+    // Cashier shift fields — null for non-cashiers.
+    shiftDays: apiUser.shiftDays ?? null,
+    shiftStartTime: apiUser.shiftStartTime ?? null,
+    shiftEndTime: apiUser.shiftEndTime ?? null,
+    maxDiscountPercent: apiUser.maxDiscountPercent ?? null,
+    onShift: apiUser.onShift ?? null,
   };
 }
