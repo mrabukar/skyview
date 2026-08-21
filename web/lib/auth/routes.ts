@@ -13,6 +13,8 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/branches",
   "/users",
   "/audit",
+  "/pos",
+  "/menu",
   "/settings/organization",
   "/settings/profile",
   "/settings/password",
@@ -26,7 +28,7 @@ export const ACCOUNT_SETTINGS_ROUTE_PREFIXES = [
   "/settings/password",
 ] as const;
 
-/** Admin-only routes — branch managers must not access these. */
+/** Admin-only routes — branch managers and cashiers must not access these. */
 export const ADMIN_ONLY_ROUTE_PREFIXES = [
   "/payroll",
   "/financial",
@@ -38,6 +40,17 @@ export const ADMIN_ONLY_ROUTE_PREFIXES = [
 
 /** Manager-only routes — admins must not access these (unless hasStores is false). */
 export const MANAGER_ONLY_ROUTE_PREFIXES = [] as const;
+
+/**
+ * Routes accessible to cashiers. Cashiers are locked to POS, customer menu,
+ * and account settings; all other protected routes are denied.
+ */
+export const CASHIER_ALLOWED_ROUTE_PREFIXES = [
+  "/pos",
+  "/menu/print",
+  "/settings/profile",
+  "/settings/password",
+] as const;
 
 export const PUBLIC_ROUTE_PREFIXES = ["/login"] as const;
 
@@ -76,6 +89,12 @@ export function isManagerOnlyPath(pathname: string): boolean {
   );
 }
 
+export function isCashierAllowedPath(pathname: string): boolean {
+  return CASHIER_ALLOWED_ROUTE_PREFIXES.some((prefix) =>
+    matchesPrefix(pathname, prefix),
+  );
+}
+
 export function isRouteAllowedForRole(
   role: Role,
   pathname: string,
@@ -87,6 +106,11 @@ export function isRouteAllowedForRole(
 
   if (isSuperAdminPath(pathname)) {
     return false;
+  }
+
+  // Cashiers may only access POS routes and account settings.
+  if (role === "cashier") {
+    return isCashierAllowedPath(pathname);
   }
 
   if (role === "admin" && isManagerOnlyPath(pathname)) {
