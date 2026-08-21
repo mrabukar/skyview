@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -34,6 +34,7 @@
 
   /* Neutral — light */
   --bg: #faf7f2;
+  /* --bg: #edeceb; */
   --surface: #ffffff;
   --border: #eae1d5;
   --fg1: #2b1b12;
@@ -116,6 +117,7 @@
   --sidebar-panel-border: rgba(255, 255, 255, 0.18);
 
   /* Dashboard page header band + main content tint */
+  /* --page-head-band-bg: #f3e7d5; */
   --page-head-band-bg: #f3e7d5;
   --page-head-band-border: #e6d3b8;
 }
@@ -281,13 +283,29 @@ button {
 .app-content {
   flex: 1;
   overflow-y: auto;
-  background: var(--page-head-band-bg);
+  background: var(--bg);
 }
 .app-content-inner {
   width: 100%;
   max-width: var(--max-content);
   margin: 0 auto;
   padding: 24px var(--content-padding-x);
+}
+
+/* Cashier POS terminal — fill remaining height beside sidebar + navbar. */
+.pos-terminal-page .app-content {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pos-terminal-page .app-content-inner {
+  max-width: none;
+  padding: 16px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (min-width: 1440px) {
@@ -512,11 +530,7 @@ button {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.28);
 }
 .sidebar .nav-tree-tick {
-  background: color-mix(
-    in srgb,
-    var(--sidebar-panel-border) 75%,
-    #ffffff
-  );
+  background: color-mix(in srgb, var(--sidebar-panel-border) 75%, #ffffff);
 }
 .sidebar .nav-tree-row .nav-tree-node.is-active + .nav-tree-tick {
   background: color-mix(in srgb, #ffffff 55%, var(--sidebar-panel-border));
@@ -566,7 +580,11 @@ button {
   );
 }
 .dark .sidebar .nav-tree-row .nav-tree-node.is-active + .nav-tree-tick {
-  background: color-mix(in srgb, var(--brand-teal) 45%, var(--sidebar-panel-border));
+  background: color-mix(
+    in srgb,
+    var(--brand-teal) 45%,
+    var(--sidebar-panel-border)
+  );
 }
 
 .nav-group {
@@ -590,7 +608,9 @@ button {
   flex: none;
   color: var(--fg3);
   opacity: 0.7;
-  transition: transform 0.2s ease, opacity 0.15s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.15s ease;
 }
 .nav-group-trigger:hover .nav-group-chevron,
 .nav-group--open .nav-group-chevron {
@@ -1205,6 +1225,186 @@ button {
 }
 .stat-card--colorful .stat-ic {
   box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* KPI Card — tinted shell + white inner card (admin dashboard) */
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  padding-top: 0;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.kpi-card[data-accent="indigo"] {
+  background: var(--tint-indigo);
+  border-color: color-mix(in srgb, var(--brand-indigo) 16%, var(--border));
+}
+.kpi-card[data-accent="teal"] {
+  background: var(--tint-teal);
+  border-color: color-mix(in srgb, var(--brand-teal) 22%, var(--border));
+}
+.kpi-card[data-accent="violet"] {
+  background: var(--tint-violet);
+  border-color: color-mix(in srgb, var(--brand-violet) 18%, var(--border));
+}
+.kpi-card[data-accent="amber"] {
+  background: var(--tint-amber);
+  border-color: color-mix(in srgb, var(--status-amber) 22%, var(--border));
+}
+.kpi-card[data-accent="emerald"] {
+  background: var(--tint-emerald);
+  border-color: color-mix(in srgb, var(--status-emerald) 18%, var(--border));
+}
+.kpi-card[data-accent="rose"] {
+  background: var(--tint-rose);
+  border-color: color-mix(in srgb, var(--status-rose) 18%, var(--border));
+}
+.kpi-card[data-accent="slate"] {
+  background: var(--tint-slate);
+  border-color: color-mix(in srgb, var(--cost-slate) 22%, var(--border));
+}
+.kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  min-width: 0;
+}
+.kpi-ic {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
+}
+.kpi-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kpi-inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 8px;
+  padding: 12px 12px 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  min-width: 0;
+}
+.kpi-valrow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kpi-val {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.kpi-trend--up {
+  background: var(--tint-emerald);
+  color: var(--status-emerald);
+}
+.kpi-trend--down {
+  background: var(--tint-rose);
+  color: var(--status-rose);
+}
+.kpi-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 10px;
+}
+.kpi-arrow {
+  flex-shrink: 0;
+  color: var(--fg3);
+  opacity: 0.5;
+}
+.kpi-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  line-height: 1.2;
+}
+@media (max-width: 1279px) {
+  .kpi-inner {
+    padding: 10px;
+  }
+  .kpi-val {
+    font-size: 17px;
+  }
+  .kpi-footer {
+    padding-top: 8px;
+  }
+}
+@media (max-width: 767px) {
+  .kpi-val {
+    font-size: 16px;
+  }
+}
+
+/* Admin dashboard polish — scoped so other pages stay unchanged */
+.dash-page .card {
+  overflow: hidden;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+.dash-page .card:hover {
+  border-color: color-mix(in srgb, var(--brand-indigo) 22%, var(--border));
+  box-shadow: var(--shadow-md);
+}
+.dash-page .card-head {
+  padding: 12px 16px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tint-indigo) 70%, var(--surface)) 0%,
+    var(--surface) 100%
+  );
+}
+.dash-page .card-head h3 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.dash-page .card-pad {
+  padding: 14px 16px 16px;
 }
 
 /* ============================================================================
