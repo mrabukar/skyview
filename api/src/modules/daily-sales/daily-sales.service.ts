@@ -103,7 +103,15 @@ export class DailySalesService {
   ): Promise<DailySaleWithDetails> {
     const organizationId = requireOrganizationId(user);
     const branchId = resolveWriteBranchId(user, dto.branchId);
-    await this.getActiveBranch(branchId);
+    const branch = await this.getActiveBranch(branchId);
+
+    // BR-POS-8.2 — POS-enabled branches record revenue via POS orders, not
+    // manual daily sales entries.
+    if (branch.posEnabled) {
+      throw new BadRequestException(
+        "This branch uses POS — daily sales are recorded automatically",
+      );
+    }
 
     const saleDate = extractCalendarDate(dto.saleDate);
     this.assertNotFuture(saleDate);
@@ -232,10 +240,10 @@ export class DailySalesService {
 
   private async getActiveBranch(
     branchId: string,
-  ): Promise<{ id: string; name: string }> {
+  ): Promise<{ id: string; name: string; posEnabled: boolean }> {
     const branch = await this.prisma.branch.findFirst({
       where: { id: branchId, isActive: true },
-      select: { id: true, name: true },
+      select: { id: true, name: true, posEnabled: true },
     });
     if (!branch) {
       throw new BadRequestException("Branch not found or inactive");
