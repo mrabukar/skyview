@@ -20,6 +20,7 @@ const contentCls = cn(
 export interface StoreFormValues {
   name: string;
   address: string;
+  posEnabled?: boolean;
 }
 
 interface Props {
@@ -31,16 +32,20 @@ interface Props {
 }
 
 export function StoreModal({ open, initial, onClose, onSave, isSaving }: Props) {
+  const isEdit = Boolean(initial);
+
   const [form, setForm] = useState<StoreFormValues>({
     name: initial?.name ?? "",
     address: initial?.address ?? "",
+    posEnabled: initial?.posEnabled ?? false,
   });
-  const [err, setErr] = useState<Partial<StoreFormValues>>({});
-  const set = (key: keyof StoreFormValues, value: string) =>
+  const [err, setErr] = useState<Partial<Record<"name" | "address", string>>>({});
+
+  const set = (key: "name" | "address", value: string) =>
     setForm((s) => ({ ...s, [key]: value }));
 
   const save = () => {
-    const next: Partial<StoreFormValues> = {};
+    const next: Partial<Record<"name" | "address", string>> = {};
     if (!form.name.trim()) next.name = "Name is required";
     if (!form.address.trim()) next.address = "Address is required";
     setErr(next);
@@ -63,6 +68,7 @@ export function StoreModal({ open, initial, onClose, onSave, isSaving }: Props) 
           </div>
 
           <div className="grid gap-4 py-2">
+            {/* Name */}
             <div className="grid gap-2">
               <label className="text-sm font-medium leading-none">
                 Branch name <span className="text-destructive">*</span>
@@ -70,25 +76,71 @@ export function StoreModal({ open, initial, onClose, onSave, isSaving }: Props) 
               <input
                 className={cn(inputCls, err.name && "border-destructive")}
                 value={form.name}
-                onChange={(e) => { set("name", e.target.value); setErr((v) => ({ ...v, name: undefined })); }}
+                onChange={(e) => {
+                  set("name", e.target.value);
+                  setErr((v) => ({ ...v, name: undefined }));
+                }}
                 placeholder="e.g. Main Branch"
                 maxLength={100}
               />
               {err.name && <p className="text-sm text-destructive">{err.name}</p>}
             </div>
+
+            {/* Address */}
             <div className="grid gap-2">
               <label className="text-sm font-medium leading-none">
                 Address <span className="text-destructive">*</span>
               </label>
               <textarea
-                className={cn(inputCls, "min-h-[80px] resize-y py-2", err.address && "border-destructive")}
+                className={cn(
+                  inputCls,
+                  "min-h-[80px] resize-y py-2",
+                  err.address && "border-destructive",
+                )}
                 value={form.address}
-                onChange={(e) => { set("address", e.target.value); setErr((v) => ({ ...v, address: undefined })); }}
+                onChange={(e) => {
+                  set("address", e.target.value);
+                  setErr((v) => ({ ...v, address: undefined }));
+                }}
                 placeholder="e.g. 123 Main St, City"
                 maxLength={255}
               />
               {err.address && <p className="text-sm text-destructive">{err.address}</p>}
             </div>
+
+            {/* POS toggle — only shown when editing an existing branch */}
+            {isEdit && (
+              <div className="flex items-center justify-between rounded-md border border-input bg-muted/30 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Enable POS</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Revenue recorded via POS orders — disables manual daily-sales entry
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.posEnabled}
+                  onClick={() =>
+                    setForm((s) => ({ ...s, posEnabled: !s.posEnabled }))
+                  }
+                  disabled={isSaving}
+                  className={cn(
+                    "relative ml-4 inline-flex h-5 w-9 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "disabled:cursor-not-allowed disabled:opacity-50",
+                    form.posEnabled ? "bg-primary" : "bg-input",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition-transform",
+                      form.posEnabled ? "translate-x-4" : "translate-x-0",
+                    )}
+                  />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
