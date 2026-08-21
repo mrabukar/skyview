@@ -82,10 +82,11 @@ export class PosOrdersController {
 
   /**
    * PATCH /pos/orders/:id/cancel
-   * Cancel a pending order. Cashier-only (own order). No shift guard —
-   * cashiers must be able to cancel stale pending orders even if off shift.
+   * Cancel a pending order. Cashiers may cancel their own; admin/manager may
+   * cancel any pending order in scope. No shift guard — cashiers must be able
+   * to cancel stale pending orders even if off shift.
    */
-  @Roles(UserRole.cashier)
+  @Roles(UserRole.cashier, UserRole.admin, UserRole.branch_manager)
   @Patch(":id/cancel")
   cancelOrder(
     @Param("id") id: string,
