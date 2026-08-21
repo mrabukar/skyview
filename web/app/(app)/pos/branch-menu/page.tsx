@@ -207,7 +207,7 @@ function MenuGridCard({
               </div>
             )}
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-muted-foreground">Stock</span>
+              <span className="text-[10px] text-muted-foreground">Available</span>
               {pending ? (
                 <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               ) : (
@@ -215,7 +215,7 @@ function MenuGridCard({
                   checked={item.isInStock}
                   onChange={onToggleStock}
                   disabled={showConfig && !item.isEnabled}
-                  label={`Toggle ${item.itemName} in stock`}
+                  label={`Toggle ${item.itemName} available`}
                 />
               )}
             </div>
@@ -526,11 +526,11 @@ export default function BranchMenuPage() {
       });
     }
 
-    // In Stock toggle — all roles
+    // Available toggle — all roles
     cols.push({
       id: "isInStock",
-      meta: { label: "In Stock" },
-      header: "In Stock",
+      meta: { label: "Available" },
+      header: "Available",
       cell: ({ row }) => {
         const item = row.original;
         return pendingItems.has(item.menuItemId) ? (
@@ -540,7 +540,7 @@ export default function BranchMenuPage() {
             checked={item.isInStock}
             onChange={() => void handleToggleItemStock(item)}
             disabled={canConfigure && !item.isEnabled}
-            label={`Toggle ${item.itemName} in stock`}
+            label={`Toggle ${item.itemName} available`}
           />
         );
       },
@@ -624,10 +624,10 @@ export default function BranchMenuPage() {
   return (
     <>
       <PageHeader
-        title={isCashier ? "Stock Management" : "Branch Menu Config"}
+        title={isCashier ? "Available Menu" : "Branch Menu Config"}
         desc={
           isCashier
-            ? "Mark items as in or out of stock for your branch"
+            ? "Mark items as available or unavailable for your branch"
             : "Enable items for each branch and set per-branch prices"
         }
       />
