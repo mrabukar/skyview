@@ -66,10 +66,15 @@ export function SupplyTypeBadge({
 }
 
 export function RoleBadge({ role }: { role: string }) {
-  const isAdmin = role === "admin";
-  return (
-    <Badge color={isAdmin ? "indigo" : "teal"}>
-      {isAdmin ? "Admin" : "Branch Manager"}
-    </Badge>
-  );
+  if (role === "cashier") {
+    return <Badge color="amber">Cashier</Badge>;
+  }
+  if (role === "admin" || role === "super_admin") {
+    return (
+      <Badge color="indigo">
+        {role === "super_admin" ? "Super Admin" : "Admin"}
+      </Badge>
+    );
+  }
+  return <Badge color="teal">Branch Manager</Badge>;
 }
