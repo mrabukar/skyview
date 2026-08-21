@@ -20,6 +20,10 @@ model Organization {
   receipts          Receipt[]
   userAttachments   UserAttachment[]
   branchManagerAssignments BranchManagerAssignment[]
+  menuCategories    MenuCategory[]
+  menuItems         MenuItem[]
+  toppings          Topping[]
+  posOrders         PosOrder[]
 
   @@map("organization")
 }
