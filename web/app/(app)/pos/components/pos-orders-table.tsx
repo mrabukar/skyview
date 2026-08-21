@@ -3,14 +3,22 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CheckCircle2, Ban, Receipt } from "lucide-react";
+import { CheckCircle2, Ban, Receipt, XCircle } from "lucide-react";
 
 import { ConfirmPaymentModal } from "./confirm-payment-modal";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { Combobox } from "@/components/ui/combobox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
-import { usePosOrders, usePayPosOrder, useVoidPosOrder } from "@/hooks/pos/use-pos-orders";
+import {
+  usePosOrders,
+  usePayPosOrder,
+  useVoidPosOrder,
+  useCancelPosOrder,
+} from "@/hooks/pos/use-pos-orders";
+import { useStores } from "@/hooks/stores/list-stores";
 import { useAppStore } from "@/store/app";
 import type { PosOrder, PosOrderQuery, OrderStatus, PaymentMethod } from "@/types/pos/order";
 
@@ -94,17 +102,24 @@ export function PosOrdersTable({
   const addErrorToast = useAppStore((s) => s.addErrorToast);
 
   const isAdmin = user?.role === "admin";
-  const canVoid = isAdmin || user?.role === "manager";
+  const isManager = user?.role === "manager";
+  const isCashier = user?.role === "cashier";
+  const managerMulti = isManager && (user?.storeIds?.length ?? 0) > 1;
+  const showBranchFilter = isAdmin || managerMulti;
+  const canVoid = isAdmin || isManager;
+  const canCancelAnyPending = isAdmin || isManager;
 
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | undefined>(
     undefined,
   );
+  const [storeId, setStoreId] = useState<string | undefined>();
   const [voidTarget, setVoidTarget] = useState<PosOrder | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const [voidErr, setVoidErr] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<PosOrder | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<PosOrder | null>(null);
 
   const listQuery = useMemo<PosOrderQuery>(
     () => ({
@@ -112,15 +127,35 @@ export function PosOrdersTable({
       page: pageIndex + 1,
       limit: pageSize,
       status: statusFilter,
+      ...(showBranchFilter && storeId ? { storeId } : {}),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pageIndex, pageSize, statusFilter, JSON.stringify(baseQuery)],
+    [pageIndex, pageSize, statusFilter, storeId, showBranchFilter, JSON.stringify(baseQuery)],
   );
+
+  const { data: storesData, isPending: storesPending } = useStores(
+    { limit: 100 },
+    { enabled: isAdmin },
+  );
+
+  const branchItems = useMemo(() => {
+    if (isAdmin) {
+      return (storesData?.data ?? []).map((store) => ({
+        value: store.id,
+        label: store.name,
+      }));
+    }
+    return (user?.stores ?? []).map((store) => ({
+      value: store.id,
+      label: store.name,
+    }));
+  }, [isAdmin, storesData?.data, user?.stores]);
 
   const { data, isPending, isFetching, isError, error } =
     usePosOrders(listQuery);
   const payOrder = usePayPosOrder();
   const voidOrder = useVoidPosOrder();
+  const cancelOrder = useCancelPosOrder();
 
   const isLoading =
     isPending || (isFetching && (data?.data.length ?? 0) === 0);
@@ -163,7 +198,7 @@ export function PosOrdersTable({
       },
     ];
 
-    if (isAdmin) {
+    if (isAdmin || managerMulti) {
       cols.push({
         id: "branch",
         meta: { label: "Branch" },
@@ -224,9 +259,13 @@ export function PosOrdersTable({
         header: "Actions",
         cell: ({ row }) => {
           const order = row.original;
+          const canCancelPending =
+            order.status === "pending" &&
+            (canCancelAnyPending ||
+              (isCashier && order.cashierId === user?.id));
           return (
             <div className="dt-actions">
-              {order.status === "pending" ? (
+              {isCashier && order.status === "pending" ? (
                 <button
                   type="button"
                   className="dt-act"
@@ -236,13 +275,25 @@ export function PosOrdersTable({
                   <CheckCircle2 size={16} className="text-emerald-600" />
                 </button>
               ) : null}
-              <Link
-                href={`/pos/invoice/${order.id}`}
-                className="dt-act"
-                title="View receipt"
-              >
-                <Receipt size={16} />
-              </Link>
+              {order.status === "paid" ? (
+                <Link
+                  href={`/pos/invoice/${order.id}`}
+                  className="dt-act"
+                  title="View receipt"
+                >
+                  <Receipt size={16} />
+                </Link>
+              ) : null}
+              {canCancelPending ? (
+                <button
+                  type="button"
+                  className="dt-act danger"
+                  title="Cancel order"
+                  onClick={() => setCancelTarget(order)}
+                >
+                  <XCircle size={16} />
+                </button>
+              ) : null}
               {canVoid && order.status === "paid" ? (
                 <button
                   type="button"
@@ -266,7 +317,7 @@ export function PosOrdersTable({
     );
 
     return cols;
-  }, [isAdmin, canVoid]);
+  }, [isAdmin, isCashier, managerMulti, canVoid, canCancelAnyPending, user?.id]);
 
   // ── Confirm payment handler ──────────────────────────────────────────────────
 
@@ -282,6 +333,20 @@ export function PosOrdersTable({
     } catch (e) {
       addErrorToast({
         title: "Payment failed",
+        sub: e instanceof Error ? e.message : "Something went wrong",
+      });
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!cancelTarget) return;
+    try {
+      await cancelOrder.mutateAsync(cancelTarget.id);
+      addToast({ title: `Order #${cancelTarget.orderNumber} cancelled` });
+      setCancelTarget(null);
+    } catch (e) {
+      addErrorToast({
+        title: "Failed to cancel order",
         sub: e instanceof Error ? e.message : "Something went wrong",
       });
     }
@@ -313,7 +378,22 @@ export function PosOrdersTable({
   // ── Status filter toolbar ─────────────────────────────────────────────────────
 
   const toolbarExtra = (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      {showBranchFilter ? (
+        <Combobox
+          value={storeId}
+          onValueChange={(value) => {
+            setStoreId(value);
+            setPageIndex(0);
+          }}
+          items={branchItems}
+          clearOption={{ label: "All branches" }}
+          placeholder="All branches"
+          searchPlaceholder="Search branches…"
+          emptyText="No branches found."
+          loading={isAdmin && storesPending}
+        />
+      ) : null}
       {STATUS_OPTIONS.map((opt) => (
         <button
           key={String(opt.value)}
@@ -343,7 +423,9 @@ export function PosOrdersTable({
           desc ??
           (isAdmin
             ? "All POS orders across the organisation"
-            : "POS orders for your branch")
+            : managerMulti
+              ? "POS orders for your branches"
+              : "POS orders for your branch")
         }
       />
 
@@ -381,6 +463,17 @@ export function PosOrdersTable({
           isLoading={payOrder.isPending}
           onConfirm={(method) => void handleConfirmPayment(method)}
           onClose={() => setConfirmTarget(null)}
+        />
+      ) : null}
+
+      {cancelTarget ? (
+        <ConfirmDialog
+          title={`Cancel Order #${cancelTarget.orderNumber}?`}
+          message="This pending order will be cancelled. This cannot be undone."
+          confirmLabel="Cancel Order"
+          isLoading={cancelOrder.isPending}
+          onConfirm={() => void handleCancel()}
+          onClose={() => setCancelTarget(null)}
         />
       ) : null}
 
