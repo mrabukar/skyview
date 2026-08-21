@@ -318,6 +318,7 @@ export default function DailySalesPage() {
           mode={modal.mode}
           sale={modal.mode === "edit" ? modal.sale : undefined}
           showStoreField={showStoreField}
+          implicitStoreId={!showStoreField ? user?.storeId ?? undefined : undefined}
           storeItems={storeItems}
           onClose={() => setModal(null)}
           onSave={(form) => void handleSave(form)}
