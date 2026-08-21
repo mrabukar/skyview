@@ -8,6 +8,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { RoleBadge, StatusBadge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/format-relative-time";
+import { formatShiftDays, formatShiftWindow } from "@/lib/format-shift";
 import { fmt } from "@/lib/utils";
 import type { User } from "@/types/users/user";
 
@@ -90,6 +91,37 @@ export function UsersTable({
           <DataTableColumnHeader column={column} title="Branch" />
         ),
         cell: ({ row }) => row.original.store?.name ?? "—",
+      },
+      {
+        id: "shift",
+        accessorFn: (row) =>
+          row.role === "cashier"
+            ? `${formatShiftDays(row.shiftDays)} ${formatShiftWindow(row.shiftStartTime, row.shiftEndTime)}`
+            : "—",
+        meta: {
+          label: "Shift",
+          exportValue: (row: User) =>
+            row.role === "cashier"
+              ? `${formatShiftDays(row.shiftDays)} ${formatShiftWindow(row.shiftStartTime, row.shiftEndTime)}`
+              : "—",
+        },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Shift" />
+        ),
+        cell: ({ row }) => {
+          if (row.original.role !== "cashier") {
+            return <span className="muted">—</span>;
+          }
+          return (
+            <span className="muted whitespace-nowrap">
+              {formatShiftDays(row.original.shiftDays)}{" "}
+              {formatShiftWindow(
+                row.original.shiftStartTime,
+                row.original.shiftEndTime,
+              )}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "salary",
