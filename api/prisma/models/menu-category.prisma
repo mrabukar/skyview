@@ -1,0 +1,25 @@
+/// Org-wide POS menu category (e.g. Milk Teas, Fruit Teas). Shared across all
+/// branches; each branch toggles which items within a category it carries.
+/// Admins and branch managers can create; managers may edit/deactivate their own.
+model MenuCategory {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  description    String?
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  /// Tracks creator for manager ownership-based edit permissions.
+  createdById    String
+  createdBy      User         @relation("MenuCategoriesCreatedBy", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  items MenuItem[]
+
+  /// Case-insensitive uniqueness enforced in app + a functional index on lower(name)
+  /// added via raw SQL in the migration (mirrors the vendor pattern).
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@map("menu_category")
+}
