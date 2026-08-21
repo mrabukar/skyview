@@ -1,4 +1,4 @@
-export type ApiRole = "super_admin" | "admin" | "branch_manager";
+export type ApiRole = "super_admin" | "admin" | "branch_manager" | "cashier";
 
 export interface MeBranch {
   id: string;
@@ -30,6 +30,13 @@ export interface ApiUser {
   branchIds?: string[];
   branches?: MeBranch[];
   organization?: MeOrganization | null;
+  // Cashier-only fields — present only when role = cashier.
+  shiftDays?: string[] | null;
+  shiftStartTime?: string | null;
+  shiftEndTime?: string | null;
+  maxDiscountPercent?: number | null;
+  /** Real-time shift status computed server-side (present only for cashiers). */
+  onShift?: boolean | null;
 }
 
 export interface MeResponse {
