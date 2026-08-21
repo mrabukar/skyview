@@ -1,8 +1,9 @@
-export type Role = "super_admin" | "admin" | "manager";
+export type Role = "super_admin" | "admin" | "manager" | "cashier";
 
 export function appRoleLabel(role: Role | undefined): string {
   if (role === "super_admin") return "Super Admin";
   if (role === "admin") return "Administrator";
+  if (role === "cashier") return "Cashier";
   return "Branch Manager";
 }
 
@@ -33,4 +34,11 @@ export interface AppUser {
   hasStores: boolean | null;
   organizationLogoKey: string | null;
   organizationLogoUpdatedAt: string | null;
+  // Cashier-only fields — null/undefined for non-cashier roles.
+  shiftDays: string[] | null;
+  shiftStartTime: string | null;
+  shiftEndTime: string | null;
+  maxDiscountPercent: number | null;
+  /** Real-time shift status as of last session fetch. Null for non-cashiers. */
+  onShift: boolean | null;
 }
