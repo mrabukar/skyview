@@ -69,9 +69,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (roleDenied) {
-      router.replace(
-        user?.role === "super_admin" ? "/super-admin" : "/dashboard",
-      );
+      let fallback = "/dashboard";
+      if (user?.role === "super_admin") fallback = "/super-admin";
+      else if (user?.role === "cashier") fallback = "/pos";
+      router.replace(fallback);
     }
   }, [roleDenied, router, user?.role]);
 
@@ -92,8 +93,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Redirecting to an allowed page — render nothing to avoid a flash.
   if (pageDenied && pageFallback) return null;
 
+  const posTerminalPage = user.role === "cashier" && pathname === "/pos";
+
   return (
-    <div className="app-frame">
+    <div className={posTerminalPage ? "app-frame pos-terminal-page" : "app-frame"}>
       <Sidebar
         role={user.role}
         collapsed={collapsed}
