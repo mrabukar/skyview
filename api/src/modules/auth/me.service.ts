@@ -4,6 +4,7 @@ import {
 } from "@nestjs/common";
 import { AuditAction, Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
+import { isOnShift } from "../../common/utils/shift.util";
 import { UpdateMeDto } from "./dto/update-me.dto";
 
 const branchSelect = {
@@ -31,6 +32,11 @@ const userSelect = {
   isActive: true,
   phone: true,
   disabledPages: true,
+  // Cashier shift fields — null for non-cashier roles.
+  shiftDays: true,
+  shiftStartTime: true,
+  shiftEndTime: true,
+  maxDiscountPercent: true,
 } as const;
 
 export type MeBranch = {
@@ -105,6 +111,13 @@ export class MeService {
             ? [branch]
             : [];
 
+    // BR-POS-1.5: include real-time shift status so the frontend can gate the POS.
+    const onShift =
+      user.role === "cashier"
+        ? isOnShift(user.shiftDays, user.shiftStartTime, user.shiftEndTime)
+            .onShift
+        : undefined;
+
     return {
       user: {
         ...user,
@@ -112,6 +125,7 @@ export class MeService {
         branches,
         branchIds: branches.map((b) => b.id),
         organization,
+        ...(onShift !== undefined ? { onShift } : undefined),
       },
     };
   }
@@ -188,6 +202,12 @@ export class MeService {
             ? [branch]
             : [];
 
+    const onShift =
+      updated.role === "cashier"
+        ? isOnShift(updated.shiftDays, updated.shiftStartTime, updated.shiftEndTime)
+            .onShift
+        : undefined;
+
     return {
       user: {
         ...updated,
@@ -195,6 +215,7 @@ export class MeService {
         branches,
         branchIds: branches.map((b) => b.id),
         organization,
+        ...(onShift !== undefined ? { onShift } : undefined),
       },
     };
   }
