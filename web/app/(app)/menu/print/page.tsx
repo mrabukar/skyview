@@ -142,27 +142,32 @@ export default function CustomerMenuPage() {
     { enabled: !isCashier },
   );
 
+  const storeId = user?.storeId;
+  const storeName = user?.store;
+  const storeIds = user?.storeIds;
+  const storesData = allStores?.data;
+
   const branchOptions = useMemo(() => {
-    if (isCashier && user?.storeId) {
-      return [{ value: user.storeId, label: user.store ?? "Branch" }];
+    if (isCashier && storeId) {
+      return [{ value: storeId, label: storeName ?? "Branch" }];
     }
-    const stores = (allStores?.data ?? []).filter((s) => s.posEnabled);
+    const stores = (storesData ?? []).filter((s) => s.posEnabled);
     if (isAdmin) return stores.map((s) => ({ value: s.id, label: s.name }));
     if (isManager) {
-      const allowed = new Set(user?.storeIds ?? []);
+      const allowed = new Set(storeIds ?? []);
       return stores
         .filter((s) => allowed.has(s.id))
         .map((s) => ({ value: s.id, label: s.name }));
     }
     return [];
   }, [
-    allStores?.data,
     isAdmin,
     isCashier,
     isManager,
-    user?.store,
-    user?.storeId,
-    user?.storeIds,
+    storeId,
+    storeIds,
+    storeName,
+    storesData,
   ]);
 
   const firstPosId = branchOptions[0]?.value ?? "";
