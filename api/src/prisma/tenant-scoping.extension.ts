@@ -15,6 +15,11 @@ const TENANT_MODELS = new Set([
   "Receipt",
   "UserAttachment",
   "BranchManagerAssignment",
+  // POS module (Phase 2)
+  "MenuCategory",
+  "MenuItem",
+  "Topping",
+  "PosOrder",
 ]);
 
 const WHERE_OPERATIONS = new Set([
