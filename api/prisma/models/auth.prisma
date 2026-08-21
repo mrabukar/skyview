@@ -2,6 +2,7 @@ enum UserRole {
   super_admin
   admin
   branch_manager
+  cashier
 }
 
 model User {
@@ -27,6 +28,18 @@ model User {
   /// pages visible. Ignored for admin/super_admin. See page registry (doc 10).
   disabledPages  String[]      @default([])
 
+  /// ── Cashier-only fields (ignored for other roles) ──────────────────────────
+  /// Days of week this cashier works, e.g. ["monday","tuesday","saturday"].
+  /// Required when role = cashier (BR-POS-1.2).
+  shiftDays      String[]      @default([])
+  /// Shift window start in HH:mm, Africa/Nairobi (e.g. "07:00"). Cashier only.
+  shiftStartTime String?
+  /// Shift window end in HH:mm, Africa/Nairobi (e.g. "20:00"). Cashier only.
+  shiftEndTime   String?
+  /// Maximum discount percentage this cashier may apply per order (BR-POS-7.3).
+  /// Null = cashier cannot give any discount.
+  maxDiscountPercent Decimal?  @db.Decimal(5, 2)
+
   sessions               Session[]
   accounts               Account[]
   dailySales             DailySale[]               @relation("DailySalesEnteredBy")
@@ -37,6 +50,11 @@ model User {
   uploadedAttachments    UserAttachment[]          @relation("UserAttachmentsUploadedBy")
   branchAssignments      BranchManagerAssignment[]
   auditLogs              AuditLog[]
+  posOrders              PosOrder[]                @relation("PosOrdersCashier")
+  voidedOrders           PosOrder[]                @relation("PosOrdersVoidedBy")
+  createdMenuCategories  MenuCategory[]            @relation("MenuCategoriesCreatedBy")
+  createdMenuItems       MenuItem[]                @relation("MenuItemsCreatedBy")
+  createdToppings        Topping[]                 @relation("ToppingsCreatedBy")
 
   @@unique([email])
   @@map("user")
