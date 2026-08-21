@@ -8,12 +8,20 @@ import type { ReportQuery } from "./query";
 
 export interface AdminDashboardSummary {
   totalRevenue: number;
+  saleRevenue: number;
+  posRevenue: number;
+  posOrderCount: number;
   totalUnitsSold: number;
   cogs: number;
   grossProfit: number;
   totalExpenses: number;
   salaries: number;
   netProfit: number;
+  grossMarginPercent: number;
+  netMarginPercent: number;
+  expenseRatio: number;
+  payrollRatio: number;
+  dailyAvgRevenue: number;
   currentStockValue: number;
   inStockBalance: number;
   lowStockCount: number;
@@ -54,10 +62,19 @@ export interface TopStoreRow {
   revenue: number;
 }
 
+export interface MarginTrendRow {
+  month: string;
+  monthKey: string;
+  percent: number;
+}
+
 export interface AdminDashboardCharts {
   revenueCogsExpenses: MonthlyRevenueRow[];
   netProfitTrend: NetProfitTrendRow[];
   expenseBreakdown: ExpenseBreakdownRow[];
+  grossMarginTrend: MarginTrendRow[];
+  profitMarginTrend: MarginTrendRow[];
+  revenueByBranch: TopStoreRow[];
   stockByCategory: StockByCategoryRow[];
   topProducts: TopProductRow[];
   topStores: TopStoreRow[];
