@@ -9,6 +9,7 @@ import {
   Building2,
   ChevronDown,
   LayoutDashboard,
+  Package,
   ShoppingCart,
   ShoppingBag,
   CreditCard,
@@ -18,6 +19,11 @@ import {
   ClipboardList,
   ShieldCheck,
   Store,
+  UtensilsCrossed,
+  ReceiptText,
+  BarChart3,
+  Tag,
+  Printer,
 } from "lucide-react";
 
 import { LogoMark } from "@/components/logo";
@@ -79,6 +85,37 @@ function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
   nav.push(
     {
       type: "group",
+      label: "POS",
+      icon: ReceiptText,
+      children: [
+        {
+          href: "/pos",
+          label: "Orders",
+          icon: ReceiptText,
+          match: "exact",
+        },
+        { href: "/pos/reports", label: "Reports", icon: BarChart3 },
+      ],
+    },
+    {
+      type: "group",
+      label: "Menu",
+      icon: UtensilsCrossed,
+      children: [
+        { href: "/menu/categories", label: "Categories", icon: Tag },
+        { href: "/menu/items", label: "Items", icon: UtensilsCrossed },
+        {
+          href: "/pos/branch-menu",
+          label: "Branch Menu",
+          icon: UtensilsCrossed,
+        },
+        { href: "/menu/print", label: "Customer Menu", icon: Printer },
+
+        // { href: "/menu/toppings", label: "Toppings", icon: ShoppingBag }, // TOPPINGS HIDDEN
+      ],
+    },
+    {
+      type: "group",
       label: "Administration",
       icon: ShieldCheck,
       children: [
@@ -93,13 +130,39 @@ function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
   return nav;
 }
 
-const MANAGER_NAV: NavLinkItem[] = [
+const MANAGER_NAV: AdminNavEntry[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sales", label: "Daily Sales", icon: ShoppingCart },
   { href: "/purchases", label: "Purchases", icon: ShoppingBag },
   { href: "/expenses", label: "Expenses", icon: CreditCard },
-  // Receipt Centre retired — receipts now live in the Purchases table.
-  // { href: "/receipts", label: "Receipt Centre", icon: Receipt },
+  {
+    type: "group",
+    label: "POS",
+    icon: ReceiptText,
+    children: [
+      { href: "/pos", label: "Orders", icon: ReceiptText, match: "exact" },
+      { href: "/pos/reports", label: "Reports", icon: BarChart3 },
+    ],
+  },
+  {
+    type: "group",
+    label: "Menu",
+    icon: UtensilsCrossed,
+    children: [
+      { href: "/menu/categories", label: "Categories", icon: Tag },
+      { href: "/menu/items", label: "Items", icon: UtensilsCrossed },
+      { href: "/pos/branch-menu", label: "Branch Menu", icon: UtensilsCrossed },
+      { href: "/menu/print", label: "Customer Menu", icon: Printer },
+      // { href: "/menu/toppings", label: "Toppings", icon: ShoppingBag }, // TOPPINGS HIDDEN
+    ],
+  },
+];
+
+const CASHIER_NAV: NavLinkItem[] = [
+  { href: "/pos", label: "POS Terminal", icon: ReceiptText },
+  { href: "/pos/history", label: "Order History", icon: ClipboardList },
+  { href: "/pos/branch-menu", label: "Stock", icon: Package },
+  { href: "/menu/print", label: "Customer Menu", icon: Printer },
 ];
 
 function isNavGroup(entry: AdminNavEntry): entry is NavGroupItem {
@@ -374,10 +437,21 @@ export function Sidebar({
   const pathname = usePathname();
   const adminNav = buildAdminNav(hasStores !== false);
   const disabledPages = useAppStore((s) => s.user?.disabledPages ?? []);
-  const managerNav = MANAGER_NAV.filter((item) => {
-    const key = pageKeyForPath(item.href);
-    return !key || !disabledPages.includes(key);
-  });
+
+  // Filter manager nav entries respecting disabled pages.
+  const managerNav = MANAGER_NAV.reduce<AdminNavEntry[]>((acc, entry) => {
+    if (isNavGroup(entry)) {
+      const children = entry.children.filter((child) => {
+        const key = pageKeyForPath(child.href);
+        return !key || !disabledPages.includes(key);
+      });
+      if (children.length > 0) acc.push({ ...entry, children });
+    } else {
+      const key = pageKeyForPath(entry.href);
+      if (!key || !disabledPages.includes(key)) acc.push(entry);
+    }
+    return acc;
+  }, []);
   // The off-canvas drawer (<1024px) always shows the sidebar fully expanded
   // regardless of the desktop icon-rail toggle — see the CSS override at
   // ".sidebar.collapsed" inside the mobile media query. Mirror that here so
@@ -399,7 +473,9 @@ export function Sidebar({
               ? "Platform"
               : role === "admin"
                 ? "Operations"
-                : "My Branch"}
+                : role === "cashier"
+                  ? "POS"
+                  : "My Branch"}
           </div>
         )}
         {role === "super_admin"
@@ -423,13 +499,30 @@ export function Sidebar({
                   />
                 ),
               )
-            : managerNav.map((item) => (
-                <SidebarNavLink
-                  key={item.href}
-                  item={item}
-                  pathname={pathname}
-                />
-              ))}
+            : role === "cashier"
+              ? CASHIER_NAV.map((item) => (
+                  <SidebarNavLink
+                    key={item.href}
+                    item={item}
+                    pathname={pathname}
+                  />
+                ))
+              : managerNav.map((entry) =>
+                  isNavGroup(entry) ? (
+                    <SidebarNavGroup
+                      key={entry.label}
+                      group={entry}
+                      pathname={pathname}
+                      collapsed={effectiveCollapsed}
+                    />
+                  ) : (
+                    <SidebarNavLink
+                      key={entry.href}
+                      item={entry}
+                      pathname={pathname}
+                    />
+                  ),
+                )}
       </nav>
 
       {/* <div className="sb-foot">
