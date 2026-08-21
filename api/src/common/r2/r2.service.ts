@@ -78,6 +78,17 @@ export class R2Service {
     );
   }
 
+  /** Download object bytes (used to validate menu item images after PUT). */
+  async getObjectBuffer(key: string): Promise<Buffer> {
+    const res = await this.requireClient().send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
+    if (!res.Body) {
+      throw new InternalServerErrorException("Stored image is empty.");
+    }
+    return Buffer.from(await res.Body.transformToByteArray());
+  }
+
   async deleteObject(key: string): Promise<void> {
     await this.requireClient().send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
