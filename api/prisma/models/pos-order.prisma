@@ -1,0 +1,89 @@
+/// A POS sales transaction at a branch (BR-POS-6).
+/// Statuses: pending → paid | cancelled; paid → voided (admin/manager).
+model PosOrder {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  branchId       String
+  branch         Branch         @relation(fields: [branchId], references: [id])
+  /// Branch-scoped continuous counter, never resets (BR-POS-6.9).
+  orderNumber    Int
+  status         OrderStatus    @default(pending)
+  paymentMethod  PaymentMethod?
+  /// Sum of all line totals before discount.
+  subtotal       Decimal        @db.Decimal(14, 2)
+  discountType   DiscountType?
+  /// The percentage or fixed amount entered by the cashier.
+  discountValue  Decimal?       @db.Decimal(12, 2)
+  /// Computed discount in KSh (BR-POS-7.5).
+  discountAmount Decimal?       @db.Decimal(12, 2)
+  /// subtotal − discountAmount.
+  totalAmount    Decimal        @db.Decimal(14, 2)
+  cashierId      String
+  cashier        User           @relation("PosOrdersCashier", fields: [cashierId], references: [id])
+  /// Set when an admin/manager voids a paid order.
+  voidedById     String?
+  voidedBy       User?          @relation("PosOrdersVoidedBy", fields: [voidedById], references: [id])
+  /// Required non-empty reason when status = voided (BR-POS-6.13).
+  voidReason     String?
+  voidedAt       DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  lines OrderLine[]
+
+  @@unique([branchId, orderNumber])
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([cashierId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("pos_order")
+}
+
+/// One line in a POS order: one size of one menu item, with optional toppings.
+/// Prices are snapshotted at order creation and never change (BR-POS-6.6).
+model OrderLine {
+  id             String       @id @default(cuid())
+  orderId        String
+  order          PosOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId     String
+  menuItem       MenuItem     @relation(fields: [menuItemId], references: [id])
+  menuItemSizeId String
+  menuItemSize   MenuItemSize @relation(fields: [menuItemSizeId], references: [id])
+  /// Snapshot: item name at time of sale.
+  itemName       String
+  /// Snapshot: size name at time of sale.
+  sizeName       String
+  /// Snapshot: effective branch price for this size at time of sale.
+  unitPrice      Decimal      @db.Decimal(12, 2)
+  quantity       Int          @default(1)
+  /// sum(topping.price) × quantity
+  toppingsTotal  Decimal      @db.Decimal(12, 2) @default(0)
+  /// (unitPrice × quantity) + toppingsTotal
+  lineTotal      Decimal      @db.Decimal(14, 2)
+  createdAt      DateTime     @default(now())
+
+  toppings OrderLineTopping[]
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_line")
+}
+
+/// A topping added to one order line. Prices snapshotted at order creation.
+model OrderLineTopping {
+  id          String    @id @default(cuid())
+  orderLineId String
+  orderLine   OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+  toppingId   String
+  topping     Topping   @relation(fields: [toppingId], references: [id])
+  /// Snapshot: topping name at time of sale.
+  toppingName String
+  /// Snapshot: per-unit topping price at time of sale.
+  price       Decimal   @db.Decimal(12, 2)
+  createdAt   DateTime  @default(now())
+
+  @@index([orderLineId])
+  @@map("order_line_topping")
+}
