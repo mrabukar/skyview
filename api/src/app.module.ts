@@ -21,6 +21,11 @@ import { ReportsModule } from "./modules/reports/reports.module";
 import { ReceiptsModule } from "./modules/receipts/receipts.module";
 import { UserAttachmentsModule } from "./modules/user-attachments/user-attachments.module";
 import { HealthModule } from "./modules/health/health.module";
+import { MenuCategoriesModule } from "./modules/menu-categories/menu-categories.module";
+import { MenuItemsModule } from "./modules/menu-items/menu-items.module";
+import { ToppingsModule } from "./modules/toppings/toppings.module";
+import { BranchMenuModule } from "./modules/branch-menu/branch-menu.module";
+import { PosOrdersModule } from "./modules/pos-orders/pos-orders.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { R2Module } from "./common/r2/r2.module";
 import { TenantModule } from "./common/tenant/tenant.module";
@@ -78,6 +83,11 @@ import { TenantModule } from "./common/tenant/tenant.module";
     ReportsModule,
     ReceiptsModule,
     UserAttachmentsModule,
+    MenuCategoriesModule,
+    MenuItemsModule,
+    ToppingsModule,
+    BranchMenuModule,
+    PosOrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
