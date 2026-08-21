@@ -106,7 +106,7 @@ export function MenuGrid({ items, onItemSelect }: Props) {
             No items match your search.
           </p>
         ) : (
-          <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(128px,1fr))] lg:gap-1.5 lg:[grid-template-columns:repeat(auto-fill,minmax(104px,1fr))]">
+          <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(148px,1fr))] lg:gap-2 lg:[grid-template-columns:repeat(auto-fill,minmax(132px,1fr))]">
             {displayed.map((item) => (
               <ItemCard
                 key={item.menuItemId}
@@ -176,8 +176,8 @@ function ItemCard({
         aria-hidden
       />
 
-      <div className="relative flex items-center justify-center px-1.5 pb-1.5 pt-2.5">
-        <div className="relative aspect-square w-[72%] max-w-[4.5rem] overflow-hidden bg-card p-0.5 lg:max-w-[4rem]">
+      <div className="relative flex items-center justify-center px-2 pb-2 pt-3">
+        <div className="relative aspect-square w-[78%] max-w-[5.5rem] overflow-hidden bg-card p-0.5 lg:max-w-[5.25rem]">
           <MenuItemImage
             imageKey={item.imageKey}
             alt={item.itemName}
@@ -185,7 +185,7 @@ function ItemCard({
           />
           {unavailable ? (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70">
-              <span className="rounded bg-background/90 px-1 py-px text-[9px] font-semibold text-destructive">
+              <span className="rounded bg-background/90 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
                 Out of stock
               </span>
             </div>
@@ -193,21 +193,21 @@ function ItemCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-1 bg-muted px-1.5 py-1.5">
+      <div className="flex items-center justify-between gap-1.5 bg-muted px-2 py-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[10px] font-medium leading-tight">
+          <p className="truncate text-xs font-medium leading-tight">
             {item.itemName}
           </p>
-          <p className="mt-px truncate whitespace-nowrap text-[9px] font-normal leading-tight text-muted-foreground">
+          <p className="mt-px truncate whitespace-nowrap text-[10px] font-normal leading-tight text-muted-foreground">
             {fmtPrice(item)}
           </p>
         </div>
         {!unavailable ? (
           <span
-            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-background text-primary shadow-sm"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-background text-primary shadow-sm"
             aria-hidden
           >
-            <Plus size={12} />
+            <Plus size={13} />
           </span>
         ) : null}
       </div>
