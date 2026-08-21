@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 
 import { UserModal, type UserFormValues } from "./components/user-modal";
@@ -11,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSession } from "@/hooks/auth/session";
 import { useActivateUser } from "@/hooks/users/use-activate-user";
-import { useCreateUser } from "@/hooks/users/use-create-user";
 import { useDeactivateUser } from "@/hooks/users/use-deactivate-user";
 import { useUpdateUser } from "@/hooks/users/use-update-user";
 import { useUsers } from "@/hooks/users/use-users";
@@ -22,8 +22,8 @@ import { useAppStore } from "@/store/app";
 import { ROLE_ITEMS, type User, type UserRole } from "@/types/users/user";
 
 interface ModalState {
-  mode: "add" | "edit";
-  user?: User;
+  mode: "edit";
+  user: User;
 }
 
 const STATUS_ITEMS = [
@@ -61,7 +61,6 @@ export default function UsersPage() {
   const { data: storesData } = useStores({ limit: 100 });
   const { data, isPending, isFetching, isError, error } = useUsers(listQuery);
 
-  const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const activateUser = useActivateUser();
   const deactivateUser = useDeactivateUser();
@@ -110,46 +109,39 @@ export default function UsersPage() {
   }, [debouncedSearch, role, status]);
 
   const saveUser = async (form: UserFormValues) => {
+    if (!modal?.user) return;
     try {
-      if (modal?.mode === "edit" && modal.user) {
-        const input: Parameters<typeof updateUser.mutateAsync>[0]["input"] = {
-          name: form.name,
-          email: form.email,
-          role: form.role,
-          phone: form.phone || null,
-          salary: form.salary ? Number(form.salary) : 0,
-        };
+      const input: Parameters<typeof updateUser.mutateAsync>[0]["input"] = {
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        phone: form.phone || null,
+        salary: form.salary ? Number(form.salary) : 0,
+      };
 
-        if (form.password) input.password = form.password;
+      if (form.password) input.password = form.password;
 
-        if (form.role === "branch_manager") {
-          input.storeIds = form.storeIds;
-          input.storeId = form.storeIds[0];
-          input.disabledPages = form.disabledPages;
-        } else {
-          input.storeId = null;
-          input.storeIds = [];
-        }
-
-        await updateUser.mutateAsync({ id: modal.user.id, input });
-        addToast({ title: "User updated" });
+      if (form.role === "branch_manager") {
+        input.storeIds = form.storeIds;
+        input.storeId = form.storeIds[0];
+        input.disabledPages = form.disabledPages;
+      } else if (form.role === "cashier") {
+        input.storeId = form.storeIds[0];
+        input.storeIds = [form.storeIds[0]];
+        input.disabledPages = [];
+        input.shiftDays = form.shiftDays;
+        input.shiftStartTime = form.shiftStartTime;
+        input.shiftEndTime = form.shiftEndTime;
+        input.maxDiscountPercent = form.maxDiscountPercent.trim()
+          ? Number(form.maxDiscountPercent)
+          : null;
       } else {
-        await createUser.mutateAsync({
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          role: form.role,
-          storeIds:
-            form.role === "branch_manager" ? form.storeIds : undefined,
-          storeId:
-            form.role === "branch_manager" ? form.storeIds[0] : undefined,
-          phone: form.phone || undefined,
-          salary: form.salary ? Number(form.salary) : 0,
-          disabledPages:
-            form.role === "branch_manager" ? form.disabledPages : undefined,
-        });
-        addToast({ title: "User added successfully" });
+        input.storeId = null;
+        input.storeIds = [];
       }
+
+      await updateUser.mutateAsync({ id: modal.user.id, input });
+      addToast({ title: "User updated" });
       setModal(null);
     } catch (e) {
       addErrorToast({
@@ -185,7 +177,7 @@ export default function UsersPage() {
     }
   };
 
-  const isSaving = createUser.isPending || updateUser.isPending;
+  const isSaving = updateUser.isPending;
 
   const toolbarExtra = (
     <div
@@ -225,11 +217,13 @@ export default function UsersPage() {
     <>
       <PageHeader
         title="Users"
-        desc="Admins and branch managers"
+        desc="Admins, branch managers, and cashiers"
         action={
-          <Button onClick={() => setModal({ mode: "add" })}>
-            <Plus className="size-4" />
-            Add User
+          <Button asChild>
+            <Link href="/users/new">
+              <Plus className="size-4" />
+              Add User
+            </Link>
           </Button>
         }
       />
@@ -273,7 +267,7 @@ export default function UsersPage() {
 
       {modal && (
         <UserModal
-          key={`${modal.mode}-${modal.user?.id ?? "new"}`}
+          key={`edit-${modal.user.id}`}
           open
           mode={modal.mode}
           user={modal.user}
