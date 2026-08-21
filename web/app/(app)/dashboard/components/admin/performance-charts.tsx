@@ -1,9 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LineArea } from "@/components/charts/line-area";
-import { HBars } from "@/components/charts/h-bars";
-import { fmt } from "@/lib/utils";
 import type { AdminDashboardCharts } from "@/types/reports/admin-dashboard";
+
+const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
 interface Props {
   charts: AdminDashboardCharts;
@@ -11,32 +11,33 @@ interface Props {
 
 export function AdminPerformanceCharts({ charts }: Props) {
   return (
-    <div className="grid-2 mb-16">
-      <Card title="Net Profit Trend" pad>
-        {charts.netProfitTrend.length > 0 ? (
+    <div className="mb-3 grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
+      <Card title="Gross Margin Trend" pad className="h-full min-w-0">
+        {charts.grossMarginTrend.length > 0 ? (
           <LineArea
-            values={charts.netProfitTrend.map((row) => row.netProfit)}
-            labels={charts.netProfitTrend.map((row) => row.month)}
-            height={180}
+            values={charts.grossMarginTrend.map((r) => r.percent)}
+            labels={charts.grossMarginTrend.map((r) => r.month)}
+            height={160}
+            color="var(--brand-teal)"
+            valueLabel="Gross Margin"
+            formatValue={fmtPct}
           />
         ) : (
-          <EmptyState title="No profit trend" sub="Not enough data for this period." />
+          <EmptyState title="No margin data" sub="Not enough data for this period." />
         )}
       </Card>
-      <Card title="Top Performing Branches" pad>
-        {charts.topStores.length > 0 ? (
-          <HBars
-            data={charts.topStores.map((row) => ({
-              name: row.storeName,
-              revenue: row.revenue,
-            }))}
-            valueKey="revenue"
-            labelKey="name"
-            color="var(--brand-indigo)"
-            format={fmt}
+      <Card title="Net Margin Trend" pad className="h-full min-w-0">
+        {charts.profitMarginTrend.length > 0 ? (
+          <LineArea
+            values={charts.profitMarginTrend.map((r) => r.percent)}
+            labels={charts.profitMarginTrend.map((r) => r.month)}
+            height={160}
+            color="var(--status-amber)"
+            valueLabel="Net Margin"
+            formatValue={fmtPct}
           />
         ) : (
-          <EmptyState title="No branch rankings" sub="Branch rankings appear when viewing all branches." />
+          <EmptyState title="No margin data" sub="Not enough data for this period." />
         )}
       </Card>
     </div>
