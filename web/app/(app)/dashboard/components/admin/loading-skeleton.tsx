@@ -16,19 +16,28 @@ function SkeletonBar({
   );
 }
 
-function StatCardSkeleton() {
+function KpiCardSkeleton() {
   return (
-    <div className="stat-card">
-      <div className="stat-top">
+    <div className="kpi-card">
+      <div className="kpi-head">
         <SkeletonBar
-          style={{ width: 40, height: 40, borderRadius: 9999, maxWidth: 40 }}
+          style={{ width: 12, height: 12, borderRadius: 3, maxWidth: 12 }}
         />
-        <SkeletonBar style={{ width: 48, height: 16, maxWidth: 48 }} />
+        <SkeletonBar style={{ width: 72, height: 10, maxWidth: 72 }} />
       </div>
-      <SkeletonBar
-        style={{ width: "70%", height: 28, maxWidth: 120, marginBottom: 8 }}
-      />
-      <SkeletonBar style={{ width: "55%", height: 14, maxWidth: 100 }} />
+      <div className="kpi-inner">
+        <div className="kpi-valrow">
+          <SkeletonBar
+            style={{ width: "70%", height: 20, maxWidth: 100 }}
+          />
+        </div>
+        <div className="kpi-footer">
+          <SkeletonBar
+            style={{ width: 14, height: 14, borderRadius: 3, maxWidth: 14 }}
+          />
+          <SkeletonBar style={{ width: 60, height: 11, maxWidth: 60 }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -88,30 +97,58 @@ function TableCardSkeleton({
 export function DashboardLoadingSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading dashboard">
-      <div className="stat-grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 mb-16">
-        {Array.from({ length: 10 }).map((_, index) => (
-          <StatCardSkeleton key={`stat-${index}`} />
-        ))}
+      <div className="mb-16 space-y-3">
+        <div className="stat-grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <KpiCardSkeleton key={`stat-top-${index}`} />
+          ))}
+        </div>
+        <div className="stat-grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <KpiCardSkeleton key={`stat-mid-${index}`} />
+          ))}
+        </div>
       </div>
 
-      <div className="dash-charts mb-16">
-        <ChartCardSkeleton height={260} />
-        <ChartCardSkeleton height={260} />
-      </div>
-
-      <div className="mb-16">
-        <ChartCardSkeleton height={260} />
-      </div>
-
-      <div className="grid-3 mb-16">
+      <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         <ChartCardSkeleton height={180} />
         <ChartCardSkeleton height={180} />
         <ChartCardSkeleton height={180} />
       </div>
 
-      <div className="grid-2 mb-16">
-        <ChartCardSkeleton height={240} />
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ChartCardSkeleton height={160} />
+        <ChartCardSkeleton height={160} />
+        <ChartCardSkeleton height={160} />
+      </div>
+
+      <div className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <ChartCardSkeleton height={160} />
+        <ChartCardSkeleton height={160} />
+      </div>
+
+      <div className="mb-3 grid gap-3 lg:grid-cols-2">
         <TableCardSkeleton columns={5} rows={5} />
+        <ChartCardSkeleton height={180} />
+      </div>
+
+      <div className="rounded-[10px] border border-border bg-muted p-1 pt-0">
+        <div className="px-2 py-1.5">
+          <SkeletonBar style={{ width: 48, height: 10, maxWidth: 48 }} />
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div
+              key={`health-${index}`}
+              className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border bg-card px-3 py-2.5"
+            >
+              <SkeletonBar style={{ width: 88, height: 10, maxWidth: 88 }} />
+              <SkeletonBar style={{ width: "55%", height: 18, maxWidth: 80 }} />
+              <SkeletonBar style={{ width: "100%", height: 4, maxWidth: "none" }} />
+              <SkeletonBar style={{ width: 64, height: 10, maxWidth: 64 }} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
