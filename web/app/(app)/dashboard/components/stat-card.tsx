@@ -60,13 +60,22 @@ export function StatCard({
           <Icon size={20} />
         </div>
         {trend != null && (
-          <span className={`trend ${trendDir === "down" ? "trend-dn" : "trend-up"}`}>
-            {trendDir === "down" ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+          <span
+            className={`trend ${trendDir === "down" ? "trend-dn" : "trend-up"}`}
+          >
+            {trendDir === "down" ? (
+              <TrendingDown size={12} />
+            ) : (
+              <TrendingUp size={12} />
+            )}
             {trend}
           </span>
         )}
       </div>
-      <div className="stat-val num" style={valueColor ? { color: valueColor } : undefined}>
+      <div
+        className="stat-val num"
+        style={valueColor ? { color: valueColor } : undefined}
+      >
         {value}
       </div>
       <div className="stat-lbl">{label}</div>
