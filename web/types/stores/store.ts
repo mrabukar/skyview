@@ -5,6 +5,7 @@ export interface Store {
   name: string;
   address: string;
   isActive: boolean;
+  posEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
