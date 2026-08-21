@@ -55,6 +55,10 @@ function toUserModalUser(user: OrganizationUser): User {
     storeIds: user.store ? [user.store.id] : [],
     stores: user.store ? [user.store] : [],
     disabledPages: [],
+    shiftDays: null,
+    shiftStartTime: null,
+    shiftEndTime: null,
+    maxDiscountPercent: null,
     createdAt: "",
     updatedAt: "",
   };
