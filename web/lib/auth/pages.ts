@@ -16,6 +16,9 @@ export const MANAGER_PAGES: ManagerPage[] = [
   { key: "expenses", label: "Expenses", href: "/expenses" },
   // Receipt Centre retired — receipts now live in the Purchases table.
   // { key: "receipts", label: "Receipt Centre", href: "/receipts" },
+  // POS module (Phase 2) — toggleable for managers.
+  { key: "pos", label: "POS Orders", href: "/pos" },
+  { key: "menu", label: "Menu Management", href: "/menu" },
 ];
 
 function matches(pathname: string, href: string): boolean {
