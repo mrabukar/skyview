@@ -16,6 +16,9 @@ export const MANAGER_PAGES = [
   "expenses",
   "vendors",
   "receipts",
+  // POS module (Phase 2) — toggleable for managers; always-on for cashiers
+  "pos",
+  "menu",
 ] as const;
 
 export type PageKey = (typeof MANAGER_PAGES)[number];
