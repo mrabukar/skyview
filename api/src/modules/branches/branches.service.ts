@@ -118,6 +118,7 @@ export class BranchesService {
           data: {
             ...(nextName !== undefined ? { name: nextName } : undefined),
             ...(dto.address !== undefined ? { address: dto.address.trim() } : undefined),
+            ...(dto.posEnabled !== undefined ? { posEnabled: dto.posEnabled } : undefined),
           },
         });
         await tx.auditLog.create({
