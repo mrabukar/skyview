@@ -7,6 +7,7 @@ const ROWS: {
   op: string;
   color: string;
   emphasize?: boolean;
+  indent?: boolean;
 }[] = [
   { key: "revenue", label: "Revenue", op: "", color: "var(--fin-revenue)" },
   {
@@ -26,6 +27,13 @@ const ROWS: {
     label: "Operating Expenses",
     op: "−",
     color: "var(--fin-expenses)",
+  },
+  {
+    key: "salaries",
+    label: "Salaries & Payroll",
+    op: "",
+    color: "var(--fin-expenses)",
+    indent: true,
   },
   {
     key: "netProfit",
@@ -66,8 +74,10 @@ export function PnlBreakdown({ breakdown }: { breakdown: FinancialBreakdown }) {
               style={{
                 width: 180,
                 flexShrink: 0,
-                fontSize: 13,
+                fontSize: row.indent ? 12 : 13,
                 fontWeight: 500,
+                paddingLeft: row.indent ? 16 : 0,
+                color: row.indent ? "var(--fg3)" : undefined,
               }}
             >
               <span style={{ color: "var(--fg3)" }}>{row.op} </span>
