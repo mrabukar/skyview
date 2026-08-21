@@ -4,6 +4,12 @@ model Branch {
   name           String
   address        String
   isActive       Boolean      @default(true)
+  /// When true, POS orders are the revenue source; new manual DailySale entries
+  /// are blocked for this branch (BR-POS-8.2). Historical entries are preserved.
+  posEnabled     Boolean      @default(false)
+  /// Atomic counter for branch-scoped POS order numbers (BR-POS-6.9).
+  /// Incremented in the same transaction as PosOrder creation.
+  nextPosOrderNumber Int      @default(1)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
@@ -14,7 +20,11 @@ model Branch {
   purchases  Purchase[]
   expenses   Expense[]
   receipts   Receipt[]
-  managerAssignments BranchManagerAssignment[]
+  managerAssignments   BranchManagerAssignment[]
+  posOrders            PosOrder[]
+  branchMenuItems      BranchMenuItem[]
+  branchMenuItemPrices BranchMenuItemPrice[]
+  branchToppings       BranchTopping[]
 
   @@unique([name, organizationId])
   @@map("branch")
