@@ -14,6 +14,7 @@ import {
 import { APIError } from "better-auth/api";
 import { isBootstrapSignupAllowed } from "../../config/signup-policy.util";
 import { PrismaService } from "../../prisma/prisma.service";
+import { isOnShift } from "../../common/utils/shift.util";
 import { isUserRole, UserRole } from "./auth.constants";
 import type { AppAuth } from "./auth.config";
 import {
@@ -282,13 +283,33 @@ export class AuthSignInHook {
 
     const user = await this.prisma.user.findUnique({
       where: { email },
-      select: { isActive: true },
+      select: {
+        isActive: true,
+        role: true,
+        shiftDays: true,
+        shiftStartTime: true,
+        shiftEndTime: true,
+      },
     });
 
     if (user?.isActive === false) {
       throw new APIError("UNAUTHORIZED", {
         message: "Unauthorized",
       });
+    }
+
+    // BR-POS-1.4: Cashiers may only sign in during their configured shift window.
+    if (user?.role === "cashier") {
+      const status = isOnShift(
+        user.shiftDays,
+        user.shiftStartTime,
+        user.shiftEndTime,
+      );
+      if (!status.onShift) {
+        throw new APIError("UNAUTHORIZED", {
+          message: status.message ?? "You are not on shift",
+        });
+      }
     }
   }
 }
@@ -322,8 +343,12 @@ export class AuthUserDatabaseHook {
           : (user.organizationId as string | null) ?? null;
     }
 
+    // Both branch_manager and cashier are assigned to a specific branch.
     let branchId: string | null = null;
-    if (role === UserRole.branch_manager) {
+    if (
+      role === UserRole.branch_manager ||
+      role === UserRole.cashier
+    ) {
       branchId =
         typeof user.branchId === "string"
           ? user.branchId.trim() || null
