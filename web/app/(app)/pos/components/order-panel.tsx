@@ -121,25 +121,25 @@ export function OrderPanel({ onDiscount, onPay, isPlacingOrder }: Props) {
                       ) : (
                         <span />
                       )}
-                      <div className="inline-flex shrink-0 items-center rounded-full bg-background">
+                      <div className="inline-flex shrink-0 items-center gap-1">
                         <button
                           type="button"
-                          className="flex size-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                          className="flex size-8 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
                           aria-label="Decrease quantity"
                           onClick={() => updateLineQty(idx, line.quantity - 1)}
                         >
-                          <Minus size={11} />
+                          <Minus size={14} strokeWidth={2.25} />
                         </button>
-                        <span className="w-4 text-center text-[11px] font-semibold tabular-nums">
+                        <span className="min-w-6 text-center text-sm font-semibold tabular-nums">
                           {line.quantity}
                         </span>
                         <button
                           type="button"
-                          className="flex size-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                          className="flex size-8 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
                           aria-label="Increase quantity"
                           onClick={() => updateLineQty(idx, line.quantity + 1)}
                         >
-                          <Plus size={11} />
+                          <Plus size={14} strokeWidth={2.25} />
                         </button>
                       </div>
                     </div>
