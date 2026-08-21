@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { useStore } from "@/hooks/stores/use-store";
 import { dateToYmd } from "@/lib/filters/dates";
 import { cn } from "@/lib/utils";
 import type { DailySale } from "@/types/daily-sales/daily-sale";
@@ -32,6 +33,8 @@ interface Props {
   sale?: DailySale;
   /** Show required branch picker on create (admin, or multi-branch manager). */
   showStoreField: boolean;
+  /** Implied branch when the picker is hidden (single-branch manager). */
+  implicitStoreId?: string;
   storeItems: { value: string; label: string }[];
   onClose: () => void;
   onSave: (data: DailySaleFormValues) => void;
@@ -66,6 +69,7 @@ export function DailySaleModal({
   mode,
   sale,
   showStoreField,
+  implicitStoreId,
   storeItems,
   onClose,
   onSave,
@@ -81,10 +85,20 @@ export function DailySaleModal({
   }));
   const [err, setErr] = useState<Partial<Record<keyof DailySaleFormValues, string>>>({});
 
+  const selectedStoreId = isEdit
+    ? sale?.storeId
+    : showStoreField
+      ? form.storeId
+      : implicitStoreId;
+
+  const { data: selectedStore, isFetching: storeLoading } = useStore(selectedStoreId);
+  const posBlocked = selectedStore?.posEnabled === true;
+
   const set = (key: keyof DailySaleFormValues, value: string | undefined) =>
     setForm((state) => ({ ...state, [key]: value }));
 
   const save = () => {
+    if (posBlocked) return;
     const next: Partial<Record<keyof DailySaleFormValues, string>> = {};
     if (showStoreField && !isEdit && !form.storeId) next.storeId = "Branch is required";
     if (!form.saleDate) next.saleDate = "Date is required";
@@ -95,6 +109,8 @@ export function DailySaleModal({
     if (Object.keys(next).length) return;
     onSave(form);
   };
+
+  const fieldsDisabled = isSaving || posBlocked;
 
   return (
     <Dialog.Root
@@ -129,6 +145,7 @@ export function DailySaleModal({
                   emptyText="No branches found."
                   className="w-full"
                   popoverClassName="z-[200]"
+                  disabled={isSaving}
                 />
               </FormField>
             ) : null}
@@ -136,6 +153,12 @@ export function DailySaleModal({
             {isEdit && sale ? (
               <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
                 Branch: <span className="font-medium text-foreground">{sale.store.name}</span>
+              </p>
+            ) : null}
+
+            {posBlocked ? (
+              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+                This branch uses POS — revenue is recorded automatically through POS orders.
               </p>
             ) : null}
 
@@ -147,6 +170,7 @@ export function DailySaleModal({
                   max={today}
                   value={form.saleDate}
                   onChange={(e) => set("saleDate", e.target.value)}
+                  disabled={fieldsDisabled}
                 />
               </FormField>
 
@@ -159,6 +183,7 @@ export function DailySaleModal({
                   value={form.totalAmount}
                   onChange={(e) => set("totalAmount", e.target.value)}
                   placeholder="e.g. 32000"
+                  disabled={fieldsDisabled}
                 />
               </FormField>
             </div>
@@ -170,6 +195,7 @@ export function DailySaleModal({
                 onChange={(e) => set("note", e.target.value)}
                 placeholder="Optional note (e.g. holiday, promotion day)"
                 maxLength={300}
+                disabled={fieldsDisabled}
               />
             </FormField>
           </div>
@@ -178,7 +204,11 @@ export function DailySaleModal({
             <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancel
             </Button>
-            <Button type="button" onClick={save} disabled={isSaving}>
+            <Button
+              type="button"
+              onClick={save}
+              disabled={isSaving || posBlocked || storeLoading}
+            >
               {isSaving ? "Saving…" : isEdit ? "Save Changes" : "Add Entry"}
             </Button>
           </div>
