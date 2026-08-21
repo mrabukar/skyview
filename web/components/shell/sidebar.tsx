@@ -161,7 +161,7 @@ const MANAGER_NAV: AdminNavEntry[] = [
 const CASHIER_NAV: NavLinkItem[] = [
   { href: "/pos", label: "POS Terminal", icon: ReceiptText },
   { href: "/pos/history", label: "Order History", icon: ClipboardList },
-  { href: "/pos/branch-menu", label: "Stock", icon: Package },
+  { href: "/pos/branch-menu", label: "Available Menu", icon: Package },
   { href: "/menu/print", label: "Customer Menu", icon: Printer },
 ];
 
