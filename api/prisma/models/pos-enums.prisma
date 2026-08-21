@@ -1,0 +1,17 @@
+enum OrderStatus {
+  pending
+  paid
+  cancelled
+  voided
+}
+
+enum PaymentMethod {
+  cash
+  mpesa
+  card
+}
+
+enum DiscountType {
+  percentage
+  fixed
+}
