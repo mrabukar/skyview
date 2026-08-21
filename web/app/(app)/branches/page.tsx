@@ -76,6 +76,24 @@ export default function StoresPage() {
         ),
       },
       {
+        id: "posEnabled",
+        meta: {
+          label: "POS",
+          align: "center",
+          exportValue: (row: Store) => (row.posEnabled ? "Enabled" : "—"),
+        },
+        header: "POS",
+        cell: ({ row }) =>
+          row.original.posEnabled ? (
+            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              Active
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        enableSorting: false,
+      },
+      {
         accessorKey: "isActive",
         meta: {
           label: "Status",
@@ -138,17 +156,22 @@ export default function StoresPage() {
   }, [debouncedSearch]);
 
   const saveStore = async (form: StoreFormValues) => {
-    const payload = {
-      name: form.name.trim(),
-      address: form.address.trim(),
-    };
-
     try {
       if (sheet?.row) {
-        await updateStore.mutateAsync({ id: sheet.row.id, input: payload });
+        await updateStore.mutateAsync({
+          id: sheet.row.id,
+          input: {
+            name: form.name.trim(),
+            address: form.address.trim(),
+            posEnabled: form.posEnabled,
+          },
+        });
         addToast({ title: "Branch updated" });
       } else {
-        await createStore.mutateAsync(payload);
+        await createStore.mutateAsync({
+          name: form.name.trim(),
+          address: form.address.trim(),
+        });
         addToast({ title: "Branch added successfully" });
       }
       setSheet(null);
@@ -220,6 +243,7 @@ export default function StoresPage() {
       />
 
       <StoreModal
+        key={sheet?.row?.id ?? "new"}
         open={sheet !== null}
         initial={sheet?.row}
         onClose={() => setSheet(null)}
