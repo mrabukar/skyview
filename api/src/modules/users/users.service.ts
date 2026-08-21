@@ -37,6 +37,11 @@ const userSelect = {
     },
   },
   disabledPages: true,
+  // Cashier-only fields
+  shiftDays: true,
+  shiftStartTime: true,
+  shiftEndTime: true,
+  maxDiscountPercent: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -176,6 +181,15 @@ export class UsersService {
             disabledPages:
               role === UserRole.branch_manager ? (dto.disabledPages ?? []) : [],
             branchId,
+            // Cashier shift fields — only written for cashier role
+            ...(role === UserRole.cashier
+              ? {
+                  shiftDays: dto.shiftDays ?? [],
+                  shiftStartTime: dto.shiftStartTime ?? null,
+                  shiftEndTime: dto.shiftEndTime ?? null,
+                  maxDiscountPercent: dto.maxDiscountPercent ?? null,
+                }
+              : {}),
             accounts: {
               create: {
                 id: accountId,
@@ -278,10 +292,26 @@ export class UsersService {
     }
 
     let nextDisabledPages: string[] | undefined;
-    if (nextRole === UserRole.admin) {
+    if (nextRole === UserRole.admin || nextRole === UserRole.cashier) {
       nextDisabledPages = [];
     } else if (dto.disabledPages !== undefined) {
       nextDisabledPages = dto.disabledPages;
+    }
+
+    // Cashier-specific fields: write when role is cashier; clear when changing away.
+    const cashierFields: Record<string, unknown> = {};
+    if (nextRole === UserRole.cashier) {
+      if (dto.shiftDays !== undefined) cashierFields.shiftDays = dto.shiftDays;
+      if (dto.shiftStartTime !== undefined) cashierFields.shiftStartTime = dto.shiftStartTime;
+      if (dto.shiftEndTime !== undefined) cashierFields.shiftEndTime = dto.shiftEndTime;
+      if (dto.maxDiscountPercent !== undefined)
+        cashierFields.maxDiscountPercent = dto.maxDiscountPercent;
+    } else if (dto.role !== undefined && existing.role === UserRole.cashier) {
+      // Switching away from cashier — clear shift fields.
+      cashierFields.shiftDays = [];
+      cashierFields.shiftStartTime = null;
+      cashierFields.shiftEndTime = null;
+      cashierFields.maxDiscountPercent = null;
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -299,6 +329,7 @@ export class UsersService {
           ...(nextDisabledPages !== undefined
             ? { disabledPages: nextDisabledPages }
             : undefined),
+          ...cashierFields,
         },
       });
 
@@ -397,7 +428,8 @@ export class UsersService {
   }
 
   /**
-   * admin → []; branch_manager → ≥1 active org branches.
+   * admin → []; branch_manager → ≥1 active org branches (multi-branch support).
+   * cashier → exactly 1 active org branch (single branchId required).
    * Prefers `branchIds`; falls back to single `branchId`.
    */
   private async resolveBranchIdsForRole(
@@ -419,9 +451,18 @@ export class UsersService {
     const unique = [
       ...new Set(raw.map((id) => id.trim()).filter(Boolean)),
     ];
+
     if (unique.length === 0) {
+      const label =
+        role === UserRole.cashier ? "cashiers" : "branch managers";
       throw new BadRequestException(
-        "At least one branch is required for branch managers",
+        `At least one branch is required for ${label}`,
+      );
+    }
+
+    if (role === UserRole.cashier && unique.length > 1) {
+      throw new BadRequestException(
+        "Cashiers can only be assigned to one branch",
       );
     }
 
