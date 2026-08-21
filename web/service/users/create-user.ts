@@ -18,14 +18,29 @@ export function createUser(
       email: input.email.trim().toLowerCase(),
       password: input.password,
       role: input.role,
-      ...(input.role === "branch_manager" && input.storeId
-        ? { storeId: input.storeId }
+      ...(input.role === "branch_manager"
+        ? {
+            ...(input.storeIds?.length
+              ? { storeIds: input.storeIds }
+              : input.storeId
+                ? { storeId: input.storeId }
+                : {}),
+            ...(input.disabledPages ? { disabledPages: input.disabledPages } : {}),
+          }
+        : {}),
+      ...(input.role === "cashier"
+        ? {
+            storeId: input.storeId,
+            shiftDays: input.shiftDays,
+            shiftStartTime: input.shiftStartTime,
+            shiftEndTime: input.shiftEndTime,
+            ...(input.maxDiscountPercent != null
+              ? { maxDiscountPercent: input.maxDiscountPercent }
+              : {}),
+          }
         : {}),
       ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
       ...(input.salary != null ? { salary: input.salary } : {}),
-      ...(input.role === "branch_manager" && input.disabledPages
-        ? { disabledPages: input.disabledPages }
-        : {}),
     }),
   });
 }
