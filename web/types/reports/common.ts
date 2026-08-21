@@ -21,6 +21,8 @@ export interface AdminPeriodComparison {
   netProfit: PeriodDelta;
   totalExpenses: PeriodDelta;
   totalUnitsSold: PeriodDelta;
+  cogs: PeriodDelta;
+  salaries: PeriodDelta;
 }
 
 export interface ManagerPeriodComparison {
