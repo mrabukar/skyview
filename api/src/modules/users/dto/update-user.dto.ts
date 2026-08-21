@@ -7,11 +7,23 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
+  Max,
   MaxLength,
   Min,
   MinLength,
 } from "class-validator";
 import { MANAGER_PAGES } from "../../../common/page-access/pages";
+
+const DAYS_OF_WEEK = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
 
 export class UpdateUserDto {
   @IsOptional()
@@ -30,8 +42,8 @@ export class UpdateUserDto {
   password?: string;
 
   @IsOptional()
-  @IsIn(["admin", "branch_manager"])
-  role?: "admin" | "branch_manager";
+  @IsIn(["admin", "branch_manager", "cashier"])
+  role?: "admin" | "branch_manager" | "cashier";
 
   @IsOptional()
   @IsString()
@@ -60,4 +72,36 @@ export class UpdateUserDto {
   @IsArray()
   @IsIn(MANAGER_PAGES, { each: true })
   disabledPages?: string[];
+
+  // ── Cashier-only fields ────────────────────────────────────────────────────
+
+  /** Days of week the cashier works. */
+  @IsOptional()
+  @IsArray()
+  @IsIn(DAYS_OF_WEEK, { each: true })
+  shiftDays?: string[];
+
+  /** Shift start time in HH:mm (Africa/Nairobi). */
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
+    message: "shiftStartTime must be in HH:mm format (e.g. 07:00)",
+  })
+  shiftStartTime?: string;
+
+  /** Shift end time in HH:mm (Africa/Nairobi). Must be after shiftStartTime. */
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
+    message: "shiftEndTime must be in HH:mm format (e.g. 20:00)",
+  })
+  shiftEndTime?: string;
+
+  /** Max discount % this cashier can apply per order (0–100). Null = no discount. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  maxDiscountPercent?: number | null;
 }
