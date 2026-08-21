@@ -1,0 +1,53 @@
+/// Org-wide POS menu item (e.g. Classic Milk Tea). Shared catalog — branches
+/// configure availability and prices via BranchMenuItem / BranchMenuItemPrice.
+/// Admins and branch managers can create; managers may edit/deactivate their own.
+model MenuItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  categoryId     String
+  category       MenuCategory @relation(fields: [categoryId], references: [id])
+  name           String
+  description    String?
+  /// R2 object key for an optional item image (future use).
+  imageKey       String?
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  /// Tracks creator for manager ownership-based edit permissions.
+  createdById    String
+  createdBy      User         @relation("MenuItemsCreatedBy", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  sizes       MenuItemSize[]
+  branchItems BranchMenuItem[]
+  orderLines  OrderLine[]
+
+  /// Case-insensitive uniqueness enforced in app + functional index on lower(name).
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@index([categoryId])
+  @@map("menu_item")
+}
+
+/// One size variant of a menu item (e.g. Small, Medium, Large) with a base price.
+/// Branches override per-size pricing via BranchMenuItemPrice.
+model MenuItemSize {
+  id         String   @id @default(cuid())
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name       String
+  /// Base price in KSh — applied when no branch price override exists.
+  basePrice  Decimal  @db.Decimal(12, 2)
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branchPrices BranchMenuItemPrice[]
+  orderLines   OrderLine[]
+
+  @@unique([menuItemId, name])
+  @@index([menuItemId])
+  @@map("menu_item_size")
+}
