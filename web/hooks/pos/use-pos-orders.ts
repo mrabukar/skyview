@@ -65,7 +65,7 @@ export function usePayPosOrder() {
   });
 }
 
-/** Cancel a pending order (cashier-only; no shift guard). */
+/** Cancel a pending order (cashier own, or admin/manager in scope). */
 export function useCancelPosOrder() {
   const queryClient = useQueryClient();
   return useMutation({
