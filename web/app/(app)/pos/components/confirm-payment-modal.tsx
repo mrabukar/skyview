@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Dialog } from "radix-ui";
-import { Banknote, Smartphone, X } from "lucide-react";
+import { Banknote, Nfc, Smartphone, Wallet, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,18 @@ const METHODS: MethodOption[] = [
     icon: Smartphone,
     description: "Mobile money transfer",
   },
+  {
+    value: "pesapal",
+    label: "Pesapal",
+    icon: Wallet,
+    description: "Pesapal online payment",
+  },
+  {
+    value: "pdq",
+    label: "PDQ",
+    icon: Nfc,
+    description: "Card machine (PDQ)",
+  },
 ];
 
 interface Props {
@@ -47,7 +59,7 @@ interface Props {
 
 /**
  * Confirm payment modal shown from Order History on pending orders.
- * Only Cash and M-Pesa options — Card is hidden per user request.
+ * Cash, M-Pesa, Pesapal, and PDQ — Card is hidden per user request.
  */
 export function ConfirmPaymentModal({
   open,
