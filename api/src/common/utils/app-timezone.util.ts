@@ -249,6 +249,14 @@ export function resolveReportDateRange(
     throw new BadRequestException("fromDate must be on or before toDate");
   }
 
+  // Cap reporting windows so dashboards cannot pull unbounded multi-year row sets.
+  const maxFrom = calendarDateMonthsAgo(12, toCalendar);
+  if (compareCalendarDates(fromCalendar, maxFrom) < 0) {
+    throw new BadRequestException(
+      "Date range cannot exceed 12 months. Narrow fromDate/toDate and try again.",
+    );
+  }
+
   return {
     fromCalendar,
     toCalendar,
