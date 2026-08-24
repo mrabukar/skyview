@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { Dialog } from "radix-ui";
 import { X } from "lucide-react";
 
+import { CategoryIconPicker } from "@/components/pos/category-icon-picker";
 import { Button } from "@/components/ui/button";
+import {
+  DEFAULT_MENU_CATEGORY_ICON,
+  isMenuCategoryIconName,
+  type MenuCategoryIconName,
+} from "@/lib/pos/category-icons";
 import { cn } from "@/lib/utils";
 import type {
   MenuCategory,
@@ -16,7 +22,7 @@ const inputCls =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 const contentCls = cn(
-  "fixed left-1/2 top-1/2 z-[60] grid w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border border-border bg-background p-6 shadow-lg duration-200",
+  "fixed left-1/2 top-1/2 z-[60] grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border border-border bg-background p-6 shadow-lg duration-200",
   "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
   "sm:rounded-lg",
 );
@@ -28,6 +34,10 @@ interface Props {
   onClose: () => void;
   onSave: (data: CreateMenuCategoryInput | UpdateMenuCategoryInput) => void;
   isSaving: boolean;
+}
+
+function resolveIcon(value: string | null | undefined): MenuCategoryIconName {
+  return isMenuCategoryIconName(value) ? value : DEFAULT_MENU_CATEGORY_ICON;
 }
 
 export function CategoryModal({
@@ -42,6 +52,9 @@ export function CategoryModal({
   const [description, setDescription] = useState(
     category?.description ?? "",
   );
+  const [icon, setIcon] = useState<MenuCategoryIconName>(() =>
+    resolveIcon(category?.icon),
+  );
   const [isActive, setIsActive] = useState(category?.isActive ?? true);
   const [errs, setErrs] = useState<{
     name?: string;
@@ -52,6 +65,7 @@ export function CategoryModal({
     if (open) {
       setName(category?.name ?? "");
       setDescription(category?.description ?? "");
+      setIcon(resolveIcon(category?.icon));
       setIsActive(category?.isActive ?? true);
       setErrs({});
     }
@@ -74,12 +88,14 @@ export function CategoryModal({
       onSave({
         name: name.trim(),
         description: description.trim() || undefined,
+        icon,
         isActive,
       } satisfies UpdateMenuCategoryInput);
     } else {
       onSave({
         name: name.trim(),
         description: description.trim() || undefined,
+        icon,
       } satisfies CreateMenuCategoryInput);
     }
   };
@@ -120,6 +136,8 @@ export function CategoryModal({
                 <p className="text-sm text-destructive">{errs.name}</p>
               ) : null}
             </div>
+
+            <CategoryIconPicker value={icon} onChange={setIcon} />
 
             {/* Description */}
             <div className="grid gap-2">
