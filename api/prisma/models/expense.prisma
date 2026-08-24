@@ -34,6 +34,7 @@ model Expense {
   updatedAt      DateTime        @updatedAt
 
   @@index([organizationId])
+  @@index([organizationId, expenseDate])
   @@index([branchId, expenseDate])
   @@index([categoryId])
   @@map("expense")
