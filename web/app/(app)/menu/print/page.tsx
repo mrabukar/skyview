@@ -13,7 +13,6 @@ import { useMenuCategories } from "@/hooks/pos/use-menu-categories";
 import { useStores } from "@/hooks/stores/list-stores";
 import { getMenuItemImageUrl } from "@/service/pos/menu-items";
 import { useAppStore } from "@/store/app";
-import { cn } from "@/lib/utils";
 import { toCustomerMenuItems } from "@/lib/pos/customer-menu";
 import type {
   CustomerMenuItem,
@@ -232,23 +231,56 @@ export default function CustomerMenuPage() {
     (isAdmin || (isManager && branchOptions.length > 1)) &&
     branchOptions.length > 0;
 
+  const canExport =
+    Boolean(branchId) &&
+    !isPending &&
+    !isError &&
+    items.length > 0 &&
+    (isCashier || storesLoaded);
+
+  const headerActions = (
+    <div className="customer-menu-actions flex flex-wrap items-center gap-2">
+      {showPicker ? (
+        <Combobox
+          value={branchId || undefined}
+          onValueChange={(v) => setSelectedBranchId(v ?? "")}
+          items={branchOptions}
+          placeholder="Select a branch…"
+          searchPlaceholder="Search branches…"
+          emptyText="No POS-enabled branches."
+          className="w-56"
+        />
+      ) : null}
+      {canExport ? (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+          >
+            <Printer className="size-4" />
+            Print
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => void handleDownloadPdf()}
+            disabled={isPdfLoading}
+          >
+            <Download className="size-4" />
+            {isPdfLoading ? "Generating…" : "Download PDF"}
+          </Button>
+        </>
+      ) : null}
+    </div>
+  );
+
   return (
     <>
       <PageHeader
         title="Customer Menu"
         desc="Print or download a customer menu"
         action={
-          showPicker ? (
-            <Combobox
-              value={branchId || undefined}
-              onValueChange={(v) => setSelectedBranchId(v ?? "")}
-              items={branchOptions}
-              placeholder="Select a branch…"
-              searchPlaceholder="Search branches…"
-              emptyText="No POS-enabled branches."
-              className="w-56"
-            />
-          ) : undefined
+          showPicker || canExport ? headerActions : undefined
         }
       />
 
@@ -279,68 +311,20 @@ export default function CustomerMenuPage() {
         <p className="py-20 text-center text-sm text-muted-foreground">
           No enabled items for {branchName}. Enable items on Branch Menu first.
         </p>
+      ) : layout === "poster" ? (
+        <CustomerMenuPoster
+          items={items}
+          branchName={branchName}
+          organizationName={user?.organizationName}
+          toppings={toppings}
+          categoryDescriptions={categoryDescriptions}
+        />
       ) : (
-        <>
-          {/* <div className="customer-menu-actions mb-6 flex flex-wrap items-center justify-between gap-2">
-            <div className="inline-flex rounded-lg border border-border p-0.5">
-              {(
-                [
-                  ["classic", "Classic"],
-                  ["poster", "Poster"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setLayout(value)}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                    layout === value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.print()}
-              >
-                <Printer className="size-4" />
-                Print
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void handleDownloadPdf()}
-                disabled={isPdfLoading}
-              >
-                <Download className="size-4" />
-                {isPdfLoading ? "Generating…" : "PDF"}
-              </Button>
-            </div>
-          </div> */}
-
-          {layout === "poster" ? (
-            <CustomerMenuPoster
-              items={items}
-              branchName={branchName}
-              organizationName={user?.organizationName}
-              toppings={toppings}
-              categoryDescriptions={categoryDescriptions}
-            />
-          ) : (
-            <CustomerMenuSheet
-              items={items}
-              branchName={branchName}
-              organizationName={user?.organizationName}
-            />
-          )}
-        </>
+        <CustomerMenuSheet
+          items={items}
+          branchName={branchName}
+          organizationName={user?.organizationName}
+        />
       )}
     </>
   );
