@@ -1,9 +1,18 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { ChevronRight, LayoutGrid, Plus, Search } from "lucide-react";
 
 import { MenuItemImage } from "@/components/pos/menu-item-image";
+import { getMenuCategoryIcon } from "@/lib/pos/category-icons";
 import { cn } from "@/lib/utils";
 import type { BranchMenuItemConfig } from "@/types/pos/branch-menu";
 
@@ -29,49 +38,31 @@ function fmtPrice(item: BranchMenuItemConfig): string {
 
 function buildCategories(
   items: BranchMenuItemConfig[],
-): { id: string; name: string }[] {
-  const seen = new Map<string, string>();
+): { id: string; name: string; icon: string | null }[] {
+  const seen = new Map<string, { name: string; icon: string | null }>();
   for (const item of items) {
     if (!seen.has(item.categoryId)) {
-      seen.set(item.categoryId, item.categoryName);
+      seen.set(item.categoryId, {
+        name: item.categoryName,
+        icon: item.categoryIcon ?? null,
+      });
     }
   }
-  return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  return Array.from(seen.entries()).map(([id, v]) => ({
+    id,
+    name: v.name,
+    icon: v.icon,
+  }));
 }
 
-const CATEGORY_COLORS = [
-  {
-    idle: "bg-amber-100 text-amber-800 hover:bg-amber-200",
-    active: "bg-amber-500 text-white",
-  },
-  {
-    idle: "bg-sky-100 text-sky-800 hover:bg-sky-200",
-    active: "bg-sky-500 text-white",
-  },
-  {
-    idle: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
-    active: "bg-emerald-500 text-white",
-  },
-  {
-    idle: "bg-violet-100 text-violet-800 hover:bg-violet-200",
-    active: "bg-violet-500 text-white",
-  },
-  {
-    idle: "bg-rose-100 text-rose-800 hover:bg-rose-200",
-    active: "bg-rose-500 text-white",
-  },
-  {
-    idle: "bg-teal-100 text-teal-800 hover:bg-teal-200",
-    active: "bg-teal-500 text-white",
-  },
-  {
-    idle: "bg-orange-100 text-orange-800 hover:bg-orange-200",
-    active: "bg-orange-500 text-white",
-  },
-  {
-    idle: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
-    active: "bg-indigo-500 text-white",
-  },
+/** Soft brand pastels for idle pills; selected always uses primary. */
+const CATEGORY_PASTELS = [
+  "bg-[var(--tint-indigo)] text-[var(--brand-indigo)] hover:bg-[color-mix(in_srgb,var(--brand-indigo)_12%,var(--tint-indigo))]",
+  "bg-[var(--tint-teal)] text-[var(--brand-teal-600)] hover:bg-[color-mix(in_srgb,var(--brand-teal)_18%,var(--tint-teal))]",
+  "bg-[var(--tint-violet)] text-[var(--brand-violet-600)] hover:bg-[color-mix(in_srgb,var(--brand-violet)_14%,var(--tint-violet))]",
+  "bg-[var(--tint-emerald)] text-emerald-800 hover:bg-emerald-100",
+  "bg-[var(--tint-amber)] text-amber-800 hover:bg-amber-100",
+  "bg-[var(--tint-rose)] text-rose-800 hover:bg-rose-100",
 ] as const;
 
 export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
@@ -118,22 +109,28 @@ export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
           />
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+        <CategoryScroller>
           <CategoryTab
             label="All"
+            icon={<LayoutGrid size={16} />}
             active={activeCat === null}
             onClick={() => setActiveCat(null)}
+            idleClass="bg-[var(--tint-slate)] text-primary hover:bg-[color-mix(in_srgb,var(--brand-indigo)_10%,var(--tint-slate))]"
           />
-          {categories.map((cat, i) => (
-            <CategoryTab
-              key={cat.id}
-              label={cat.name}
-              active={activeCat === cat.id}
-              onClick={() => setActiveCat(cat.id)}
-              colors={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
-            />
-          ))}
-        </div>
+          {categories.map((cat, i) => {
+            const Icon = getMenuCategoryIcon(cat.icon);
+            return (
+              <CategoryTab
+                key={cat.id}
+                label={cat.name}
+                icon={<Icon size={16} />}
+                active={activeCat === cat.id}
+                onClick={() => setActiveCat(cat.id)}
+                idleClass={CATEGORY_PASTELS[i % CATEGORY_PASTELS.length]}
+              />
+            );
+          })}
+        </CategoryScroller>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
@@ -157,32 +154,79 @@ export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
   );
 });
 
+function CategoryScroller({ children }: { children: ReactNode }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateOverflow = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    updateOverflow();
+    el.addEventListener("scroll", updateOverflow, { passive: true });
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateOverflow);
+      observer.disconnect();
+    };
+  }, [updateOverflow, children]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        ref={scrollerRef}
+        className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {children}
+      </div>
+      {canScrollRight ? (
+        <button
+          type="button"
+          aria-label="Show more categories"
+          onClick={() => {
+            scrollerRef.current?.scrollBy({ left: 180, behavior: "smooth" });
+          }}
+          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-primary shadow-sm hover:bg-muted"
+        >
+          <ChevronRight size={18} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function CategoryTab({
   label,
+  icon,
   active,
   onClick,
-  colors,
+  idleClass,
 }: {
   label: string;
+  icon?: ReactNode;
   active: boolean;
   onClick: () => void;
-  colors?: { idle: string; active: string };
+  idleClass?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "h-8 flex-shrink-0 rounded-full px-3.5 text-sm font-medium transition-colors",
-        colors
-          ? active
-            ? colors.active
-            : colors.idle
-          : active
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+        "inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-4 text-sm font-medium shadow-none transition-colors",
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : (idleClass ??
+              "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"),
       )}
     >
+      {icon ? <span className="shrink-0">{icon}</span> : null}
       {label}
     </button>
   );
