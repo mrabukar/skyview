@@ -18,6 +18,7 @@ const categorySelect = {
   id: true,
   name: true,
   description: true,
+  icon: true,
   isActive: true,
   createdById: true,
   createdBy: { select: { id: true, name: true } },
@@ -77,6 +78,7 @@ export class MenuCategoriesService {
             {
               name,
               description: dto.description?.trim() || null,
+              icon: dto.icon ?? null,
               createdById: user.id,
             },
             organizationId,
@@ -132,6 +134,9 @@ export class MenuCategoriesService {
               ? { description: dto.description?.trim() || null }
               : undefined),
             ...(dto.isActive !== undefined ? { isActive: dto.isActive } : undefined),
+            ...(dto.icon !== undefined
+              ? { icon: dto.icon?.trim() || null }
+              : undefined),
           },
         });
         await tx.auditLog.create({
