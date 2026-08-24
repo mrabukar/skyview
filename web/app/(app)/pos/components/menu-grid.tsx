@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 
 import { MenuItemImage } from "@/components/pos/menu-item-image";
@@ -39,7 +39,7 @@ function buildCategories(
   return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
 }
 
-export function MenuGrid({ items, onItemSelect }: Props) {
+export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
   const categories = useMemo(() => buildCategories(items), [items]);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -119,7 +119,7 @@ export function MenuGrid({ items, onItemSelect }: Props) {
       </div>
     </div>
   );
-}
+});
 
 function CategoryTab({
   label,
@@ -180,6 +180,7 @@ function ItemCard({
         <div className="relative aspect-square w-[78%] max-w-[5.5rem] overflow-hidden bg-card p-0.5 lg:max-w-[5.25rem]">
           <MenuItemImage
             imageKey={item.imageKey}
+            src={item.imageUrl}
             alt={item.itemName}
             className="h-full w-full rounded-none bg-transparent"
           />
