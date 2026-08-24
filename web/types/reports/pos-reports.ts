@@ -40,7 +40,7 @@ export interface PosBranchRow {
 }
 
 export interface PosPaymentMethodRow {
-  method: "cash" | "mpesa" | "card" | null;
+  method: "cash" | "mpesa" | "card" | "pesapal" | "pdq" | null;
   revenue: number;
   orderCount: number;
 }
