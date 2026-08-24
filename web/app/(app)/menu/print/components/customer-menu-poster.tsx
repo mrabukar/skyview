@@ -98,7 +98,7 @@ export function CustomerMenuPoster({
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{
           __html: `
-.poster-script { font-family: "Great Vibes", cursive; }
+.poster-script { font-family: var(--font-script); }
 .customer-menu-poster-print { display: none; }
 @media print {
   .navbar,
