@@ -34,6 +34,8 @@ model PosOrder {
 
   @@unique([branchId, orderNumber])
   @@index([organizationId])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, branchId, createdAt])
   @@index([branchId])
   @@index([cashierId])
   @@index([status])
