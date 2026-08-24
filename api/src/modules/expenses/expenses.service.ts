@@ -16,10 +16,11 @@ import {
 } from "../../common/utils/app-timezone.util";
 import {
   assertBranchAccess,
-  assertManagerHasBranches,
   isManager,
+  resolveBranchFilter,
   resolveWriteBranchId,
 } from "../../common/utils/branch-scope.util";
+import { parseIdList } from "../../common/utils/parse-id-list.util";
 import { requireOrganizationId } from "../../common/utils/require-organization-id.util";
 import { withOrganizationId } from "../../common/utils/with-organization-id.util";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -43,6 +44,17 @@ export interface PaginatedResult<T> {
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
+export interface ExpenseBranchTotal {
+  branchId: string;
+  branchName: string;
+  totalAmount: number;
+}
+
+export interface ExpenseTotalsResult {
+  byBranch: ExpenseBranchTotal[];
+  grandTotal: number;
+}
+
 @Injectable()
 export class ExpensesService {
   constructor(
@@ -55,43 +67,7 @@ export class ExpensesService {
     user: CurrentUserPayload,
   ): Promise<PaginatedResult<ExpenseWithDetails>> {
     const skip = (query.page - 1) * query.limit;
-    const dateRange = this.buildDateRange(query.fromDate, query.toDate);
-    const search = typeof query.search === "string" ? query.search.trim() : "";
-
-    let branchFilter: Prisma.ExpenseWhereInput;
-    if (isManager(user)) {
-      // Managers: assigned branches only; company-wide excluded (BR-5.3).
-      const ids = assertManagerHasBranches(user);
-      const trimmed =
-        typeof query.branchId === "string" ? query.branchId.trim() : "";
-      if (trimmed) {
-        if (!ids.includes(trimmed)) {
-          throw new ForbiddenException(
-            "You can only access your assigned branches",
-          );
-        }
-        branchFilter = { branchId: trimmed };
-      } else {
-        branchFilter = {
-          branchId: ids.length === 1 ? ids[0]! : { in: ids },
-        };
-      }
-    } else if (query.companyWideOnly) {
-      branchFilter = { branchId: null };
-    } else if (query.branchId) {
-      branchFilter = { branchId: query.branchId };
-    } else {
-      branchFilter = {};
-    }
-
-    const where: Prisma.ExpenseWhereInput = {
-      ...branchFilter,
-      ...(query.categoryId ? { categoryId: query.categoryId } : undefined),
-      ...(dateRange ? { expenseDate: dateRange } : undefined),
-      ...(search
-        ? { title: { contains: search, mode: "insensitive" } }
-        : undefined),
-    };
+    const where = this.buildWhere(query, user);
 
     const [data, total] = await Promise.all([
       this.prisma.expense.findMany({
@@ -112,6 +88,49 @@ export class ExpensesService {
         limit: query.limit,
         totalPages: Math.ceil(total / query.limit),
       },
+    };
+  }
+
+  async findTotals(
+    query: ExpenseQueryDto,
+    user: CurrentUserPayload,
+  ): Promise<ExpenseTotalsResult> {
+    const requested = parseIdList(query.branchId);
+    if (requested.length === 0) {
+      return { byBranch: [], grandTotal: 0 };
+    }
+
+    const where = this.buildWhere(query, user);
+    const grouped = await this.prisma.expense.groupBy({
+      by: ["branchId"],
+      where: {
+        ...where,
+        branchId: { in: requested },
+      },
+      _sum: { amount: true },
+    });
+
+    const totalsById = new Map(
+      grouped
+        .filter((row) => row.branchId != null)
+        .map((row) => [row.branchId as string, Number(row._sum.amount ?? 0)]),
+    );
+
+    const branches = await this.prisma.branch.findMany({
+      where: { id: { in: requested } },
+      select: { id: true, name: true },
+    });
+    const nameById = new Map(branches.map((branch) => [branch.id, branch.name]));
+
+    const byBranch = requested.map((id) => ({
+      branchId: id,
+      branchName: nameById.get(id) ?? id,
+      totalAmount: totalsById.get(id) ?? 0,
+    }));
+
+    return {
+      byBranch,
+      grandTotal: byBranch.reduce((sum, row) => sum + row.totalAmount, 0),
     };
   }
 
@@ -311,6 +330,31 @@ export class ExpensesService {
     if (compareCalendarDates(calendarDate, todayCalendarDate()) > 0) {
       throw new BadRequestException("Expense date cannot be in the future");
     }
+  }
+
+  private buildWhere(
+    query: ExpenseQueryDto,
+    user: CurrentUserPayload,
+  ): Prisma.ExpenseWhereInput {
+    const dateRange = this.buildDateRange(query.fromDate, query.toDate);
+    const search = typeof query.search === "string" ? query.search.trim() : "";
+
+    let branchFilter: Prisma.ExpenseWhereInput;
+    if (query.companyWideOnly && !isManager(user)) {
+      branchFilter = { branchId: null };
+    } else {
+      const branchId = resolveBranchFilter(user, query.branchId);
+      branchFilter = branchId ? { branchId } : {};
+    }
+
+    return {
+      ...branchFilter,
+      ...(query.categoryId ? { categoryId: query.categoryId } : undefined),
+      ...(dateRange ? { expenseDate: dateRange } : undefined),
+      ...(search
+        ? { title: { contains: search, mode: "insensitive" } }
+        : undefined),
+    };
   }
 
   private buildDateRange(
