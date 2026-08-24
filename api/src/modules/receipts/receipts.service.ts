@@ -102,9 +102,30 @@ export class ReceiptsService {
       const rows = await this.prisma.receipt.findMany({
         where: { purchaseId: query.purchaseId },
         orderBy: { createdAt: "desc" },
+        take: 50,
         include: receiptInclude,
       });
-      const data = await Promise.all(rows.map((r) => this.toClient(r)));
+      const bases = rows.map((r) => ({
+        id: r.id,
+        purchaseId: r.purchaseId,
+        branchId: r.branchId,
+        branchName: r.branch?.name ?? null,
+        itemName: r.purchase?.itemName ?? null,
+        vendorName: r.purchase?.vendor?.name ?? null,
+        purchaseDate:
+          r.purchase?.purchaseDate.toISOString().slice(0, 10) ?? null,
+        originalName: r.originalName,
+        contentType: r.contentType,
+        size: r.size,
+        uploadedByName: r.uploadedBy?.name ?? null,
+        createdAt: r.createdAt.toISOString(),
+      }));
+      const urls = this.r2.isConfigured
+        ? await Promise.all(
+            rows.map((r) => this.r2.presignGet(r.key).catch(() => "")),
+          )
+        : rows.map(() => "");
+      const data = bases.map((row, i) => ({ ...row, url: urls[i] ?? "" }));
       return {
         data,
         meta: {
@@ -137,9 +158,36 @@ export class ReceiptsService {
       this.prisma.receipt.count({ where }),
     ]);
 
-    const data = await Promise.all(rows.map((r) => this.toClient(r)));
+    const data = await Promise.all(
+      rows.map(async (r) => {
+        const base = {
+          id: r.id,
+          purchaseId: r.purchaseId,
+          branchId: r.branchId,
+          branchName: r.branch?.name ?? null,
+          itemName: r.purchase?.itemName ?? null,
+          vendorName: r.purchase?.vendor?.name ?? null,
+          purchaseDate:
+            r.purchase?.purchaseDate.toISOString().slice(0, 10) ?? null,
+          originalName: r.originalName,
+          contentType: r.contentType,
+          size: r.size,
+          uploadedByName: r.uploadedBy?.name ?? null,
+          createdAt: r.createdAt.toISOString(),
+        };
+        return base;
+      }),
+    );
+
+    // Batch-presign the page (one Promise.all) instead of serial awaits in toClient.
+    const urls = this.r2.isConfigured
+      ? await Promise.all(
+          rows.map((r) => this.r2.presignGet(r.key).catch(() => "")),
+        )
+      : rows.map(() => "");
+
     return {
-      data,
+      data: data.map((row, i) => ({ ...row, url: urls[i] ?? "" })),
       meta: {
         total,
         page: query.page,
