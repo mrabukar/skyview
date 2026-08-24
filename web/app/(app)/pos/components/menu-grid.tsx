@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { ChevronRight, LayoutGrid, Plus, Search } from "lucide-react";
+import { memo, useMemo, useState, type ReactNode } from "react";
+import { LayoutGrid, Plus, Search } from "lucide-react";
 
 import { MenuItemImage } from "@/components/pos/menu-item-image";
 import { getMenuCategoryIcon } from "@/lib/pos/category-icons";
@@ -94,7 +86,7 @@ export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="flex-shrink-0 space-y-2.5 px-3 pt-3 pb-2">
+      <div className="flex-shrink-0 space-y-2.5 border-b border-border px-3 pb-3 pt-3">
         <div className="relative">
           <Search
             size={15}
@@ -109,7 +101,7 @@ export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
           />
         </div>
 
-        <CategoryScroller>
+        <div className="flex min-w-0 gap-2 overflow-x-auto pb-0.5">
           <CategoryTab
             label="All"
             icon={<LayoutGrid size={16} />}
@@ -130,10 +122,10 @@ export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
               />
             );
           })}
-        </CategoryScroller>
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3 pb-3">
         {displayed.length === 0 ? (
           <p className="py-12 text-center text-sm text-muted-foreground">
             No items match your search.
@@ -153,53 +145,6 @@ export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
     </div>
   );
 });
-
-function CategoryScroller({ children }: { children: ReactNode }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const updateOverflow = useCallback(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    updateOverflow();
-    el.addEventListener("scroll", updateOverflow, { passive: true });
-    const observer = new ResizeObserver(updateOverflow);
-    observer.observe(el);
-    return () => {
-      el.removeEventListener("scroll", updateOverflow);
-      observer.disconnect();
-    };
-  }, [updateOverflow, children]);
-
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        ref={scrollerRef}
-        className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {children}
-      </div>
-      {canScrollRight ? (
-        <button
-          type="button"
-          aria-label="Show more categories"
-          onClick={() => {
-            scrollerRef.current?.scrollBy({ left: 180, behavior: "smooth" });
-          }}
-          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-primary shadow-sm hover:bg-muted"
-        >
-          <ChevronRight size={18} />
-        </button>
-      ) : null}
-    </div>
-  );
-}
 
 function CategoryTab({
   label,
