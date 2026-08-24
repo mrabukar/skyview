@@ -9,6 +9,8 @@ model MenuCategory {
   description    String?
   sortOrder      Int          @default(0)
   isActive       Boolean      @default(true)
+  /// Lucide icon name chosen in the category picker (e.g. "Coffee").
+  icon           String?
   /// Tracks creator for manager ownership-based edit permissions.
   createdById    String
   createdBy      User         @relation("MenuCategoriesCreatedBy", fields: [createdById], references: [id])
