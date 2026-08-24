@@ -38,7 +38,7 @@ const sizeSelect = {
   updatedAt: true,
 } satisfies Prisma.MenuItemSizeSelect;
 
-const itemSelect = {
+const itemListSelect = {
   id: true,
   name: true,
   description: true,
@@ -54,11 +54,19 @@ const itemSelect = {
     select: sizeSelect,
     orderBy: [{ updatedAt: "desc" as const }],
   },
+} satisfies Prisma.MenuItemSelect;
+
+const itemSelect = {
+  ...itemListSelect,
   _count: { select: { orderLines: true } },
 } satisfies Prisma.MenuItemSelect;
 
 export type MenuItemResult = Prisma.MenuItemGetPayload<{
   select: typeof itemSelect;
+}>;
+
+export type MenuItemListResult = Prisma.MenuItemGetPayload<{
+  select: typeof itemListSelect;
 }>;
 
 export interface PaginatedResult<T> {
@@ -76,7 +84,7 @@ export class MenuItemsService {
   async findAll(
     query: MenuItemQueryDto,
     user: CurrentUserPayload,
-  ): Promise<PaginatedResult<MenuItemResult>> {
+  ): Promise<PaginatedResult<MenuItemListResult>> {
     const isAdmin =
       user.role === UserRole.admin || user.role === UserRole.super_admin;
     const activeFilter =
@@ -97,7 +105,7 @@ export class MenuItemsService {
         skip,
         take: query.limit,
         orderBy: [{ updatedAt: "desc" }],
-        select: itemSelect,
+        select: itemListSelect,
       }),
       this.prisma.menuItem.count({ where }),
     ]);
