@@ -20,6 +20,7 @@ model Purchase {
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId])
+  @@index([organizationId, purchaseDate])
   @@index([branchId, purchaseDate])
   @@index([vendorId])
   @@map("purchase")
