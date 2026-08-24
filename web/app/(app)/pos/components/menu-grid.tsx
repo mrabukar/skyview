@@ -39,6 +39,41 @@ function buildCategories(
   return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
 }
 
+const CATEGORY_COLORS = [
+  {
+    idle: "bg-amber-100 text-amber-800 hover:bg-amber-200",
+    active: "bg-amber-500 text-white",
+  },
+  {
+    idle: "bg-sky-100 text-sky-800 hover:bg-sky-200",
+    active: "bg-sky-500 text-white",
+  },
+  {
+    idle: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
+    active: "bg-emerald-500 text-white",
+  },
+  {
+    idle: "bg-violet-100 text-violet-800 hover:bg-violet-200",
+    active: "bg-violet-500 text-white",
+  },
+  {
+    idle: "bg-rose-100 text-rose-800 hover:bg-rose-200",
+    active: "bg-rose-500 text-white",
+  },
+  {
+    idle: "bg-teal-100 text-teal-800 hover:bg-teal-200",
+    active: "bg-teal-500 text-white",
+  },
+  {
+    idle: "bg-orange-100 text-orange-800 hover:bg-orange-200",
+    active: "bg-orange-500 text-white",
+  },
+  {
+    idle: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
+    active: "bg-indigo-500 text-white",
+  },
+] as const;
+
 export function MenuGrid({ items, onItemSelect }: Props) {
   const categories = useMemo(() => buildCategories(items), [items]);
   const [activeCat, setActiveCat] = useState<string | null>(null);
@@ -89,12 +124,13 @@ export function MenuGrid({ items, onItemSelect }: Props) {
             active={activeCat === null}
             onClick={() => setActiveCat(null)}
           />
-          {categories.map((cat) => (
+          {categories.map((cat, i) => (
             <CategoryTab
               key={cat.id}
               label={cat.name}
               active={activeCat === cat.id}
               onClick={() => setActiveCat(cat.id)}
+              colors={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
             />
           ))}
         </div>
@@ -125,10 +161,12 @@ function CategoryTab({
   label,
   active,
   onClick,
+  colors,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  colors?: { idle: string; active: string };
 }) {
   return (
     <button
@@ -136,9 +174,13 @@ function CategoryTab({
       onClick={onClick}
       className={cn(
         "h-8 flex-shrink-0 rounded-full px-3.5 text-sm font-medium transition-colors",
-        active
-          ? "bg-primary text-primary-foreground"
-          : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+        colors
+          ? active
+            ? colors.active
+            : colors.idle
+          : active
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
       )}
     >
       {label}
