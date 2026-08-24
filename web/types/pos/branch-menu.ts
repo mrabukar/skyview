@@ -23,6 +23,8 @@ export interface BranchMenuItemConfig {
   itemName: string;
   categoryId: string;
   categoryName: string;
+  /** Lucide icon name saved on the category; null uses the POS default. */
+  categoryIcon?: string | null;
   description: string | null;
   imageKey: string | null;
   /** Short-lived presigned GET URL from branch-menu; prefer over a separate fetch. */
