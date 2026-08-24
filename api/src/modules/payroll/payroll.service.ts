@@ -58,9 +58,17 @@ export class PayrollService {
     requireOrganizationId(user);
     const monthKey = this.resolveMonthKey(month);
 
+    // Bound history: current month + last 11 months (12 total), not unbounded.
+    const [y, m] = monthKey.split("-").map(Number);
+    const historyFrom = new Date(Date.UTC(y, m - 12, 1));
+    const historyFromKey = `${historyFrom.getUTCFullYear()}-${String(historyFrom.getUTCMonth() + 1).padStart(2, "0")}`;
+
     const [activeUsers, payments] = await Promise.all([
       this.activeUsers(),
-      this.prisma.salaryPayment.findMany({ orderBy: { paidAt: "desc" } }),
+      this.prisma.salaryPayment.findMany({
+        where: { monthKey: { gte: historyFromKey } },
+        orderBy: { paidAt: "desc" },
+      }),
     ]);
 
     const paidThisMonth = new Set(
@@ -109,9 +117,11 @@ export class PayrollService {
       );
     }
 
+    const salariesCategoryId = await this.requireSalariesCategoryId();
+
     await this.prisma.$transaction(async (tx) => {
       for (const u of toPay) {
-        await this.payOne(tx, user, u, monthKey);
+        await this.payOne(tx, user, u, monthKey, salariesCategoryId);
       }
     });
 
@@ -148,9 +158,11 @@ export class PayrollService {
       );
     }
 
+    const salariesCategoryId = await this.requireSalariesCategoryId();
+
     try {
       await this.prisma.$transaction(async (tx) => {
-        await this.payOne(tx, user, target, monthKey);
+        await this.payOne(tx, user, target, monthKey, salariesCategoryId);
       });
     } catch (error) {
       if (
@@ -167,16 +179,8 @@ export class PayrollService {
     return this.getStatus(user, monthKey);
   }
 
-  /** Create the salary expense + payment record for one user (inside a tx). */
-  private async payOne(
-    tx: Prisma.TransactionClient,
-    actor: CurrentUserPayload,
-    target: ActiveUser,
-    monthKey: string,
-  ): Promise<void> {
-    const organizationId = requireOrganizationId(actor);
-    const label = monthLabel(monthKey);
-    const category = await tx.expenseCategory.findFirst({
+  private async requireSalariesCategoryId(): Promise<number> {
+    const category = await this.prisma.expenseCategory.findFirst({
       where: { name: "Salaries" },
       select: { id: true },
     });
@@ -185,13 +189,26 @@ export class PayrollService {
         'The "Salaries" expense category is missing. Re-run the seed.',
       );
     }
+    return category.id;
+  }
+
+  /** Create the salary expense + payment record for one user (inside a tx). */
+  private async payOne(
+    tx: Prisma.TransactionClient,
+    actor: CurrentUserPayload,
+    target: ActiveUser,
+    monthKey: string,
+    salariesCategoryId: number,
+  ): Promise<void> {
+    const organizationId = requireOrganizationId(actor);
+    const label = monthLabel(monthKey);
 
     const expense = await tx.expense.create({
       data: withOrganizationId(
         {
           title: `Salary — ${target.name} (${label})`,
           amount: target.salary,
-          categoryId: category.id,
+          categoryId: salariesCategoryId,
           branchId: target.branchId,
           expenseDate: calendarDateToDbDate(todayCalendarDate()),
           note: `Salary payment ${label}`,
