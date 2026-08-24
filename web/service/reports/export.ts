@@ -3,6 +3,9 @@
  * API yet). PDFs are real vector documents via @react-pdf/renderer; Excel
  * files are real .xlsx workbooks via exceljs. Both are branded with the
  * org's name/logo mark and the app's color theme.
+ *
+ * Heavy PDF/XLSX modules are dynamic-imported so Financial Summary pages
+ * do not pull them into the initial JS chunk.
  */
 import { apiFetch } from "@/service/client";
 import { getStore } from "@/service/stores/get-store";
@@ -11,11 +14,6 @@ import { useAppStore } from "@/store/app";
 import type { ReportQuery } from "@/types/reports/query";
 import type { FinancialSummaryResponse } from "@/types/reports/financial-summary";
 import type { StockReportResponse } from "@/types/reports/stock-report";
-
-import { renderFinancialSummaryPdfBlob } from "@/lib/reports/pdf/financial-summary-pdf";
-import { renderStockReportPdfBlob } from "@/lib/reports/pdf/stock-report-pdf";
-import { buildFinancialSummaryWorkbook } from "@/lib/reports/xlsx/financial-summary-xlsx";
-import { buildStockReportWorkbook } from "@/lib/reports/xlsx/stock-report-xlsx";
 
 export type ReportExportKind = "financial-summary" | "stock-report";
 export type ReportExportFormat = "xlsx" | "pdf";
@@ -80,6 +78,9 @@ export async function downloadReportExport(
     };
 
     if (format === "pdf") {
+      const { renderFinancialSummaryPdfBlob } = await import(
+        "@/lib/reports/pdf/financial-summary-pdf"
+      );
       downloadBlob(
         "skyview-financial-summary.pdf",
         await renderFinancialSummaryPdfBlob(payload),
@@ -87,6 +88,9 @@ export async function downloadReportExport(
       return;
     }
 
+    const { buildFinancialSummaryWorkbook } = await import(
+      "@/lib/reports/xlsx/financial-summary-xlsx"
+    );
     const workbook = buildFinancialSummaryWorkbook(payload);
     downloadBlob(
       "skyview-financial-summary.xlsx",
@@ -101,10 +105,16 @@ export async function downloadReportExport(
   const payload = { ...context, products: data.products, totals: data.totals };
 
   if (format === "pdf") {
+    const { renderStockReportPdfBlob } = await import(
+      "@/lib/reports/pdf/stock-report-pdf"
+    );
     downloadBlob("skyview-stock-report.pdf", await renderStockReportPdfBlob(payload));
     return;
   }
 
+  const { buildStockReportWorkbook } = await import(
+    "@/lib/reports/xlsx/stock-report-xlsx"
+  );
   const workbook = buildStockReportWorkbook(payload);
   downloadBlob(
     "skyview-stock-report.xlsx",
