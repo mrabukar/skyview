@@ -1,5 +1,9 @@
 import { apiFetch } from "@/service/client";
-import type { ExpenseListQuery, ExpenseListResponse } from "@/types/expenses/expense";
+import type {
+  ExpenseListQuery,
+  ExpenseListResponse,
+  ExpenseTotalsResponse,
+} from "@/types/expenses/expense";
 
 function toQueryString(params: ExpenseListQuery = {}): string {
   const search = new URLSearchParams();
@@ -23,4 +27,12 @@ export function listExpenses(
   params: ExpenseListQuery = {},
 ): Promise<ExpenseListResponse> {
   return apiFetch<ExpenseListResponse>(`/api/expenses${toQueryString(params)}`);
+}
+
+export function listExpenseTotals(
+  params: ExpenseListQuery = {},
+): Promise<ExpenseTotalsResponse> {
+  return apiFetch<ExpenseTotalsResponse>(
+    `/api/expenses/totals${toQueryString(params)}`,
+  );
 }
