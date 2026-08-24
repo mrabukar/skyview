@@ -57,6 +57,7 @@ model User {
   createdToppings        Topping[]                 @relation("ToppingsCreatedBy")
 
   @@unique([email])
+  @@index([organizationId])
   @@map("user")
 }
 
