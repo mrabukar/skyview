@@ -25,6 +25,8 @@ export interface BranchMenuItemConfig {
   categoryName: string;
   description: string | null;
   imageKey: string | null;
+  /** Short-lived presigned GET URL from branch-menu; prefer over a separate fetch. */
+  imageUrl?: string | null;
   /** Branch carries this item (admin/manager toggle). */
   isEnabled: boolean;
   /** Item is currently in stock at this branch (cashier/manager toggle). */
