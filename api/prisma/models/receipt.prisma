@@ -18,7 +18,9 @@ model Receipt {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId])
+  @@index([organizationId, createdAt])
   @@index([purchaseId])
   @@index([branchId])
+  @@index([branchId, createdAt])
   @@map("receipt")
 }
