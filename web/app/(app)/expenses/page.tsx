@@ -11,18 +11,19 @@ import {
 } from "./components/expense-modal";
 import { ExpensesTable } from "./components/expenses-table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Combobox } from "@/components/ui/combobox";
+import { Combobox, MultiCombobox } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
+import { SummaryBar } from "@/components/ui/summary-bar";
 import { useCreateExpenseCategory } from "@/hooks/expense-categories/use-create-expense-category";
 import { useDeleteExpenseCategory } from "@/hooks/expense-categories/use-delete-expense-category";
 import { useExpenseCategories } from "@/hooks/expense-categories/use-expense-categories";
 import { useUpdateExpenseCategory } from "@/hooks/expense-categories/use-update-expense-category";
 import { useCreateExpense } from "@/hooks/expenses/use-create-expense";
 import { useDeleteExpense } from "@/hooks/expenses/use-delete-expense";
-import { useExpenses } from "@/hooks/expenses/use-expenses";
+import { useExpenseTotals, useExpenses } from "@/hooks/expenses/use-expenses";
 import { useUpdateExpense } from "@/hooks/expenses/use-update-expense";
 import { useStores } from "@/hooks/stores/list-stores";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -38,6 +39,7 @@ import { listExpenses } from "@/service/expenses/list-expenses";
 import { getFinancialSummary } from "@/service/reports/financial-summary";
 import { useAppStore } from "@/store/app";
 import { expenseAmount, type Expense } from "@/types/expenses/expense";
+import { fmt } from "@/lib/utils";
 
 type ModalState = { mode: "add" } | { mode: "edit"; expense: Expense };
 
@@ -68,7 +70,7 @@ export default function ExpensesPage() {
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<number | undefined>();
-  const [storeId, setStoreId] = useState<string | undefined>();
+  const [storeIds, setStoreIds] = useState<string[]>([]);
   const [companyWideOnly, setCompanyWideOnly] = useState(false);
   const [fromDate, setFromDate] = useState(defaultRange.fromDate);
   const [toDate, setToDate] = useState(defaultRange.toDate);
@@ -88,7 +90,10 @@ export default function ExpensesPage() {
       limit: pageSize,
       search: debouncedSearch || undefined,
       categoryId,
-      storeId: companyWideOnly ? undefined : storeId || undefined,
+      storeId:
+        companyWideOnly || storeIds.length === 0
+          ? undefined
+          : storeIds.join(","),
       companyWideOnly: companyWideOnly || undefined,
       fromDate,
       toDate,
@@ -98,11 +103,22 @@ export default function ExpensesPage() {
       pageSize,
       debouncedSearch,
       categoryId,
-      storeId,
+      storeIds,
       companyWideOnly,
       fromDate,
       toDate,
     ],
+  );
+
+  const totalsQuery = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      categoryId,
+      storeId: storeIds.join(","),
+      fromDate,
+      toDate,
+    }),
+    [debouncedSearch, categoryId, storeIds, fromDate, toDate],
   );
 
   const { data: storesData } = useStores({ limit: 100 });
@@ -110,6 +126,11 @@ export default function ExpensesPage() {
     useExpenseCategories();
   const { data, isPending, isFetching, isError, error } =
     useExpenses(listQuery);
+  const showBranchTotals =
+    showStoreField && storeIds.length > 0 && !companyWideOnly;
+  const { data: totalsData } = useExpenseTotals(totalsQuery, {
+    enabled: showBranchTotals,
+  });
 
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
@@ -157,7 +178,7 @@ export default function ExpensesPage() {
     do {
       const response = await listExpenses({ ...listQuery, page, limit });
       exported.push(...response.data);
-      totalPages = response.meta.totalPages;
+      totalPages = Math.min(response.meta.totalPages, 50);
       page += 1;
     } while (page <= totalPages);
 
@@ -382,14 +403,13 @@ export default function ExpensesPage() {
       />
       {showStoreField ? (
         <>
-          <Combobox
-            value={storeId}
-            onValueChange={(value) => {
-              setStoreId(value);
+          <MultiCombobox
+            values={storeIds}
+            onValuesChange={(values) => {
+              setStoreIds(values);
               resetPage();
             }}
             items={storeItems}
-            clearOption={{ label: "All branches" }}
             placeholder="All branches"
             searchPlaceholder="Search branches…"
             emptyText="No branches found."
@@ -402,7 +422,7 @@ export default function ExpensesPage() {
                 onCheckedChange={(checked) => {
                   const next = checked === true;
                   setCompanyWideOnly(next);
-                  if (next) setStoreId(undefined);
+                  if (next) setStoreIds([]);
                   resetPage();
                 }}
               />
@@ -438,6 +458,22 @@ export default function ExpensesPage() {
           {error instanceof Error ? error.message : "Failed to load expenses."}
         </div>
       )}
+
+      {showBranchTotals && totalsData ? (
+        <div style={{ marginBottom: 16 }}>
+          <SummaryBar
+            items={[
+              ...totalsData.byBranch.map((row) => ({
+                k: row.storeName,
+                v: fmt(row.totalAmount),
+              })),
+              ...(totalsData.byBranch.length > 1
+                ? [{ k: "Total", v: fmt(totalsData.grandTotal) }]
+                : []),
+            ]}
+          />
+        </div>
+      ) : null}
 
       <ExpensesTable
         rows={rows}
