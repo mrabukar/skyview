@@ -17,6 +17,7 @@ import {
   useUpdateMenuCategory,
   useDeleteMenuCategory,
 } from "@/hooks/pos/use-menu-categories";
+import { getMenuCategoryIcon } from "@/lib/pos/category-icons";
 import { useAppStore } from "@/store/app";
 import type {
   MenuCategory,
@@ -78,9 +79,15 @@ export default function MenuCategoriesPage() {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Name" />
         ),
-        cell: ({ row }) => (
-          <span className="strong">{row.original.name}</span>
-        ),
+        cell: ({ row }) => {
+          const Icon = getMenuCategoryIcon(row.original.icon);
+          return (
+            <span className="inline-flex items-center gap-2 strong">
+              <Icon size={16} className="shrink-0 text-muted-foreground" />
+              {row.original.name}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "description",
