@@ -43,6 +43,7 @@ const purchaseInclude = {
       createdAt: true,
     },
     orderBy: { createdAt: "asc" },
+    take: 8,
   },
 } satisfies Prisma.PurchaseInclude;
 
@@ -79,21 +80,38 @@ export class PurchasesService {
     private readonly r2: R2Service,
   ) {}
 
-  /** Replace each receipt's storage key with a short-lived view URL. */
+  /** Replace each receipt's storage key with a short-lived view URL (batched). */
   private async withReceiptUrls(
     purchase: PurchaseRow,
   ): Promise<PurchaseWithDetails> {
-    const receipts: ReceiptThumb[] = await Promise.all(
-      purchase.receipts.map(async (r) => ({
-        id: r.id,
-        contentType: r.contentType,
-        originalName: r.originalName,
-        url: this.r2.isConfigured ? await this.r2.presignGet(r.key) : "",
-      })),
+    if (!this.r2.isConfigured || purchase.receipts.length === 0) {
+      return {
+        ...purchase,
+        receipts: purchase.receipts.map((r) => ({
+          id: r.id,
+          contentType: r.contentType,
+          originalName: r.originalName,
+          url: "",
+        })),
+      };
+    }
+
+    const urls = await Promise.all(
+      purchase.receipts.map((r) => this.r2.presignGet(r.key).catch(() => "")),
     );
+    const receipts: ReceiptThumb[] = purchase.receipts.map((r, i) => ({
+      id: r.id,
+      contentType: r.contentType,
+      originalName: r.originalName,
+      url: urls[i] ?? "",
+    }));
     return { ...purchase, receipts };
   }
 
+  /**
+   * List purchases with receipt thumbs. Presigns are batched per page
+   * (receipts capped at 8 per purchase in the include).
+   */
   async findAll(
     query: PurchaseQueryDto,
     user: CurrentUserPayload,
@@ -134,8 +152,34 @@ export class PurchasesService {
       this.prisma.purchase.count({ where }),
     ]);
 
+    // Single flat batch of presigns for the whole page (not N+1 per purchase).
+    const keyed = data.flatMap((p) =>
+      p.receipts.map((r) => ({ purchaseId: p.id, receipt: r })),
+    );
+    const urlByReceiptId = new Map<string, string>();
+    if (this.r2.isConfigured && keyed.length > 0) {
+      const urls = await Promise.all(
+        keyed.map(({ receipt }) =>
+          this.r2.presignGet(receipt.key).catch(() => ""),
+        ),
+      );
+      keyed.forEach(({ receipt }, i) => {
+        urlByReceiptId.set(receipt.id, urls[i] ?? "");
+      });
+    }
+
+    const withUrls: PurchaseWithDetails[] = data.map((p) => ({
+      ...p,
+      receipts: p.receipts.map((r) => ({
+        id: r.id,
+        contentType: r.contentType,
+        originalName: r.originalName,
+        url: urlByReceiptId.get(r.id) ?? "",
+      })),
+    }));
+
     return {
-      data: await Promise.all(data.map((p) => this.withReceiptUrls(p))),
+      data: withUrls,
       meta: {
         total,
         page: query.page,
