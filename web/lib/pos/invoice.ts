@@ -49,11 +49,11 @@ export function paidAndDue(order: PosOrder): { paid: number; due: number } {
 }
 
 export function invoiceLineCount(order: PosOrder): number {
-  return order.lines.length;
+  return (order.lines ?? []).length;
 }
 
 export function invoiceQtyTotal(order: PosOrder): number {
-  return order.lines.reduce((sum, line) => sum + line.quantity, 0);
+  return (order.lines ?? []).reduce((sum, line) => sum + line.quantity, 0);
 }
 
 export function discountLabel(order: PosOrder): string | null {
