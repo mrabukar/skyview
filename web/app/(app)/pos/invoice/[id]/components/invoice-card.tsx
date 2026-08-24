@@ -196,7 +196,7 @@ export function InvoiceCard({
             </tr>
           </thead>
           <tbody>
-            {order.lines.map((line, index) => (
+            {(order.lines ?? []).map((line, index) => (
               <tr key={line.id} className="align-top border-b border-[#eae1d5]">
                 <td className="px-2.5 py-2.5 tabular-nums text-muted-foreground">
                   {index + 1}
