@@ -44,7 +44,8 @@ export interface MenuItem {
   createdAt: string;
   updatedAt: string;
   sizes: MenuItemSize[];
-  _count: { orderLines: number };
+  /** Present on detail; omitted from list responses. */
+  _count?: { orderLines: number };
 }
 
 export interface Topping {
