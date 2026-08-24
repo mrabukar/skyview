@@ -13,6 +13,7 @@ export interface MenuCategory {
   id: string;
   name: string;
   description: string | null;
+  icon: string | null;
   isActive: boolean;
   createdById: string;
   createdBy: MenuCreatedBy;
@@ -84,12 +85,14 @@ export interface ToppingQuery {
 export interface CreateMenuCategoryInput {
   name: string;
   description?: string;
+  icon?: string;
 }
 
 export interface UpdateMenuCategoryInput {
   name?: string;
   description?: string;
   isActive?: boolean;
+  icon?: string | null;
 }
 
 export interface CreateMenuItemSizeInput {
