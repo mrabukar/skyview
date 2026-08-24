@@ -8,6 +8,7 @@ import { Prisma, UserRole } from "@prisma/client";
 import { CurrentUserPayload } from "../../common/decorators/current-user.decorator";
 import { requireOrganizationId } from "../../common/utils/require-organization-id.util";
 import { assertBranchAccess } from "../../common/utils/branch-scope.util";
+import { R2Service } from "../../common/r2/r2.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { UpdateBranchMenuItemDto } from "./dto/update-branch-menu-item.dto";
 import { BulkEnableBranchMenuItemsDto } from "./dto/bulk-enable-branch-menu-items.dto";
@@ -32,6 +33,8 @@ export interface BranchMenuItemConfig {
   categoryName: string;
   description: string | null;
   imageKey: string | null;
+  /** Short-lived presigned GET URL, or null when missing / R2 unconfigured. */
+  imageUrl: string | null;
   /** false when no BranchMenuItem row exists for this branch. */
   isEnabled: boolean;
   /** true when no BranchMenuItem row exists (default on). */
@@ -56,7 +59,10 @@ export interface BranchMenuResponse {
 
 @Injectable()
 export class BranchMenuService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly r2: R2Service,
+  ) {}
 
   /**
    * Full menu configuration for one branch.
@@ -129,8 +135,9 @@ export class BranchMenuService {
       branchToppings.map((bt) => [bt.toppingId, bt.isInStock]),
     );
 
-    // Assemble items.
-    const data: BranchMenuItemConfig[] = [];
+    // Assemble items (presign image URLs in one batch so the POS grid
+    // does not need a separate request per card).
+    const assembled: Omit<BranchMenuItemConfig, "imageUrl">[] = [];
     for (const item of menuItems) {
       const config = branchItemMap.get(item.id);
       const isEnabled = config?.isEnabled ?? false;
@@ -151,7 +158,7 @@ export class BranchMenuService {
         };
       });
 
-      data.push({
+      assembled.push({
         menuItemId: item.id,
         itemName: item.name,
         categoryId: item.category.id,
@@ -163,6 +170,14 @@ export class BranchMenuService {
         sizes,
       });
     }
+
+    const imageUrls = await this.presignImageKeys(
+      assembled.map((item) => item.imageKey),
+    );
+    const data: BranchMenuItemConfig[] = assembled.map((item, index) => ({
+      ...item,
+      imageUrl: imageUrls[index] ?? null,
+    }));
 
     // Assemble toppings.
     const toppingData: BranchToppingConfig[] = toppings.map((t) => {
@@ -418,6 +433,7 @@ export class BranchMenuService {
     }
 
     const priceMap = new Map(branchPrices.map((p) => [p.menuItemSizeId, p.price]));
+    const [imageUrl] = await this.presignImageKeys([item.imageKey]);
 
     return {
       menuItemId: item.id,
@@ -426,6 +442,7 @@ export class BranchMenuService {
       categoryName: item.category.name,
       description: item.description,
       imageKey: item.imageKey,
+      imageUrl: imageUrl ?? null,
       isEnabled: branchMenuItem?.isEnabled ?? false,
       isInStock: branchMenuItem?.isInStock ?? true,
       sizes: item.sizes.map((size) => {
@@ -440,6 +457,24 @@ export class BranchMenuService {
         };
       }),
     };
+  }
+
+  private async presignImageKeys(
+    keys: (string | null | undefined)[],
+  ): Promise<(string | null)[]> {
+    if (!this.r2.isConfigured) {
+      return keys.map(() => null);
+    }
+    return Promise.all(
+      keys.map(async (key) => {
+        if (!key) return null;
+        try {
+          return await this.r2.presignGet(key);
+        } catch {
+          return null;
+        }
+      }),
+    );
   }
 
   private async requireBranch(branchId: string): Promise<void> {
