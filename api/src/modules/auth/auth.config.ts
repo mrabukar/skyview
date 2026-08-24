@@ -69,6 +69,26 @@ export function createAuth(prisma: PrismaClient) {
           type: "string",
           input: true,
         },
+        disabledPages: {
+          type: "string[]",
+          input: false,
+          required: false,
+        },
+        shiftDays: {
+          type: "string[]",
+          input: false,
+          required: false,
+        },
+        shiftStartTime: {
+          type: "string",
+          input: false,
+          required: false,
+        },
+        shiftEndTime: {
+          type: "string",
+          input: false,
+          required: false,
+        },
       },
     },
 
