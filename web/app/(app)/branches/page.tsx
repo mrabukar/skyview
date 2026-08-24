@@ -148,7 +148,7 @@ export default function StoresPage() {
         search: debouncedSearch || undefined,
       });
       rows.push(...response.data);
-      totalPages = response.meta.totalPages;
+      totalPages = Math.min(response.meta.totalPages, 50);
       page += 1;
     } while (page <= totalPages);
 
