@@ -13,12 +13,16 @@ import type { PageKey } from "./pages";
 interface RequestUser {
   id: string;
   role: UserRole;
+  disabledPages?: string[];
 }
 
 /**
  * Blocks a branch_manager from any page whose key is in their `disabledPages`.
  * Admins/super-admins are unrestricted. Runs after the auth guard, so
  * `request.user` is already populated. No-op on routes without `@Page(...)`.
+ *
+ * Prefer `disabledPages` from the session/me payload; fall back to a DB
+ * read only when the field is missing (e.g. older sessions).
  */
 @Injectable()
 export class PageAccessGuard implements CanActivate {
@@ -48,11 +52,18 @@ export class PageAccessGuard implements CanActivate {
       return true; // admins/super-admins are never page-restricted
     }
 
-    const dbUser = await this.prisma.user.findUnique({
-      where: { id: user.id },
-      select: { disabledPages: true },
-    });
-    if (dbUser?.disabledPages?.includes(pageKey)) {
+    let disabledPages = user.disabledPages;
+    if (!Array.isArray(disabledPages)) {
+      const dbUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        select: { disabledPages: true },
+      });
+      disabledPages = dbUser?.disabledPages ?? [];
+      // Cache on the request so later guards/handlers reuse it.
+      user.disabledPages = disabledPages;
+    }
+
+    if (disabledPages.includes(pageKey)) {
       throw new ForbiddenException(
         `The ${pageKey} page is disabled for your account. Contact your administrator.`,
       );
