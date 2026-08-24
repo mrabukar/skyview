@@ -70,13 +70,16 @@ export class TenantInterceptor implements NestInterceptor {
     const primary =
       typeof user.branchId === "string" ? user.branchId : null;
 
-    let branchIds: string[] = [];
-    if (role === UserRole.branch_manager) {
+    // Reuse branchIds already on the session/me payload when present.
+    let branchIds = Array.isArray(user.branchIds) ? user.branchIds : undefined;
+    if (branchIds === undefined && role === UserRole.branch_manager) {
       branchIds = await this.branchAccess.getBranchIds(
         user.id,
         role,
         primary,
       );
+    } else if (branchIds === undefined) {
+      branchIds = [];
     }
 
     const enriched = { ...user, branchIds } as CurrentUserPayload;
