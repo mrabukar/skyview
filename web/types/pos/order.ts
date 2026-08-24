@@ -63,7 +63,8 @@ export interface PosOrder {
   voidedBy: { id: string; name: string } | null;
   voidReason: string | null;
   voidedAt: string | null;
-  lines: OrderLine[];
+  /** Present on detail/invoice; omitted from list responses. */
+  lines?: OrderLine[];
   createdAt: string;
   updatedAt: string;
 }
@@ -136,4 +137,6 @@ export interface CartLine {
   toppings: CartTopping[];
   /** Local-only; used for cart thumbnails. Not sent to the API. */
   imageKey?: string | null;
+  /** Local-only presigned URL for cart thumbnails. */
+  imageUrl?: string | null;
 }
