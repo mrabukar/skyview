@@ -91,6 +91,7 @@ export function OrderPanel({ onDiscount, onPay, isPlacingOrder }: Props) {
                 >
                   <MenuItemImage
                     imageKey={line.imageKey}
+                    src={line.imageUrl}
                     alt={line.itemName}
                     className="size-9 shrink-0 rounded-md bg-background"
                   />
