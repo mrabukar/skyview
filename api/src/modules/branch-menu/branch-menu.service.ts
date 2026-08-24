@@ -31,6 +31,7 @@ export interface BranchMenuItemConfig {
   itemName: string;
   categoryId: string;
   categoryName: string;
+  categoryIcon: string | null;
   description: string | null;
   imageKey: string | null;
   /** Short-lived presigned GET URL, or null when missing / R2 unconfigured. */
@@ -89,7 +90,7 @@ export class BranchMenuService {
             name: true,
             description: true,
             imageKey: true,
-            category: { select: { id: true, name: true } },
+            category: { select: { id: true, name: true, icon: true } },
             sizes: {
               orderBy: [{ updatedAt: "desc" }],
               select: {
@@ -163,6 +164,7 @@ export class BranchMenuService {
         itemName: item.name,
         categoryId: item.category.id,
         categoryName: item.category.name,
+        categoryIcon: item.category.icon,
         description: item.description,
         imageKey: item.imageKey,
         isEnabled,
@@ -411,7 +413,7 @@ export class BranchMenuService {
           name: true,
           description: true,
           imageKey: true,
-          category: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true, icon: true } },
           sizes: {
             orderBy: [{ updatedAt: "desc" }],
             select: { id: true, name: true, basePrice: true, isActive: true },
@@ -440,6 +442,7 @@ export class BranchMenuService {
       itemName: item.name,
       categoryId: item.category.id,
       categoryName: item.category.name,
+      categoryIcon: item.category.icon,
       description: item.description,
       imageKey: item.imageKey,
       imageUrl: imageUrl ?? null,
