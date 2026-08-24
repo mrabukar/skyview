@@ -29,6 +29,7 @@ type SaleRow = {
   branch: { id: string; name: string };
   enteredBy: { id: string; name: string; email: string };
 };
+type SaleSlimRow = { saleDate: Date; totalAmount: Prisma.Decimal; branchId: string; branch: { id: string; name: string } };
 type PurchaseRow = { purchaseDate: Date; totalCost: Prisma.Decimal };
 type ExpenseRow = {
   expenseDate: Date;
@@ -47,6 +48,12 @@ type PosOrderRow = {
   createdAt: Date;
   branch: { id: string; name: string };
   cashier: { id: string; name: string };
+};
+type PosOrderSlimRow = {
+  totalAmount: Prisma.Decimal;
+  createdAt: Date;
+  branchId: string;
+  branch: { id: string; name: string };
 };
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────────
@@ -91,11 +98,27 @@ export class ReportsService {
     const prevFromCal = calendarDateDaysAgo(1 + spanDays, range.fromCalendar);
     const prevRange = toReportDateRange(prevFromCal, prevToCal);
 
-    const [{ sales, purchases, expenses }, posOrders, prev, prevPosOrders] = await Promise.all([
+    // Current window needs dated rows for charts; previous window is SQL aggregates only.
+    const [
+      { sales, purchases, expenses },
+      posOrders,
+      prevSaleRevenue,
+      prevPosRevenue,
+      prevCogs,
+      prevExpenses,
+      prevSaleCount,
+      prevSalaries,
+      recentSales,
+    ] = await Promise.all([
       this.collect(range.fromDate, range.toDate, branchId),
       this.collectPosOrders(range.fromTimestamp, range.toTimestamp, branchId),
-      this.collect(prevRange.fromDate, prevRange.toDate, branchId),
-      this.collectPosOrders(prevRange.fromTimestamp, prevRange.toTimestamp, branchId),
+      this.sumSalesInRange(prevFromCal, prevToCal, branchId),
+      this.sumPosInRange(prevRange.fromTimestamp, prevRange.toTimestamp, branchId),
+      this.sumPurchasesInRange(prevRange.fromDate, prevRange.toDate, branchId),
+      this.sumExpensesInRange(prevRange.fromDate, prevRange.toDate, branchId),
+      this.countSalesInRange(prevFromCal, prevToCal, branchId),
+      this.sumSalariesInRange(prevRange.fromDate, prevRange.toDate, branchId),
+      this.fetchRecentSales(range.fromDate, range.toDate, branchId),
     ]);
 
     const saleRevenue = this.sum(sales, "totalAmount");
@@ -108,9 +131,7 @@ export class ReportsService {
       .filter((e) => e.category.name === "Salaries")
       .reduce((a, e) => a + Number(e.amount), 0);
 
-    const prevRevenue = this.sum(prev.sales, "totalAmount") + this.sumPosArr(prevPosOrders);
-    const prevCogs = this.sum(prev.purchases, "totalCost");
-    const prevExpenses = this.sum(prev.expenses, "amount");
+    const prevRevenue = prevSaleRevenue + prevPosRevenue;
 
     const grossProfit = revenue - cogs;
     const netProfit = revenue - cogs - totalExpenses;
@@ -124,10 +145,6 @@ export class ReportsService {
     const monthly = this.monthlyRows(
       range.fromCalendar, range.toCalendar, sales, purchases, expenses, posOrders,
     );
-
-    const prevSalaries = prev.expenses
-      .filter((e) => e.category.name === "Salaries")
-      .reduce((a, e) => a + Number(e.amount), 0);
 
     return {
       period: { from: range.fromCalendar, to: range.toCalendar, timezone: "Africa/Nairobi" },
@@ -159,7 +176,7 @@ export class ReportsService {
         grossProfit: delta(grossProfit, prevRevenue - prevCogs),
         netProfit: delta(netProfit, prevRevenue - prevCogs - prevExpenses),
         totalExpenses: delta(totalExpenses, prevExpenses),
-        totalUnitsSold: delta(sales.length, prev.sales.length),
+        totalUnitsSold: delta(sales.length, prevSaleCount),
         cogs: delta(cogs, prevCogs),
         salaries: delta(salaries, prevSalaries),
       },
@@ -182,7 +199,7 @@ export class ReportsService {
         topProducts: [],
         topStores: this.topStores(sales, posOrders),
       },
-      recentSales: this.recentSales(sales),
+      recentSales: this.recentSales(recentSales),
     };
   }
 
@@ -254,25 +271,28 @@ export class ReportsService {
     const yesterdayRange = toReportDateRange(yesterday, yesterday);
     const trendRange = toReportDateRange(trendStart, today);
 
-    // All data in parallel — reduces from 16+ serial queries to 8 parallel ones.
+    // Month collectors cover today; only fetch yesterday / prev-month as
+    // slim revenue aggregates (not full enteredBy rows).
     const [
       month,
       monthPosOrders,
-      yesterdaySaleRows,
-      yesterdayPosOrders,
-      prevMonthSaleRows,
-      prevMonthPosOrders,
+      yesterdaySaleAgg,
+      yesterdayPosAgg,
+      prevMonthSaleAgg,
+      prevMonthPosAgg,
       trendSaleRows,
       trendPosOrders,
+      recentSales,
     ] = await Promise.all([
       this.collect(monthRange.fromDate, monthRange.toDate, branchFilter),
       this.collectPosOrders(monthRange.fromTimestamp, monthRange.toTimestamp, branchFilter),
-      this.salesInRange(yesterday, yesterday, branchFilter),
-      this.collectPosOrders(yesterdayRange.fromTimestamp, yesterdayRange.toTimestamp, branchFilter),
-      this.salesInRange(prevMonthStart, prevMonthSameDay, branchFilter),
-      this.collectPosOrders(prevMonthRange.fromTimestamp, prevMonthRange.toTimestamp, branchFilter),
-      this.salesInRange(trendStart, today, branchFilter),
-      this.collectPosOrders(trendRange.fromTimestamp, trendRange.toTimestamp, branchFilter),
+      this.sumSalesInRange(yesterday, yesterday, branchFilter),
+      this.sumPosInRange(yesterdayRange.fromTimestamp, yesterdayRange.toTimestamp, branchFilter),
+      this.sumSalesInRange(prevMonthStart, prevMonthSameDay, branchFilter),
+      this.sumPosInRange(prevMonthRange.fromTimestamp, prevMonthRange.toTimestamp, branchFilter),
+      this.salesSlimInRange(trendStart, today, branchFilter),
+      this.collectPosOrdersSlim(trendRange.fromTimestamp, trendRange.toTimestamp, branchFilter),
+      this.fetchRecentSales(monthRange.fromDate, monthRange.toDate, branchFilter),
     ]);
 
     const monthRows = month.sales;
@@ -284,10 +304,8 @@ export class ReportsService {
     const monthExpenses = this.sum(month.expenses, "amount");
     const todayRevenue = this.sum(todayRows, "totalAmount") + this.sumPosArr(todayPosOrders);
 
-    const yesterdayRevenue =
-      this.sum(yesterdaySaleRows, "totalAmount") + this.sumPosArr(yesterdayPosOrders);
-    const prevMonthRevenue =
-      this.sum(prevMonthSaleRows, "totalAmount") + this.sumPosArr(prevMonthPosOrders);
+    const yesterdayRevenue = yesterdaySaleAgg + yesterdayPosAgg;
+    const prevMonthRevenue = prevMonthSaleAgg + prevMonthPosAgg;
 
     // 14-day trend — all in-memory (no extra queries)
     const salesTrend: Array<{ date: string; revenue: number }> = [];
@@ -332,7 +350,7 @@ export class ReportsService {
         expenseBreakdown: this.expenseBreakdown(month.expenses),
         stockByCategory: [],
       },
-      recentSales: this.recentSales(monthRows),
+      recentSales: this.recentSales(recentSales),
     };
   }
 
@@ -617,6 +635,7 @@ export class ReportsService {
    * Fetch DailySale + Purchase + Expense rows for a date range.
    * DailySale is filtered to posEnabled=false branches only — POS-enabled
    * branches use PosOrder as their revenue source (BR-POS-8.5).
+   * Omits enteredBy (use fetchRecentSales for the dashboard strip).
    */
   private async collect(from: Date, to: Date, branchId?: BranchIdFilter) {
     const [sales, purchases, expenses] = await Promise.all([
@@ -632,7 +651,6 @@ export class ReportsService {
           totalAmount: true,
           branchId: true,
           branch: { select: { id: true, name: true } },
-          enteredBy: { select: { id: true, name: true, email: true } },
         },
         orderBy: { saleDate: "desc" },
       }),
@@ -646,26 +664,21 @@ export class ReportsService {
       }),
     ]);
     return {
-      sales: sales as SaleRow[],
+      sales: sales as SaleSlimRow[],
       purchases: purchases as PurchaseRow[],
       expenses: expenses as ExpenseRow[],
     };
   }
 
-  /**
-   * DailySale rows for a calendar-date range (posEnabled=false branches only).
-   */
-  private async salesInRange(
-    fromCal: string,
-    toCal: string,
+  /** Latest DailySale rows with enteredBy for the dashboard recent-sales strip. */
+  private async fetchRecentSales(
+    from: Date,
+    to: Date,
     branchId?: BranchIdFilter,
   ): Promise<SaleRow[]> {
     const rows = await this.prisma.dailySale.findMany({
       where: {
-        saleDate: {
-          gte: calendarDateToDbDate(fromCal),
-          lte: calendarDateToDbDate(toCal),
-        },
+        saleDate: { gte: from, lte: to },
         branch: { posEnabled: false },
         ...(branchId ? { branchId } : undefined),
       },
@@ -678,8 +691,127 @@ export class ReportsService {
         enteredBy: { select: { id: true, name: true, email: true } },
       },
       orderBy: { saleDate: "desc" },
+      take: 8,
     });
     return rows as SaleRow[];
+  }
+
+  /** Slim DailySale rows for trend charts (no enteredBy). */
+  private async salesSlimInRange(
+    fromCal: string,
+    toCal: string,
+    branchId?: BranchIdFilter,
+  ): Promise<SaleSlimRow[]> {
+    const rows = await this.prisma.dailySale.findMany({
+      where: {
+        saleDate: {
+          gte: calendarDateToDbDate(fromCal),
+          lte: calendarDateToDbDate(toCal),
+        },
+        branch: { posEnabled: false },
+        ...(branchId ? { branchId } : undefined),
+      },
+      select: {
+        saleDate: true,
+        totalAmount: true,
+        branchId: true,
+        branch: { select: { id: true, name: true } },
+      },
+    });
+    return rows as SaleSlimRow[];
+  }
+
+  private async sumSalesInRange(
+    fromCal: string,
+    toCal: string,
+    branchId?: BranchIdFilter,
+  ): Promise<number> {
+    const agg = await this.prisma.dailySale.aggregate({
+      where: {
+        saleDate: {
+          gte: calendarDateToDbDate(fromCal),
+          lte: calendarDateToDbDate(toCal),
+        },
+        branch: { posEnabled: false },
+        ...(branchId ? { branchId } : undefined),
+      },
+      _sum: { totalAmount: true },
+    });
+    return Number(agg._sum.totalAmount ?? 0);
+  }
+
+  private async countSalesInRange(
+    fromCal: string,
+    toCal: string,
+    branchId?: BranchIdFilter,
+  ): Promise<number> {
+    return this.prisma.dailySale.count({
+      where: {
+        saleDate: {
+          gte: calendarDateToDbDate(fromCal),
+          lte: calendarDateToDbDate(toCal),
+        },
+        branch: { posEnabled: false },
+        ...(branchId ? { branchId } : undefined),
+      },
+    });
+  }
+
+  private async sumPurchasesInRange(
+    from: Date,
+    to: Date,
+    branchId?: BranchIdFilter,
+  ): Promise<number> {
+    const agg = await this.prisma.purchase.aggregate({
+      where: { purchaseDate: { gte: from, lte: to }, ...(branchId ? { branchId } : undefined) },
+      _sum: { totalCost: true },
+    });
+    return Number(agg._sum.totalCost ?? 0);
+  }
+
+  private async sumExpensesInRange(
+    from: Date,
+    to: Date,
+    branchId?: BranchIdFilter,
+  ): Promise<number> {
+    const agg = await this.prisma.expense.aggregate({
+      where: { expenseDate: { gte: from, lte: to }, ...(branchId ? { branchId } : undefined) },
+      _sum: { amount: true },
+    });
+    return Number(agg._sum.amount ?? 0);
+  }
+
+  private async sumSalariesInRange(
+    from: Date,
+    to: Date,
+    branchId?: BranchIdFilter,
+  ): Promise<number> {
+    const agg = await this.prisma.expense.aggregate({
+      where: {
+        expenseDate: { gte: from, lte: to },
+        category: { name: "Salaries" },
+        ...(branchId ? { branchId } : undefined),
+      },
+      _sum: { amount: true },
+    });
+    return Number(agg._sum.amount ?? 0);
+  }
+
+  private async sumPosInRange(
+    fromTs: Date,
+    toTs: Date,
+    branchId?: BranchIdFilter,
+  ): Promise<number> {
+    const agg = await this.prisma.posOrder.aggregate({
+      where: {
+        status: OrderStatus.paid,
+        createdAt: { gte: fromTs, lte: toTs },
+        branch: { posEnabled: true },
+        ...(branchId ? { branchId } : undefined),
+      },
+      _sum: { totalAmount: true },
+    });
+    return Number(agg._sum.totalAmount ?? 0);
   }
 
   /**
@@ -714,6 +846,29 @@ export class ReportsService {
     return rows as PosOrderRow[];
   }
 
+  /** Slim POS rows for trend / revenue-by-day (no cashier join). */
+  private async collectPosOrdersSlim(
+    fromTs: Date,
+    toTs: Date,
+    branchId?: BranchIdFilter,
+  ): Promise<PosOrderSlimRow[]> {
+    const rows = await this.prisma.posOrder.findMany({
+      where: {
+        status: OrderStatus.paid,
+        createdAt: { gte: fromTs, lte: toTs },
+        branch: { posEnabled: true },
+        ...(branchId ? { branchId } : undefined),
+      },
+      select: {
+        totalAmount: true,
+        createdAt: true,
+        branchId: true,
+        branch: { select: { id: true, name: true } },
+      },
+    });
+    return rows as PosOrderSlimRow[];
+  }
+
   // ── Aggregation helpers ─────────────────────────────────────────────────────
 
   /** Convert a UTC timestamp to the app timezone's calendar date (YYYY-MM-DD). */
@@ -722,7 +877,7 @@ export class ReportsService {
   }
 
   /** Sum totalAmount from POS order rows. */
-  private sumPosArr(orders: PosOrderRow[]): number {
+  private sumPosArr(orders: Array<{ totalAmount: Prisma.Decimal }>): number {
     return orders.reduce((a, o) => a + Number(o.totalAmount), 0);
   }
 
@@ -733,10 +888,10 @@ export class ReportsService {
   private monthlyRows(
     fromCal: string,
     toCal: string,
-    sales: SaleRow[],
+    sales: Array<{ saleDate: Date; totalAmount: Prisma.Decimal }>,
     purchases: PurchaseRow[],
     expenses: ExpenseRow[],
-    posOrders: PosOrderRow[] = [],
+    posOrders: Array<{ createdAt: Date; totalAmount: Prisma.Decimal }> = [],
   ) {
     const keys = buildMonthSeries(fromCal, toCal);
     return keys.map((monthKey) => {
@@ -780,7 +935,10 @@ export class ReportsService {
       .sort((a, b) => b.amount - a.amount);
   }
 
-  private topStores(sales: SaleRow[], posOrders: PosOrderRow[] = []) {
+  private topStores(
+    sales: Array<{ branchId: string; branch: { name: string }; totalAmount: Prisma.Decimal }>,
+    posOrders: Array<{ branchId: string; branch: { name: string }; totalAmount: Prisma.Decimal }> = [],
+  ) {
     const map = new Map<string, { name: string; revenue: number }>();
     for (const s of sales) {
       const cur = map.get(s.branchId) ?? { name: s.branch.name, revenue: 0 };
@@ -798,7 +956,7 @@ export class ReportsService {
   }
 
   private recentSales(sales: SaleRow[]) {
-    return sales.slice(0, 8).map((s) => ({
+    return sales.map((s) => ({
       id: s.id,
       quantitySold: 1,
       totalAmount: Number(s.totalAmount),
