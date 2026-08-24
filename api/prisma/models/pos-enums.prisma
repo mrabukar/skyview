@@ -9,6 +9,8 @@ enum PaymentMethod {
   cash
   mpesa
   card
+  pesapal
+  pdq
 }
 
 enum DiscountType {
