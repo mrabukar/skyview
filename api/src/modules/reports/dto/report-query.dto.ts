@@ -12,6 +12,8 @@ export class ReportQueryDto {
   /**
    * One id, or several comma-separated ids. Admin-only filter; managers
    * always use their own assigned branch(es).
+   *
+   * Date windows are capped at 12 months by resolveReportDateRange.
    */
   @IsOptional()
   @IsString()
