@@ -101,7 +101,7 @@ export default function UsersPage() {
         isActive: status,
       });
       exported.push(...response.data);
-      totalPages = response.meta.totalPages;
+      totalPages = Math.min(response.meta.totalPages, 50);
       page += 1;
     } while (page <= totalPages);
 
