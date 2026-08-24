@@ -12,7 +12,11 @@ export class ExpenseQueryDto extends PaginationQueryDto {
   @IsInt()
   categoryId?: number;
 
-  /** Admin-only; managers are always scoped to their own branch. */
+  /**
+   * One id, or several comma-separated ids. Admin: unrestricted. Manager:
+   * always scoped to their assigned branch(es); an explicit list must be a
+   * subset of it.
+   */
   @IsOptional()
   @IsString()
   branchId?: string;
