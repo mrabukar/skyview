@@ -26,7 +26,7 @@ import type { PosOrder } from "@/types/pos/order";
 const RECEIPT_WIDTH = 226.77;
 
 function receiptPageHeight(order: PosOrder): number {
-  const lineRows = order.lines.reduce(
+  const lineRows = (order.lines ?? []).reduce(
     (n, line) => n + 1 + line.toppings.length,
     0,
   );
@@ -208,7 +208,7 @@ export function InvoicePdfDocument({ order, organizationName }: Props) {
             <Text style={[s.th, s.colRate]}>RATE</Text>
             <Text style={[s.th, s.colTotal]}>TOTAL</Text>
           </View>
-          {order.lines.map((line, index) => (
+          {(order.lines ?? []).map((line, index) => (
             <View key={line.id} style={s.tableRow}>
               <Text style={[s.tdMuted, s.colNum]}>{index + 1}</Text>
               <View style={s.colItem}>
