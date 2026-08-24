@@ -9,7 +9,7 @@
 // ── Enums ──────────────────────────────────────────────────────────────────────
 
 export type OrderStatus = "pending" | "paid" | "cancelled" | "voided";
-export type PaymentMethod = "cash" | "mpesa" | "card";
+export type PaymentMethod = "cash" | "mpesa" | "card" | "pesapal" | "pdq";
 export type DiscountType = "percentage" | "fixed";
 
 // ── Response shapes ────────────────────────────────────────────────────────────
