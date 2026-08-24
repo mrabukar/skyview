@@ -79,6 +79,7 @@ export function PosTerminal() {
         quantity: 1,
         toppings: [], // no toppings
         imageKey: selected.item.imageKey,
+        imageUrl: selected.item.imageUrl,
       });
       setSelected(null);
       setMobileView("order");
