@@ -20,6 +20,7 @@ import {
 } from "@/hooks/pos/use-pos-orders";
 import { useStores } from "@/hooks/stores/list-stores";
 import { useAppStore } from "@/store/app";
+import { paymentLabel } from "@/lib/pos/invoice";
 import type { PosOrder, PosOrderQuery, OrderStatus, PaymentMethod } from "@/types/pos/order";
 
 // ── Formatting helpers ─────────────────────────────────────────────────────────
@@ -229,13 +230,8 @@ export function PosOrdersTable({
         header: "Payment",
         cell: ({ row }) => {
           const pm = row.original.paymentMethod;
-          const labels: Record<string, string> = {
-            cash: "Cash",
-            mpesa: "M-Pesa",
-            card: "Card",
-          };
           return (
-            <span className="muted">{pm ? (labels[pm] ?? pm) : "—"}</span>
+            <span className="muted">{pm ? paymentLabel(pm) : "—"}</span>
           );
         },
         enableSorting: false,
@@ -328,7 +324,7 @@ export function PosOrdersTable({
         id: confirmTarget.id,
         data: { paymentMethod: method },
       });
-      addToast({ title: `Order #${confirmTarget.orderNumber} paid (${method === "mpesa" ? "M-Pesa" : "Cash"})` });
+      addToast({ title: `Order #${confirmTarget.orderNumber} paid (${paymentLabel(method)})` });
       setConfirmTarget(null);
     } catch (e) {
       addErrorToast({

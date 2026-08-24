@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Dialog } from "radix-ui";
-import { Banknote, CreditCard, Smartphone, X } from "lucide-react";
+import { Banknote, CreditCard, Nfc, Smartphone, Wallet, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,18 @@ const METHODS: MethodOption[] = [
     label: "Card",
     icon: CreditCard,
     description: "Debit or credit card",
+  },
+  {
+    value: "pesapal",
+    label: "Pesapal",
+    icon: Wallet,
+    description: "Pesapal online payment",
+  },
+  {
+    value: "pdq",
+    label: "PDQ",
+    icon: Nfc,
+    description: "Card machine (PDQ)",
   },
   {
     value: null,

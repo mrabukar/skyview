@@ -14,6 +14,7 @@ import { Donut } from "@/components/charts/donut";
 import { LineArea } from "@/components/charts/line-area";
 import { StatCard } from "@/app/(app)/dashboard/components/stat-card";
 import { usePosSummary } from "@/hooks/reports/use-pos-reports";
+import { paymentLabel } from "@/lib/pos/invoice";
 import { fmt } from "@/lib/utils";
 import type { PosReportQuery } from "@/types/reports/pos-reports";
 
@@ -23,11 +24,8 @@ const PAYMENT_COLORS: Record<string, string> = {
   mpesa: "var(--status-emerald)",
   cash: "var(--brand-teal)",
   card: "var(--brand-indigo)",
-};
-const PAYMENT_LABELS: Record<string, string> = {
-  mpesa: "M-Pesa",
-  cash: "Cash",
-  card: "Card",
+  pesapal: "var(--brand-violet)",
+  pdq: "var(--status-rose)",
 };
 
 function shortDate(ymd: string): string {
@@ -62,9 +60,9 @@ export function PosSummaryTab({ query }: Props) {
       (data?.byPaymentMethod ?? [])
         .filter((row) => row.revenue > 0)
         .map((row) => ({
-          label: row.method ? (PAYMENT_LABELS[row.method] ?? row.method) : "Not recorded",
+          label: row.method ? paymentLabel(row.method) : "Not recorded",
           value: row.revenue,
-          color: row.method ? (PAYMENT_COLORS[row.method] ?? "var(--brand-violet)") : "var(--cost-slate)",
+          color: row.method ? (PAYMENT_COLORS[row.method] ?? "var(--cost-slate)") : "var(--cost-slate)",
         })),
     [data?.byPaymentMethod],
   );

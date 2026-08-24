@@ -38,6 +38,8 @@ export function paymentLabel(method: string | null): string {
     cash: "Cash",
     mpesa: "M-Pesa",
     card: "Card",
+    pesapal: "Pesapal",
+    pdq: "PDQ",
   };
   return map[method] ?? method;
 }
