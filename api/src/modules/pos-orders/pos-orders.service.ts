@@ -71,12 +71,39 @@ const orderSelect = {
   },
 } satisfies Prisma.PosOrderSelect;
 
+/** List rows omit lines/toppings — detail/invoice keep the full select. */
+const orderListSelect = {
+  id: true,
+  orderNumber: true,
+  status: true,
+  paymentMethod: true,
+  subtotal: true,
+  discountType: true,
+  discountValue: true,
+  discountAmount: true,
+  totalAmount: true,
+  branchId: true,
+  branch: { select: { id: true, name: true, address: true } },
+  cashierId: true,
+  cashier: { select: { id: true, name: true } },
+  voidedById: true,
+  voidedBy: { select: { id: true, name: true } },
+  voidReason: true,
+  voidedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.PosOrderSelect;
+
 export type PosOrderResult = Prisma.PosOrderGetPayload<{
   select: typeof orderSelect;
 }>;
 
+export type PosOrderListResult = Prisma.PosOrderGetPayload<{
+  select: typeof orderListSelect;
+}>;
+
 export interface PaginatedOrders {
-  data: PosOrderResult[];
+  data: PosOrderListResult[];
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
@@ -445,7 +472,7 @@ export class PosOrdersService {
         skip,
         take: query.limit,
         orderBy: { createdAt: "desc" },
-        select: orderSelect,
+        select: orderListSelect,
       }),
       this.prisma.posOrder.count({ where }),
     ]);
