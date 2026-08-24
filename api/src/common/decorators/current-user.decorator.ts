@@ -9,6 +9,12 @@ export type CurrentUserPayload = {
   branchId: string | null;
   /** Enriched per-request for branch_manager (assignments ∪ primary). */
   branchIds?: string[];
+  /** Manager page restrictions — from session/me when available. */
+  disabledPages?: string[];
+  /** Cashier shift window — from session/me when available. */
+  shiftDays?: string[];
+  shiftStartTime?: string | null;
+  shiftEndTime?: string | null;
   isActive: boolean;
 };
 
