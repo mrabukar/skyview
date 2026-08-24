@@ -38,6 +38,17 @@ export interface ExpenseListQuery {
 
 export type ExpenseListResponse = PaginatedResponse<Expense>;
 
+export interface ExpenseBranchTotal {
+  storeId: string;
+  storeName: string;
+  totalAmount: number;
+}
+
+export interface ExpenseTotalsResponse {
+  byBranch: ExpenseBranchTotal[];
+  grandTotal: number;
+}
+
 export interface CreateExpenseInput {
   title: string;
   amount: number;
