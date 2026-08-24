@@ -36,6 +36,14 @@ export class ExpensesController {
     return this.expensesService.findAll(query, user);
   }
 
+  @Get("totals")
+  findTotals(
+    @Query() query: ExpenseQueryDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.expensesService.findTotals(query, user);
+  }
+
   @Get(":id")
   findOne(@Param("id") id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.expensesService.findOne(id, user);
