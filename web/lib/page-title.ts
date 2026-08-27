@@ -22,6 +22,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/login": "Sign In",
   // POS module
   "/pos": "POS Terminal",
+  "/pos/terminal": "POS Terminal",
   "/pos/history": "Order History",
   "/pos/reports": "POS Reports",
   "/pos/branch-menu": "Branch Menu",
