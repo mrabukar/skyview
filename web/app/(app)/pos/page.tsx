@@ -9,6 +9,7 @@ import { useAppStore } from "@/store/app";
  *
  * Cashier: shows the live POS terminal (shift guard applies).
  * Admin / Manager: shows the POS orders history with status filter.
+ * Managers and admins also have a till at /pos/terminal.
  */
 export default function PosPage() {
   const user = useAppStore((s) => s.user);
