@@ -41,7 +41,7 @@ export function usePosOrder(id: string) {
 
 // ── Mutations ──────────────────────────────────────────────────────────────────
 
-/** Create a new POS order (cashier-only; shift must be active). */
+/** Create a new POS order (cashier, manager, or admin; cashiers must be on shift). */
 export function useCreatePosOrder() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -52,7 +52,7 @@ export function useCreatePosOrder() {
   });
 }
 
-/** Mark a pending order as paid (cashier-only; shift must be active). */
+/** Mark a pending order as paid (cashier own, or manager/admin in scope). */
 export function usePayPosOrder() {
   const queryClient = useQueryClient();
   return useMutation({
