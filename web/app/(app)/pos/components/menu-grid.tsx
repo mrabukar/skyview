@@ -58,22 +58,26 @@ const CATEGORY_PASTELS = [
 ] as const;
 
 export const MenuGrid = memo(function MenuGrid({ items, onItemSelect }: Props) {
-  const categories = useMemo(() => buildCategories(items), [items]);
+  const sellable = useMemo(
+    () => items.filter((it) => it.isEnabled),
+    [items],
+  );
+  const categories = useMemo(() => buildCategories(sellable), [sellable]);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const displayed = useMemo(() => {
     let result = activeCat
-      ? items.filter((it) => it.categoryId === activeCat)
-      : items;
+      ? sellable.filter((it) => it.categoryId === activeCat)
+      : sellable;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       result = result.filter((it) => it.itemName.toLowerCase().includes(q));
     }
     return result;
-  }, [items, activeCat, search]);
+  }, [sellable, activeCat, search]);
 
-  if (items.length === 0) {
+  if (sellable.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
         <p className="text-sm font-medium">No items available</p>
