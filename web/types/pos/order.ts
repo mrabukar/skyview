@@ -106,6 +106,8 @@ export interface CreatePosOrderInput {
   lines: CreateOrderLineInput[];
   discountType?: DiscountType;
   discountValue?: number;
+  /** Branch to ring against. Required for admins and for managers with more than one store. */
+  storeId?: string;
 }
 
 export interface PayOrderInput {
