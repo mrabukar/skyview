@@ -31,9 +31,10 @@ export class PosOrdersController {
 
   /**
    * POST /pos/orders
-   * Create a new POS order. Cashier-only; shift must be active.
+   * Create a new POS order. Cashier, branch manager, or admin.
+   * Cashiers must be on shift.
    */
-  @Roles(UserRole.cashier)
+  @Roles(UserRole.cashier, UserRole.branch_manager, UserRole.admin)
   @ShiftGuarded()
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -67,9 +68,10 @@ export class PosOrdersController {
 
   /**
    * PATCH /pos/orders/:id/pay
-   * Mark a pending order as paid. Cashier-only (own order); shift must be active.
+   * Mark a pending order as paid. Cashiers: own order, on shift.
+   * Branch managers and admins: any pending order in scope.
    */
-  @Roles(UserRole.cashier)
+  @Roles(UserRole.cashier, UserRole.branch_manager, UserRole.admin)
   @ShiftGuarded()
   @Patch(":id/pay")
   payOrder(
