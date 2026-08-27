@@ -34,6 +34,16 @@ export class CreateOrderLineDto {
 }
 
 export class CreatePosOrderDto {
+  /**
+   * Branch to ring the order against. Cashiers may omit it (their assigned
+   * branch is used). Admins must send it. Branch managers with more than one
+   * store must send it.
+   */
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  branchId?: string;
+
   /** At least one line is required (BR-POS-6.4). */
   @IsArray()
   @ArrayMinSize(1)
