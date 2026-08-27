@@ -89,9 +89,14 @@ function buildAdminNav(hasStores: boolean): AdminNavEntry[] {
       icon: ReceiptText,
       children: [
         {
+          href: "/pos/terminal",
+          label: "POS Terminal",
+          icon: ReceiptText,
+        },
+        {
           href: "/pos",
           label: "Orders",
-          icon: ReceiptText,
+          icon: ClipboardList,
           match: "exact",
         },
         { href: "/pos/reports", label: "Reports", icon: BarChart3 },
@@ -140,9 +145,14 @@ const MANAGER_NAV: AdminNavEntry[] = [
     label: "POS",
     icon: ReceiptText,
     children: [
-      { href: "/pos", label: "Orders", icon: ReceiptText, match: "exact" },
-      { href: "/pos/reports", label: "Reports", icon: BarChart3 },
-    ],
+        {
+          href: "/pos/terminal",
+          label: "POS Terminal",
+          icon: ReceiptText,
+        },
+        { href: "/pos", label: "Orders", icon: ClipboardList, match: "exact" },
+        { href: "/pos/reports", label: "Reports", icon: BarChart3 },
+      ],
   },
   {
     type: "group",
