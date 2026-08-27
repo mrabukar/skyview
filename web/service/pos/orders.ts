@@ -24,7 +24,7 @@ function toQs(params: PosOrderQuery): string {
 
 /**
  * POST /pos/orders
- * Create a new POS order. Cashier-only; shift must be active.
+ * Create a new POS order. Cashier, branch manager, or admin; cashiers must be on shift.
  */
 export function createPosOrder(data: CreatePosOrderInput): Promise<PosOrder> {
   return apiFetch<PosOrder>("/api/pos/orders", {
@@ -53,7 +53,7 @@ export function getPosOrder(id: string): Promise<PosOrder> {
 
 /**
  * PATCH /pos/orders/:id/pay
- * Mark a pending order as paid. Cashier-only; shift must be active.
+ * Mark a pending order as paid. Cashier (own order) or manager/admin (in scope).
  */
 export function payPosOrder(id: string, data: PayOrderInput): Promise<PosOrder> {
   return apiFetch<PosOrder>(`/api/pos/orders/${id}/pay`, {
