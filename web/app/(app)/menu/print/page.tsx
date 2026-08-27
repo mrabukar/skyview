@@ -159,15 +159,7 @@ export default function CustomerMenuPage() {
         .map((s) => ({ value: s.id, label: s.name }));
     }
     return [];
-  }, [
-    isAdmin,
-    isCashier,
-    isManager,
-    storeId,
-    storeIds,
-    storeName,
-    storesData,
-  ]);
+  }, [isAdmin, isCashier, isManager, storeId, storeIds, storeName, storesData]);
 
   const firstPosId = branchOptions[0]?.value ?? "";
   const branchId = branchOptions.some((o) => o.value === selectedBranchId)
@@ -253,22 +245,18 @@ export default function CustomerMenuPage() {
       ) : null}
       {canExport ? (
         <>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-          >
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="size-4" />
             Print
           </Button>
-          <Button
+          {/* <Button
             size="sm"
             onClick={() => void handleDownloadPdf()}
             disabled={isPdfLoading}
           >
             <Download className="size-4" />
             {isPdfLoading ? "Generating…" : "Download PDF"}
-          </Button>
+          </Button> */}
         </>
       ) : null}
     </div>
@@ -279,9 +267,7 @@ export default function CustomerMenuPage() {
       <PageHeader
         title="Customer Menu"
         desc="Print or download a customer menu"
-        action={
-          showPicker || canExport ? headerActions : undefined
-        }
+        action={showPicker || canExport ? headerActions : undefined}
       />
 
       {!(isCashier || storesLoaded) ? (
