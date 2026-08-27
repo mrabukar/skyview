@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 
@@ -10,7 +10,9 @@ import { OrderPanel } from "./order-panel";
 import { SizePickerModal } from "./size-picker-modal";
 // import { ToppingSelectorModal } from "./topping-selector-modal"; // TOPPINGS HIDDEN
 import { DiscountModal } from "./discount-modal";
+import { Combobox } from "@/components/ui/combobox";
 import { useBranchMenu } from "@/hooks/pos/use-branch-menu";
+import { useStores } from "@/hooks/stores/list-stores";
 import { useShiftCheck } from "@/hooks/pos/use-shift-check";
 import { useCreatePosOrder } from "@/hooks/pos/use-pos-orders";
 import { usePosStore } from "@/store/pos-store";
@@ -24,12 +26,11 @@ interface SelectedItem {
 }
 
 /**
- * Core POS terminal UI — cashier catalog + current-order pane.
- * Lives inside the normal app shell (sidebar + navbar).
- * Manages the item-tap flow, cart state, discount, and order creation.
+ * Core POS terminal UI — catalog + current-order pane.
+ * Used by cashiers at /pos and by managers/admins at /pos/terminal.
  *
- * Payment flow: "Pay" creates a pending order. The cashier confirms payment
- * later from Order History.
+ * Payment flow: "Pay" creates a pending order. Payment is confirmed later
+ * from Order History (cashier) or POS Orders (manager/admin).
  */
 export function PosTerminal() {
   const router = useRouter();
@@ -37,7 +38,46 @@ export function PosTerminal() {
   const addToast = useAppStore((s) => s.addToast);
   const addErrorToast = useAppStore((s) => s.addErrorToast);
 
-  const branchId = user?.storeId ?? "";
+  const isAdmin = user?.role === "admin";
+  const isManager = user?.role === "manager";
+  const canPickBranch = isAdmin || isManager;
+
+  const { data: allStores, isPending: storesPending } = useStores(
+    { limit: 100 },
+    { enabled: Boolean(isAdmin) },
+  );
+
+  const branchOptions = useMemo(() => {
+    if (isAdmin) {
+      return (allStores?.data ?? [])
+        .filter((s) => s.posEnabled)
+        .map((s) => ({ value: s.id, label: s.name }));
+    }
+    if (isManager) {
+      return (user?.stores ?? []).map((s) => ({ value: s.id, label: s.name }));
+    }
+    return [];
+  }, [isAdmin, isManager, allStores?.data, user?.stores]);
+
+  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const branchId = canPickBranch
+    ? (branchOptions.some((o) => o.value === selectedBranchId)
+        ? selectedBranchId
+        : (branchOptions.find((o) => o.value === user?.storeId)?.value ??
+          branchOptions[0]?.value ??
+          ""))
+    : (user?.storeId ?? "");
+
+  const prevBranchId = useRef(branchId);
+  const clearCart = usePosStore((s) => s.clearCart);
+
+  useEffect(() => {
+    if (prevBranchId.current && prevBranchId.current !== branchId) {
+      clearCart();
+    }
+    prevBranchId.current = branchId;
+  }, [branchId, clearCart]);
+
   const { data: branchMenu, isPending: menuLoading } = useBranchMenu(branchId);
 
   const shiftStatus = useShiftCheck();
@@ -48,7 +88,6 @@ export function PosTerminal() {
   const discountValue = usePosStore((s) => s.discountValue);
   const addLine = usePosStore((s) => s.addLine);
   const setDiscount = usePosStore((s) => s.setDiscount);
-  const clearCart = usePosStore((s) => s.clearCart);
 
   // Modal state machine
   const [selected, setSelected] = useState<SelectedItem | null>(null);
@@ -148,11 +187,12 @@ export function PosTerminal() {
         })),
         discountType: discountType ?? undefined,
         discountValue: discountValue ?? undefined,
+        storeId: branchId || undefined,
       });
 
       clearCart();
       addToast({ title: `Order #${order.orderNumber} created` });
-      router.push("/pos/history");
+      router.push(canPickBranch ? "/pos" : "/pos/history");
     } catch (e) {
       addErrorToast({
         title: "Failed to create order",
@@ -165,6 +205,8 @@ export function PosTerminal() {
     lines,
     discountType,
     discountValue,
+    branchId,
+    canPickBranch,
     createOrder,
     clearCart,
     addToast,
@@ -199,17 +241,55 @@ export function PosTerminal() {
   }
 
   const items = branchMenu?.data ?? [];
-  // const toppings = branchMenu?.toppings ?? []; // TOPPINGS HIDDEN
+  const showBranchPicker = canPickBranch && branchOptions.length > 1;
+  const maxDiscountPercent =
+    canPickBranch ? null : (user?.maxDiscountPercent ?? null);
+
+  if (isAdmin && storesPending) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!branchId) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
+        <p className="text-sm font-medium">
+          {isAdmin ? "No POS-enabled branches" : "No branch assigned"}
+        </p>
+        <p className="text-xs">
+          {isAdmin
+            ? "Enable POS on a branch before taking orders."
+            : "Ask an admin to assign a branch to your account."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="flex h-full min-h-0 w-full flex-1 overflow-hidden">
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+        {showBranchPicker ? (
+          <div className="flex shrink-0 items-center gap-2 px-1 pb-2">
+            <Combobox
+              value={branchId}
+              onValueChange={(v) => setSelectedBranchId(v ?? "")}
+              items={branchOptions}
+              placeholder="Select a branch…"
+              searchPlaceholder="Search branches…"
+              emptyText={isAdmin ? "No POS-enabled branches." : "No branches assigned."}
+              className="w-full max-w-xs"
+            />
+          </div>
+        ) : null}
         {menuLoading ? (
           <div className="flex h-full w-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : (
-          <div className="flex h-full min-h-0 w-full gap-4 overflow-hidden">
+          <div className="flex min-h-0 w-full flex-1 gap-4 overflow-hidden">
             <div
               className={`min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-card ${mobileView === "order" ? "hidden lg:flex lg:flex-col" : "flex flex-col"}`}
             >
@@ -277,7 +357,7 @@ export function PosTerminal() {
         open={showDiscount}
         currentType={discountType}
         currentValue={discountValue}
-        maxDiscountPercent={user?.maxDiscountPercent ?? null}
+        maxDiscountPercent={maxDiscountPercent}
         onApply={handleApplyDiscount}
         onRemove={handleRemoveDiscount}
         onClose={() => setShowDiscount(false)}
