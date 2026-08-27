@@ -93,7 +93,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Redirecting to an allowed page — render nothing to avoid a flash.
   if (pageDenied && pageFallback) return null;
 
-  const posTerminalPage = user.role === "cashier" && pathname === "/pos";
+  const posTerminalPage =
+    pathname === "/pos/terminal" ||
+    (user.role === "cashier" && pathname === "/pos");
 
   return (
     <div className={posTerminalPage ? "app-frame pos-terminal-page" : "app-frame"}>
