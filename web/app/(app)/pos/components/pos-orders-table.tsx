@@ -261,7 +261,9 @@ export function PosOrdersTable({
               (isCashier && order.cashierId === user?.id));
           return (
             <div className="dt-actions">
-              {isCashier && order.status === "pending" ? (
+              {(isCashier
+                ? order.cashierId === user?.id
+                : isManager || isAdmin) && order.status === "pending" ? (
                 <button
                   type="button"
                   className="dt-act"
@@ -313,7 +315,7 @@ export function PosOrdersTable({
     );
 
     return cols;
-  }, [isAdmin, isCashier, managerMulti, canVoid, canCancelAnyPending, user?.id]);
+  }, [isAdmin, isCashier, isManager, managerMulti, canVoid, canCancelAnyPending, user?.id]);
 
   // ── Confirm payment handler ──────────────────────────────────────────────────
 
