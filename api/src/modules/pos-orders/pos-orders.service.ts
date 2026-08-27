@@ -12,8 +12,11 @@ import {
 } from "@prisma/client";
 import { CurrentUserPayload } from "../../common/decorators/current-user.decorator";
 import { requireOrganizationId } from "../../common/utils/require-organization-id.util";
-import { assertBranchAccess } from "../../common/utils/branch-scope.util";
-import { resolveBranchFilter } from "../../common/utils/branch-scope.util";
+import {
+  assertBranchAccess,
+  resolveBranchFilter,
+  resolveWriteBranchId,
+} from "../../common/utils/branch-scope.util";
 import {
   todayCalendarDate,
   zonedDayEnd,
@@ -102,6 +105,29 @@ export type PosOrderListResult = Prisma.PosOrderGetPayload<{
   select: typeof orderListSelect;
 }>;
 
+function resolvePosWriteBranchId(
+  user: CurrentUserPayload,
+  dtoBranchId?: string,
+): string {
+  if (user.role === UserRole.cashier) {
+    if (!user.branchId) {
+      throw new ForbiddenException("No branch assigned to your account");
+    }
+    if (dtoBranchId && dtoBranchId !== user.branchId) {
+      throw new ForbiddenException(
+        "You can only create orders for your assigned branch",
+      );
+    }
+    return user.branchId;
+  }
+  if (user.role === UserRole.branch_manager || user.role === UserRole.admin) {
+    return resolveWriteBranchId(user, dtoBranchId);
+  }
+  throw new ForbiddenException(
+    "Only cashiers, branch managers, and admins can create POS orders",
+  );
+}
+
 export interface PaginatedOrders {
   data: PosOrderListResult[];
   meta: { total: number; page: number; limit: number; totalPages: number };
@@ -139,7 +165,7 @@ export class PosOrdersService {
     }
 
     const organizationId = requireOrganizationId(user);
-    const branchId = user.branchId!; // validated at cashier creation time
+    const branchId = resolvePosWriteBranchId(user, dto.branchId);
 
     // ── Batch load 1: sizes + their menu items ─────────────────────────────
     const sizeIds = [...new Set(dto.lines.map((l) => l.menuItemSizeId))];
@@ -321,9 +347,12 @@ export class PosOrdersService {
     let discountAmount: number | null = null;
 
     if (dto.discountType !== undefined && dto.discountValue !== undefined) {
-      const maxPct = cashierData?.maxDiscountPercent
-        ? n(cashierData.maxDiscountPercent)
-        : null;
+      const maxPct =
+        user.role === UserRole.branch_manager || user.role === UserRole.admin
+          ? 100
+          : cashierData?.maxDiscountPercent
+            ? n(cashierData.maxDiscountPercent)
+            : null;
 
       if (maxPct === null || maxPct === 0) {
         throw new ForbiddenException(
@@ -512,7 +541,10 @@ export class PosOrdersService {
   ): Promise<PosOrderResult> {
     const order = await this.findOne(id, user);
 
-    if (order.cashierId !== user.id) {
+    if (
+      user.role === UserRole.cashier &&
+      order.cashierId !== user.id
+    ) {
       throw new ForbiddenException("You can only pay your own orders");
     }
     if (order.status !== OrderStatus.pending) {
