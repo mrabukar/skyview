@@ -1,9 +1,9 @@
 import {
+  Banknote,
   CreditCard,
-  Percent,
-  ReceiptText,
+  Nfc,
   ShoppingBag,
-  ShoppingCart,
+  Smartphone,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -23,16 +23,40 @@ export function AdminStatGrid({ summary: s, comparison }: Props) {
     <div className="mb-16 space-y-3">
       <div className="stat-grid gap-3 grid-cols-2 lg:grid-cols-4">
         <KpiCard
+          icon={Banknote}
+          color="teal"
+          value={fmt(s.cashRevenue)}
+          label="Cash"
+          sublabel="POS cash payments"
+        />
+        <KpiCard
+          icon={Smartphone}
+          color="emerald"
+          value={fmt(s.mpesaRevenue)}
+          label="M-Pesa"
+          sublabel="POS M-Pesa payments"
+        />
+        <KpiCard
+          icon={Nfc}
+          color="violet"
+          value={fmt(s.cardDigitalRevenue)}
+          label="Card & digital"
+          sublabel="PDQ, card, and Pesapal"
+        />
+        <KpiCard
           icon={TrendingUp}
           color="indigo"
           value={fmt(s.totalRevenue)}
           label="Total Sales"
-          sublabel="All revenue this period"
+          sublabel="Daily sales + POS"
           {...formatPeriodTrend(comparison.totalRevenue)}
         />
+      </div>
+
+      <div className="stat-grid gap-3 grid-cols-2 lg:grid-cols-4">
         <KpiCard
           icon={ShoppingBag}
-          color="teal"
+          color="slate"
           value={fmt(s.cogs)}
           label="Purchases"
           sublabel="Cost of goods sold"
@@ -48,46 +72,20 @@ export function AdminStatGrid({ summary: s, comparison }: Props) {
         />
         <KpiCard
           icon={Wallet}
-          color="slate"
+          color="teal"
           value={fmt(s.salaries)}
           label="Salaries"
           sublabel="Payroll & wages"
           {...formatExpenseTrend(comparison.salaries)}
         />
-      </div>
-
-      <div className="stat-grid gap-3 grid-cols-2 lg:grid-cols-4">
         <KpiCard
           icon={TrendingUp}
-          color="emerald"
-          value={fmt(s.grossProfit)}
-          label="Gross Profit"
-          sublabel="Revenue minus COGS"
-          valueColor={s.grossProfit < 0 ? "var(--status-rose)" : undefined}
-          {...formatPeriodTrend(comparison.grossProfit)}
-        />
-        <KpiCard
-          icon={Percent}
           color="violet"
           value={fmt(s.netProfit)}
           label="Net Profit"
           sublabel="After all expenses"
           valueColor={s.netProfit < 0 ? "var(--status-rose)" : undefined}
           {...formatPeriodTrend(comparison.netProfit)}
-        />
-        <KpiCard
-          icon={ReceiptText}
-          color="indigo"
-          value={fmt(s.posRevenue)}
-          label="POS Revenue"
-          sublabel="From the POS terminal"
-        />
-        <KpiCard
-          icon={ShoppingCart}
-          color="teal"
-          value={s.posOrderCount.toLocaleString()}
-          label="POS Orders"
-          sublabel="Orders this period"
         />
       </div>
     </div>
