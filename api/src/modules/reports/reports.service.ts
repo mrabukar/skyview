@@ -123,6 +123,13 @@ export class ReportsService {
 
     const saleRevenue = this.sum(sales, "totalAmount");
     const posRevenue = this.sumPosArr(posOrders);
+    const cashRevenue = this.sumPosByMethods(posOrders, ["cash"]);
+    const mpesaRevenue = this.sumPosByMethods(posOrders, ["mpesa"]);
+    const cardDigitalRevenue = this.sumPosByMethods(posOrders, [
+      "pdq",
+      "card",
+      "pesapal",
+    ]);
     const revenue = saleRevenue + posRevenue;
 
     const cogs = this.sum(purchases, "totalCost");
@@ -152,6 +159,9 @@ export class ReportsService {
         totalRevenue: Math.round(revenue),
         saleRevenue: Math.round(saleRevenue),
         posRevenue: Math.round(posRevenue),
+        cashRevenue: Math.round(cashRevenue),
+        mpesaRevenue: Math.round(mpesaRevenue),
+        cardDigitalRevenue: Math.round(cardDigitalRevenue),
         posOrderCount: posOrders.length,
         totalUnitsSold: sales.length,
         cogs: Math.round(cogs),
@@ -633,8 +643,8 @@ export class ReportsService {
 
   /**
    * Fetch DailySale + Purchase + Expense rows for a date range.
-   * DailySale is filtered to posEnabled=false branches only — POS-enabled
-   * branches use PosOrder as their revenue source (BR-POS-8.5).
+   * Includes historical DailySale rows even after a branch enables POS
+   * (BR-POS-8.2). New manual entries are still blocked at create time.
    * Omits enteredBy (use fetchRecentSales for the dashboard strip).
    */
   private async collect(from: Date, to: Date, branchId?: BranchIdFilter) {
@@ -642,7 +652,6 @@ export class ReportsService {
       this.prisma.dailySale.findMany({
         where: {
           saleDate: { gte: from, lte: to },
-          branch: { posEnabled: false },
           ...(branchId ? { branchId } : undefined),
         },
         select: {
@@ -679,7 +688,6 @@ export class ReportsService {
     const rows = await this.prisma.dailySale.findMany({
       where: {
         saleDate: { gte: from, lte: to },
-        branch: { posEnabled: false },
         ...(branchId ? { branchId } : undefined),
       },
       select: {
@@ -708,7 +716,6 @@ export class ReportsService {
           gte: calendarDateToDbDate(fromCal),
           lte: calendarDateToDbDate(toCal),
         },
-        branch: { posEnabled: false },
         ...(branchId ? { branchId } : undefined),
       },
       select: {
@@ -732,7 +739,6 @@ export class ReportsService {
           gte: calendarDateToDbDate(fromCal),
           lte: calendarDateToDbDate(toCal),
         },
-        branch: { posEnabled: false },
         ...(branchId ? { branchId } : undefined),
       },
       _sum: { totalAmount: true },
@@ -751,7 +757,6 @@ export class ReportsService {
           gte: calendarDateToDbDate(fromCal),
           lte: calendarDateToDbDate(toCal),
         },
-        branch: { posEnabled: false },
         ...(branchId ? { branchId } : undefined),
       },
     });
@@ -879,6 +884,21 @@ export class ReportsService {
   /** Sum totalAmount from POS order rows. */
   private sumPosArr(orders: Array<{ totalAmount: Prisma.Decimal }>): number {
     return orders.reduce((a, o) => a + Number(o.totalAmount), 0);
+  }
+
+  /** Sum paid POS revenue for a set of payment methods (cash, mpesa, pdq, …). */
+  private sumPosByMethods(
+    orders: Array<{
+      totalAmount: Prisma.Decimal;
+      paymentMethod: string | null;
+    }>,
+    methods: string[],
+  ): number {
+    const set = new Set(methods);
+    return orders.reduce((sum, order) => {
+      if (!order.paymentMethod || !set.has(order.paymentMethod)) return sum;
+      return sum + Number(order.totalAmount);
+    }, 0);
   }
 
   private sum<T>(rows: T[], key: keyof T): number {
