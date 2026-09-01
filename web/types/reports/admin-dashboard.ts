@@ -10,6 +10,12 @@ export interface AdminDashboardSummary {
   totalRevenue: number;
   saleRevenue: number;
   posRevenue: number;
+  /** Paid POS orders with paymentMethod = cash. */
+  cashRevenue: number;
+  /** Paid POS orders with paymentMethod = mpesa. */
+  mpesaRevenue: number;
+  /** Paid POS orders with paymentMethod in pdq, card, or pesapal. */
+  cardDigitalRevenue: number;
   posOrderCount: number;
   totalUnitsSold: number;
   cogs: number;
