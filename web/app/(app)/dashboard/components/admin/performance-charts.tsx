@@ -18,9 +18,11 @@ export function AdminPerformanceCharts({ charts }: Props) {
             values={charts.grossMarginTrend.map((r) => r.percent)}
             labels={charts.grossMarginTrend.map((r) => r.month)}
             height={160}
-            color="var(--brand-teal)"
+            color="var(--brand-violet)"
             valueLabel="Gross Margin"
             formatValue={fmtPct}
+            target={40}
+            targetLabel="target 40%"
           />
         ) : (
           <EmptyState title="No margin data" sub="Not enough data for this period." />
@@ -32,9 +34,11 @@ export function AdminPerformanceCharts({ charts }: Props) {
             values={charts.profitMarginTrend.map((r) => r.percent)}
             labels={charts.profitMarginTrend.map((r) => r.month)}
             height={160}
-            color="var(--status-amber)"
+            color="var(--status-rose)"
             valueLabel="Net Margin"
             formatValue={fmtPct}
+            target={10}
+            targetLabel="target 10%"
           />
         ) : (
           <EmptyState title="No margin data" sub="Not enough data for this period." />
