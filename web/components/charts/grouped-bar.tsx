@@ -11,10 +11,34 @@ interface DataPoint {
   exp: number;
 }
 
-const SERIES: { key: keyof DataPoint; label: string; color: string }[] = [
-  { key: "rev", label: "Sales", color: "var(--brand-indigo)" },
-  { key: "cogs", label: "Purchases", color: "var(--cost-slate)" },
-  { key: "exp", label: "Expenses", color: "var(--status-amber)" },
+const SERIES: {
+  key: keyof DataPoint;
+  label: string;
+  color: string;
+  gradFrom: string;
+  gradTo: string;
+}[] = [
+  {
+    key: "rev",
+    label: "Sales",
+    color: "var(--brand-indigo)",
+    gradFrom: "#8b5e34",
+    gradTo: "#5a3520",
+  },
+  {
+    key: "cogs",
+    label: "Purchases",
+    color: "var(--cost-slate)",
+    gradFrom: "#b0bec5",
+    gradTo: "#78909c",
+  },
+  {
+    key: "exp",
+    label: "Expenses",
+    color: "var(--status-amber)",
+    gradFrom: "#fbbf24",
+    gradTo: "#d97706",
+  },
 ];
 
 function svgX(event: MouseEvent<SVGRectElement>): number | null {
@@ -53,7 +77,7 @@ export function GroupedBar({
   const max =
     Math.max(...data.flatMap((d) => [d.rev, d.cogs, d.exp]), 1) * 1.1;
   const groupW = iw / data.length;
-  const barW = Math.min(16, groupW / 4);
+  const barW = Math.min(18, groupW / 3.5);
 
   const hovered = hoverIndex != null ? data[hoverIndex] : null;
   const tooltipLeft =
@@ -100,6 +124,21 @@ export function GroupedBar({
         className="chart-svg"
         style={{ display: "block" }}
       >
+        <defs>
+          {SERIES.map((series) => (
+            <linearGradient
+              key={series.key}
+              id={`bar-grad-${series.key}`}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop offset="0%" stopColor={series.gradFrom} />
+              <stop offset="100%" stopColor={series.gradTo} />
+            </linearGradient>
+          ))}
+        </defs>
         {[0, 0.5, 1].map((g, i) => (
           <line
             key={i}
@@ -108,7 +147,9 @@ export function GroupedBar({
             y1={pad.t + ih * g}
             y2={pad.t + ih * g}
             stroke="var(--border)"
-            strokeWidth="1"
+            strokeWidth="0.75"
+            strokeDasharray={g === 1 ? "none" : "4 3"}
+            opacity={g === 1 ? 1 : 0.7}
             pointerEvents="none"
           />
         ))}
@@ -127,10 +168,17 @@ export function GroupedBar({
                     y={pad.t + ih - bh}
                     width={barW}
                     height={bh}
-                    rx="2.5"
-                    fill={series.color}
-                    opacity={active || hoverIndex === null ? 1 : 0.45}
-                    style={{ transition: "height .6s ease, opacity .15s ease" }}
+                    rx={barW / 3.5}
+                    fill={`url(#bar-grad-${series.key})`}
+                    opacity={active || hoverIndex === null ? 1 : 0.35}
+                    style={{
+                      transition:
+                        "height .6s cubic-bezier(.4,0,.2,1), y .6s cubic-bezier(.4,0,.2,1), opacity .15s ease",
+                      filter:
+                        active
+                          ? "drop-shadow(0 2px 4px rgba(0,0,0,.15))"
+                          : "none",
+                    }}
                   />
                 );
               })}
@@ -144,6 +192,7 @@ export function GroupedBar({
             y={H - 9}
             textAnchor="middle"
             fontSize="11"
+            fontWeight={hoverIndex === i ? "600" : "400"}
             fill={hoverIndex === i ? "var(--fg1)" : "var(--fg3)"}
             fontFamily="var(--font-sans)"
           >
@@ -177,7 +226,7 @@ export function GroupedBar({
       <div className="legend">
         {SERIES.map((series) => (
           <span className="li" key={series.key}>
-            <span className="dot" style={{ background: series.color }} />
+            <span className="dot" style={{ background: series.color, borderRadius: "3px" }} />
             {series.label}
           </span>
         ))}
