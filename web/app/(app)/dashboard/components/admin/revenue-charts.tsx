@@ -66,6 +66,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               labelKey="name"
               color="var(--brand-indigo)"
               format={fmt}
+              shareLabel="of all revenue"
             />
           ) : (
             <EmptyState title="No branch rankings" sub="Branch rankings appear when viewing all branches." />
@@ -93,6 +94,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               centerLabel="Total"
               centerValue={fmt(expenseTotal)}
               height={170}
+              format={fmt}
             />
           ) : (
             <EmptyState
@@ -108,6 +110,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               centerLabel="Total"
               centerValue={fmt(summary.totalRevenue)}
               height={170}
+              format={fmt}
             />
           ) : (
             <EmptyState title="No revenue" sub="No revenue in the selected period." />
@@ -124,6 +127,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               centerLabel="Total"
               centerValue={fmt(summary.totalRevenue)}
               height={170}
+              format={fmt}
             />
           ) : (
             <EmptyState title="No branch data" sub="Branch breakdown appears when viewing all branches." />
