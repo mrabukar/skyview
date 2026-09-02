@@ -7,6 +7,9 @@ interface Props<T extends Record<string, string | number>> {
   valueKey: keyof T & string;
   labelKey: keyof T & string;
   color?: string;
+  /** Per-row palette. Lets a ranking share one colour identity with the
+   *  matching donut, so a branch reads the same in both cards. */
+  colors?: readonly string[];
   format?: (v: number) => string;
   /** Caption under each bar, e.g. "93.4% of all revenue". */
   shareLabel?: string;
@@ -17,6 +20,7 @@ export function HBars<T extends Record<string, string | number>>({
   valueKey,
   labelKey,
   color = "var(--brand-teal)",
+  colors,
   format,
   shareLabel,
 }: Props<T>) {
@@ -38,6 +42,8 @@ export function HBars<T extends Record<string, string | number>>({
         // glance; the caption carries the share of the total.
         const widthPct = max > 0 ? (value / max) * 100 : 0;
         const sharePct = total > 0 ? (value / total) * 100 : 0;
+        const rowColor =
+          colors && colors.length > 0 ? colors[i % colors.length] : color;
 
         return (
           <div
@@ -63,7 +69,7 @@ export function HBars<T extends Record<string, string | number>>({
                 className="hbar-fill"
                 style={{
                   width: on ? `${widthPct}%` : "0%",
-                  background: `linear-gradient(90deg, ${color}, color-mix(in srgb, ${color} 68%, #000))`,
+                  background: `linear-gradient(90deg, ${rowColor}, color-mix(in srgb, ${rowColor} 68%, #000))`,
                   transition: `width .7s cubic-bezier(.4,0,.2,1) ${i * 80 + 100}ms`,
                 }}
               />

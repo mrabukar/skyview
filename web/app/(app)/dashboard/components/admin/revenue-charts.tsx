@@ -64,7 +64,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               }))}
               valueKey="revenue"
               labelKey="name"
-              color="var(--brand-indigo)"
+              colors={DONUT_COLORS}
               format={fmt}
               shareLabel="of all revenue"
             />
