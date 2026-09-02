@@ -11,6 +11,9 @@ interface Props {
   color?: string;
   valueLabel?: string;
   formatValue?: (value: number) => string;
+  /** Draws a dashed reference line so "is this good?" is answerable at a glance. */
+  target?: number;
+  targetLabel?: string;
 }
 
 function svgX(event: MouseEvent<SVGRectElement>): number | null {
@@ -31,6 +34,8 @@ export function LineArea({
   color = "var(--brand-violet)",
   valueLabel = "Net Profit",
   formatValue = fmt,
+  target,
+  targetLabel,
 }: Props) {
   const [on, setOn] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -55,8 +60,12 @@ export function LineArea({
   const pad = { t: 16, r: 14, b: 28, l: 44 };
   const iw = W - pad.l - pad.r;
   const ih = H - pad.t - pad.b;
-  const max = Math.max(...plotValues, 1) * 1.15;
-  const min = Math.min(0, ...plotValues);
+  // The target has to be inside the scale or its reference line lands off
+  // the plot and the comparison it exists to make is invisible.
+  const scaleValues =
+    target != null ? [...plotValues, target] : plotValues;
+  const max = Math.max(...scaleValues, 1) * 1.15;
+  const min = Math.min(0, ...scaleValues);
   const span = Math.max(plotValues.length - 1, 1);
   const x = (i: number) => pad.l + (iw / span) * i;
   const y = (v: number) => pad.t + ih - ((v - min) / (max - min)) * ih;
@@ -135,6 +144,35 @@ export function LineArea({
             pointerEvents="none"
           />
         ))}
+        {target != null && (
+          <>
+            <line
+              x1={pad.l}
+              x2={W - pad.r}
+              y1={y(target)}
+              y2={y(target)}
+              stroke="var(--status-emerald)"
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              opacity="0.65"
+              pointerEvents="none"
+            />
+            {targetLabel && (
+              <text
+                x={W - pad.r}
+                y={y(target) - 5}
+                textAnchor="end"
+                fontSize="9.5"
+                fontWeight="700"
+                fill="var(--status-emerald)"
+                fontFamily="var(--font-sans)"
+                pointerEvents="none"
+              >
+                {targetLabel}
+              </text>
+            )}
+          </>
+        )}
         <path
           d={area}
           fill={`url(#area-grad-${color.replace(/[^a-zA-Z]/g, "")})`}
