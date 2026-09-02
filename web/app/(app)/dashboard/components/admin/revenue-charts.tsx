@@ -43,10 +43,11 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
 
   return (
     <>
-      <div className="mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 lg:grid-cols-3">
+      {/* Row 1 — Featured bar chart (wider) + branches + trend line */}
+      <div className="mb-3 grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[5fr_3fr_4fr]">
         <Card title="Sales vs Purchases vs Expenses" pad className="h-full min-w-0">
           {revenueChart.length > 0 ? (
-            <GroupedBar data={revenueChart} height={180} />
+            <GroupedBar data={revenueChart} height={200} />
           ) : (
             <EmptyState
               title="No sales data"
@@ -75,7 +76,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
             <LineArea
               values={charts.netProfitTrend.map((row) => row.netProfit)}
               labels={charts.netProfitTrend.map((row) => row.month)}
-              height={160}
+              height={180}
             />
           ) : (
             <EmptyState title="No profit trend" sub="Not enough data for this period." />
@@ -83,6 +84,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
         </Card>
       </div>
 
+      {/* Row 2 — Three donut charts (equal) */}
       <div className="mb-3 grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Card title="Expense Breakdown" pad className="h-full min-w-0">
           {expenseDonut.length > 0 ? (
@@ -90,7 +92,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               data={expenseDonut}
               centerLabel="Total"
               centerValue={fmt(expenseTotal)}
-              height={160}
+              height={170}
             />
           ) : (
             <EmptyState
@@ -105,7 +107,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               data={revenueSourceDonut}
               centerLabel="Total"
               centerValue={fmt(summary.totalRevenue)}
-              height={160}
+              height={170}
             />
           ) : (
             <EmptyState title="No revenue" sub="No revenue in the selected period." />
@@ -121,7 +123,7 @@ export function AdminRevenueCharts({ charts, summary }: Props) {
               }))}
               centerLabel="Total"
               centerValue={fmt(summary.totalRevenue)}
-              height={160}
+              height={170}
             />
           ) : (
             <EmptyState title="No branch data" sub="Branch breakdown appears when viewing all branches." />
