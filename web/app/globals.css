@@ -1273,7 +1273,7 @@ button {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 15px 16px 0;
+  padding: 11px 13px 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
@@ -1311,15 +1311,22 @@ button {
   gap: 8px;
   min-width: 0;
 }
-/* Icon is a faint monochrome glyph in the corner, not a tinted chip */
+/* Icon is a bare glyph in its accent colour — colour without the tinted
+   chip that made every card look stamped from the same template. */
 .kpi-ic {
   display: inline-flex;
   flex-shrink: 0;
-  color: var(--fg3);
-  opacity: 0.5;
+  opacity: 0.9;
 }
+.kpi-card[data-accent="indigo"] .kpi-ic { color: var(--brand-indigo); }
+.kpi-card[data-accent="teal"] .kpi-ic { color: var(--brand-teal); }
+.kpi-card[data-accent="violet"] .kpi-ic { color: var(--brand-violet); }
+.kpi-card[data-accent="amber"] .kpi-ic { color: var(--status-amber); }
+.kpi-card[data-accent="emerald"] .kpi-ic { color: var(--status-emerald); }
+.kpi-card[data-accent="rose"] .kpi-ic { color: var(--status-rose); }
+.kpi-card[data-accent="slate"] .kpi-ic { color: var(--cost-slate); }
 .kpi-label {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
@@ -1338,10 +1345,10 @@ button {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-top: 9px;
+  margin-top: 6px;
 }
 .kpi-val {
-  font-size: 27px;
+  font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.1;
@@ -1350,7 +1357,7 @@ button {
 }
 /* Currency prefix demoted so the figure reads first */
 .kpi-val .kpi-cur {
-  font-size: 15px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--fg3);
   letter-spacing: -0.01em;
@@ -1359,10 +1366,10 @@ button {
 .kpi-footer {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 5px;
-  min-height: 18px;
-  font-size: 11.5px;
+  gap: 6px;
+  margin-top: 3px;
+  min-height: 16px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--fg3);
 }
@@ -1377,7 +1384,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: -0.01em;
   flex-shrink: 0;
@@ -1386,8 +1393,8 @@ button {
 .kpi-trend--down { color: var(--status-rose); }
 /* Micro sparkline bleeds to the card edge and carries the period trend */
 .kpi-spark {
-  margin: 10px -16px 0;
-  height: 34px;
+  margin: 7px -13px 0;
+  height: 24px;
 }
 .kpi-spark svg {
   display: block;
@@ -1396,22 +1403,22 @@ button {
 }
 @media (max-width: 1279px) {
   .kpi-card {
-    padding: 13px 14px 0;
+    padding: 10px 12px 0;
   }
   .kpi-val {
-    font-size: 21px;
+    font-size: 18px;
   }
   .kpi-val .kpi-cur {
-    font-size: 13px;
+    font-size: 11.5px;
   }
   .kpi-spark {
-    margin: 8px -14px 0;
-    height: 28px;
+    margin: 6px -12px 0;
+    height: 20px;
   }
 }
 @media (max-width: 767px) {
   .kpi-val {
-    font-size: 18px;
+    font-size: 16px;
   }
 }
 
