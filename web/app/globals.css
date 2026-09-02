@@ -247,7 +247,14 @@ button {
   font-family: inherit;
   cursor: pointer;
 }
+/* Money and every aligned figure. Deliberately the SANS face with tabular
+   figures — mono at display sizes reads like terminal output, not finance.
+   Mono is reserved for dates and axis ticks via `.num-mono`. */
 .num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+.num-mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -1259,11 +1266,14 @@ button {
   box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 10%, transparent);
 }
 
-/* KPI Card — flat tinted card (admin dashboard) */
+/* KPI Card — no accent stripe, no tinted icon chip. The value carries the
+   card and a micro sparkline fills the space a caption used to waste. */
 .kpi-card {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 18px;
+  padding: 15px 16px 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
@@ -1271,7 +1281,8 @@ button {
   box-shadow: var(--shadow-sm);
   transition:
     box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    transform 0.2s ease;
   animation: kpi-enter .5s cubic-bezier(.4,0,.2,1) both;
 }
 .kpi-card:nth-child(1) { animation-delay: 0ms; }
@@ -1290,43 +1301,28 @@ button {
 }
 .kpi-card:hover {
   box-shadow: var(--shadow-md);
-  border-color: color-mix(in srgb, var(--brand-indigo) 14%, var(--border));
+  border-color: color-mix(in srgb, var(--brand-indigo) 34%, var(--border));
+  transform: translateY(-1px);
 }
-.kpi-card[data-accent="indigo"] { border-left: 3px solid var(--brand-indigo); }
-.kpi-card[data-accent="teal"] { border-left: 3px solid var(--brand-teal); }
-.kpi-card[data-accent="violet"] { border-left: 3px solid var(--brand-violet); }
-.kpi-card[data-accent="amber"] { border-left: 3px solid var(--status-amber); }
-.kpi-card[data-accent="emerald"] { border-left: 3px solid var(--status-emerald); }
-.kpi-card[data-accent="rose"] { border-left: 3px solid var(--status-rose); }
-.kpi-card[data-accent="slate"] { border-left: 3px solid var(--cost-slate); }
 .kpi-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   min-width: 0;
-  margin-bottom: 12px;
 }
+/* Icon is a faint monochrome glyph in the corner, not a tinted chip */
 .kpi-ic {
   display: inline-flex;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  color: var(--fg3);
+  opacity: 0.5;
 }
-.kpi-card[data-accent="indigo"] .kpi-ic { background: var(--tint-indigo); color: var(--brand-indigo); }
-.kpi-card[data-accent="teal"] .kpi-ic { background: var(--tint-teal); color: var(--brand-teal); }
-.kpi-card[data-accent="violet"] .kpi-ic { background: var(--tint-violet); color: var(--brand-violet); }
-.kpi-card[data-accent="amber"] .kpi-ic { background: var(--tint-amber); color: var(--status-amber); }
-.kpi-card[data-accent="emerald"] .kpi-ic { background: var(--tint-emerald); color: var(--status-emerald); }
-.kpi-card[data-accent="rose"] .kpi-ic { background: var(--tint-rose); color: var(--status-rose); }
-.kpi-card[data-accent="slate"] .kpi-ic { background: var(--tint-slate); color: var(--cost-slate); }
 .kpi-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--fg2);
   white-space: nowrap;
   overflow: hidden;
@@ -1341,62 +1337,81 @@ button {
 .kpi-valrow {
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
   gap: 8px;
+  margin-top: 9px;
 }
 .kpi-val {
-  font-size: 24px;
+  font-size: 27px;
   font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
   white-space: nowrap;
   color: var(--fg1);
 }
-.kpi-trend {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 11px;
+/* Currency prefix demoted so the figure reads first */
+.kpi-val .kpi-cur {
+  font-size: 15px;
   font-weight: 600;
-}
-.kpi-trend--up {
-  background: var(--tint-emerald);
-  color: #047857;
-}
-.kpi-trend--down {
-  background: var(--tint-rose);
-  color: #be123c;
+  color: var(--fg3);
+  letter-spacing: -0.01em;
+  margin-right: 3px;
 }
 .kpi-footer {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-}
-.kpi-arrow {
-  flex-shrink: 0;
+  gap: 7px;
+  margin-top: 5px;
+  min-height: 18px;
+  font-size: 11.5px;
+  font-weight: 500;
   color: var(--fg3);
-  opacity: 0.5;
 }
 .kpi-sub {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--fg2);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Delta is plain coloured text with a caret, not a pill badge */
+.kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+.kpi-trend--up { color: var(--status-emerald); }
+.kpi-trend--down { color: var(--status-rose); }
+/* Micro sparkline bleeds to the card edge and carries the period trend */
+.kpi-spark {
+  margin: 10px -16px 0;
+  height: 34px;
+}
+.kpi-spark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 @media (max-width: 1279px) {
   .kpi-card {
-    padding: 14px;
+    padding: 13px 14px 0;
   }
   .kpi-val {
-    font-size: 19px;
+    font-size: 21px;
+  }
+  .kpi-val .kpi-cur {
+    font-size: 13px;
+  }
+  .kpi-spark {
+    margin: 8px -14px 0;
+    height: 28px;
   }
 }
 @media (max-width: 767px) {
   .kpi-val {
-    font-size: 17px;
+    font-size: 18px;
   }
 }
 
@@ -2419,58 +2434,167 @@ table.tbl {
 }
 .legend {
   display: flex;
-  gap: 16px;
+  gap: 7px 16px;
   flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 .legend .li {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--fg2);
 }
 .legend .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  width: 9px;
+  height: 9px;
+  border-radius: 2.5px;
+  flex-shrink: 0;
 }
-.hbar-row {
-  display: grid;
-  grid-template-columns: 120px 1fr auto;
+
+/* ── Donut: ring left, value legend right. The old centred layout left the
+      card two thirds empty; the value list fills it and reads faster. ── */
+.donut-wrap {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0;
+  gap: 18px;
+}
+.donut-ring {
+  position: relative;
+  flex: none;
+}
+.donut-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Name on its own line, amount and share beneath it. Setting the amount
+   beside the name makes the two compete for width and the label ends up
+   truncated to a few characters in a narrow card. */
+.donut-list li {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr);
+  gap: 3px 9px;
+  align-items: start;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.donut-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.donut-list .dl-sw {
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  border-radius: 2.5px;
+  flex-shrink: 0;
+}
+.donut-list .dl-nm {
+  font-weight: 600;
+  color: var(--fg1);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.donut-list .dl-vals {
+  grid-column: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.donut-list .dl-vl {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  color: var(--fg1);
+}
+.donut-list .dl-pc {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--fg3);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .donut-wrap {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .donut-ring {
+    align-self: center;
+  }
+}
+
+/* ── Ranked bars (top branches, top vendors) ── */
+.hbar-row {
+  display: block;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.hbar-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.hbar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 .hbar-row .hb-name {
   font-size: 13px;
+  font-weight: 600;
   color: var(--fg1);
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.hbar-row .hb-idx {
+  color: var(--fg3);
+  font-weight: 700;
+  margin-right: 6px;
+}
 .hbar-track {
   display: block;
-  height: 20px;
+  height: 6px;
   background: var(--input-bg);
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .hbar-fill {
   display: block;
   height: 100%;
   min-width: 2px;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: width 0.7s cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .hbar-row .hb-val {
-  font-size: 12px;
-  color: var(--fg2);
-  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--fg1);
+  flex-shrink: 0;
+}
+.hbar-row .hb-sub {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg3);
 }
 
 /* ============================================================================
