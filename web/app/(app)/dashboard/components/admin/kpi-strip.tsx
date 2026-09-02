@@ -52,18 +52,20 @@ interface Tile {
   tone: Tone;
   hint: string;
   fill?: number;
+  /** Where the target sits on the same 0-100 track as `fill`. */
+  targetAt?: number;
 }
 
-function HealthTile({ icon: Icon, label, value, tone, hint, fill, index = 0 }: Tile & { index?: number }) {
-  const chipBg =
-    tone === "emerald"
-      ? "var(--tint-emerald)"
-      : tone === "amber"
-        ? "var(--tint-amber)"
-        : tone === "rose"
-          ? "var(--tint-rose)"
-          : "var(--tint-indigo)";
-
+function HealthTile({
+  icon: Icon,
+  label,
+  value,
+  tone,
+  hint,
+  fill,
+  targetAt,
+  index = 0,
+}: Tile & { index?: number }) {
   return (
     <div
       className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border bg-card px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md"
@@ -72,13 +74,12 @@ function HealthTile({ icon: Icon, label, value, tone, hint, fill, index = 0 }: T
       }}
     >
       <div className="flex min-w-0 items-center gap-1.5">
-        <span
-          className="inline-flex size-5 shrink-0 items-center justify-center rounded-md"
-          style={{ background: chipBg, color: TONE[tone] }}
+        <Icon
+          size={12}
+          strokeWidth={1.9}
+          className="shrink-0 text-muted-foreground opacity-55"
           aria-hidden
-        >
-          <Icon size={11} strokeWidth={2} />
-        </span>
+        />
         <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
@@ -90,14 +91,19 @@ function HealthTile({ icon: Icon, label, value, tone, hint, fill, index = 0 }: T
         {value}
       </div>
       {fill != null ? (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
+        // The bar alone can't answer "is this good?" — the tick marks where
+        // the target sits on the same track, so being 3x over is visible.
+        <div className="relative h-1.5 w-full rounded-full bg-muted" aria-hidden>
           <span
-            className="block h-full rounded-full transition-[width] duration-700 ease-out"
-            style={{
-              width: `${fill}%`,
-              background: `linear-gradient(90deg, ${TONE[tone]}, color-mix(in srgb, ${TONE[tone]} 70%, #000))`,
-            }}
+            className="absolute left-0 top-0 block h-full rounded-full transition-[width] duration-700 ease-out"
+            style={{ width: `${fill}%`, background: TONE[tone] }}
           />
+          {targetAt != null && (
+            <span
+              className="absolute -top-[3px] block w-0.5 rounded-full bg-foreground opacity-50"
+              style={{ left: `${targetAt}%`, height: "calc(100% + 6px)" }}
+            />
+          )}
         </div>
       ) : (
         <div className="h-1.5" aria-hidden />
@@ -118,13 +124,17 @@ export function AdminKpiStrip({ summary: s }: Props) {
       tone: "neutral",
       hint: "per day in range",
     },
+    // Each track runs 0 → SCALE so the target tick lands inside it with room
+    // left to show a value that overshoots. Scaling to the target itself
+    // would pin the tick to the end and hide by how much you are over.
     {
       icon: Percent,
       label: "Gross Margin",
       value: `${s.grossMarginPercent.toFixed(1)}%`,
       tone: higherIsBetterTone(s.grossMarginPercent, 40),
       hint: "healthy ≥ 40%",
-      fill: clampPct((s.grossMarginPercent / 40) * 100),
+      fill: clampPct((s.grossMarginPercent / 60) * 100),
+      targetAt: (40 / 60) * 100,
     },
     {
       icon: Percent,
@@ -132,7 +142,8 @@ export function AdminKpiStrip({ summary: s }: Props) {
       value: `${s.netMarginPercent.toFixed(1)}%`,
       tone: higherIsBetterTone(s.netMarginPercent, 10),
       hint: "healthy ≥ 10%",
-      fill: clampPct((s.netMarginPercent / 10) * 100),
+      fill: clampPct((s.netMarginPercent / 15) * 100),
+      targetAt: (10 / 15) * 100,
     },
     {
       icon: Receipt,
@@ -140,7 +151,8 @@ export function AdminKpiStrip({ summary: s }: Props) {
       value: `${s.expenseRatio.toFixed(1)}%`,
       tone: lowerIsBetterTone(s.expenseRatio, 30),
       hint: "aim ≤ 30%",
-      fill: clampPct(s.expenseRatio),
+      fill: clampPct((s.expenseRatio / 120) * 100),
+      targetAt: (30 / 120) * 100,
     },
     {
       icon: Wallet,
@@ -148,7 +160,8 @@ export function AdminKpiStrip({ summary: s }: Props) {
       value: `${s.payrollRatio.toFixed(1)}%`,
       tone: lowerIsBetterTone(s.payrollRatio, 25),
       hint: "aim ≤ 25%",
-      fill: clampPct(s.payrollRatio),
+      fill: clampPct((s.payrollRatio / 120) * 100),
+      targetAt: (25 / 120) * 100,
     },
   ];
 
