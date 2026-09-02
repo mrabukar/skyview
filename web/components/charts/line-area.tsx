@@ -103,6 +103,24 @@ export function LineArea({
         className="chart-svg"
         style={{ display: "block" }}
       >
+        <defs>
+          <linearGradient id={`area-grad-${color.replace(/[^a-zA-Z]/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="85%" stopColor={color} stopOpacity="0.03" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+          <filter id="line-glow" x="-10%" y="-10%" width="120%" height="120%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+            <feOffset dy="1" />
+            <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" />
+            <feFlood floodColor={color} floodOpacity="0.2" />
+            <feComposite in2="SourceGraphic" />
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         {[0, 0.5, 1].map((g, i) => (
           <line
             key={i}
@@ -111,14 +129,15 @@ export function LineArea({
             y1={pad.t + ih * g}
             y2={pad.t + ih * g}
             stroke="var(--border)"
-            strokeWidth="1"
+            strokeWidth="0.75"
+            strokeDasharray={g === 1 ? "none" : "4 3"}
+            opacity={g === 1 ? 1 : 0.7}
             pointerEvents="none"
           />
         ))}
         <path
           d={area}
-          fill={color}
-          fillOpacity="0.12"
+          fill={`url(#area-grad-${color.replace(/[^a-zA-Z]/g, "")})`}
           style={{ opacity: on ? 1 : 0, transition: "opacity .8s ease" }}
           pointerEvents="none"
         />
@@ -129,6 +148,7 @@ export function LineArea({
           strokeWidth="2.5"
           strokeLinejoin="round"
           strokeLinecap="round"
+          filter="url(#line-glow)"
           style={{
             strokeDasharray: 1400,
             strokeDashoffset: on ? 0 : 1400,
@@ -136,16 +156,32 @@ export function LineArea({
           }}
           pointerEvents="none"
         />
+        {/* Hover crosshair line */}
+        {hoverIndex != null && (
+          <line
+            x1={pts[hoverIndex][0]}
+            x2={pts[hoverIndex][0]}
+            y1={pad.t}
+            y2={pad.t + ih}
+            stroke={color}
+            strokeWidth="1"
+            strokeDasharray="3 3"
+            opacity="0.35"
+            pointerEvents="none"
+          />
+        )}
         {pts.map((p, i) => (
           <circle
             key={i}
             cx={p[0]}
             cy={p[1]}
-            r={hoverIndex === i ? 5 : 3}
-            fill={color}
+            r={hoverIndex === i ? 5.5 : 3}
+            fill={hoverIndex === i ? color : "var(--surface)"}
+            stroke={color}
+            strokeWidth={hoverIndex === i ? 2.5 : 2}
             style={{
               opacity: on ? 1 : 0,
-              transition: "opacity .5s ease .4s, r .15s ease",
+              transition: "opacity .5s ease .4s, r .15s ease, fill .15s ease",
             }}
             pointerEvents="none"
           />
@@ -158,6 +194,7 @@ export function LineArea({
               y={H - 9}
               textAnchor="middle"
               fontSize="11"
+              fontWeight={hoverIndex === i ? "600" : "400"}
               fill={hoverIndex === i ? "var(--fg1)" : "var(--fg3)"}
               fontFamily="var(--font-sans)"
               pointerEvents="none"
