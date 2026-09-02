@@ -28,9 +28,9 @@ const SERIES: {
   {
     key: "cogs",
     label: "Purchases",
-    color: "var(--cost-slate)",
-    gradFrom: "#b0bec5",
-    gradTo: "#78909c",
+    color: "var(--brand-violet)",
+    gradFrom: "#c9915a",
+    gradTo: "#9c6430",
   },
   {
     key: "exp",
@@ -156,6 +156,36 @@ export function GroupedBar({
         {data.map((d, i) => {
           const gx = pad.l + groupW * i + groupW / 2;
           const active = hoverIndex === i;
+          // A month with nothing in it draws a ghost rule rather than three
+          // zero-height bars, so a gap in the data reads as deliberate
+          // instead of looking like the chart failed to render.
+          const empty = d.rev === 0 && d.cogs === 0 && d.exp === 0;
+          if (empty) {
+            const ghostW = Math.min(groupW - 14, 64);
+            return (
+              <g key={i} pointerEvents="none">
+                <rect
+                  x={gx - ghostW / 2}
+                  y={pad.t + ih - 4}
+                  width={ghostW}
+                  height={4}
+                  rx={2}
+                  fill="var(--border)"
+                />
+                <text
+                  x={gx}
+                  y={pad.t + ih - 11}
+                  textAnchor="middle"
+                  fontSize="8.5"
+                  fontWeight="600"
+                  fill="var(--fg3)"
+                  fontFamily="var(--font-sans)"
+                >
+                  no activity
+                </text>
+              </g>
+            );
+          }
           return (
             <g key={i} pointerEvents="none">
               {SERIES.map((series, j) => {
