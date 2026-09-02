@@ -8,9 +8,17 @@ interface Props {
   centerLabel?: string;
   centerValue?: string | number;
   height?: number;
+  /** Formats each slice's value in the side legend. */
+  format?: (value: number) => string;
 }
 
-export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
+export function Donut({
+  data,
+  centerLabel,
+  centerValue,
+  height = 200,
+  format = (v) => v.toLocaleString("en-US"),
+}: Props) {
   const [on, setOn] = useState(false);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   useEffect(() => {
@@ -57,9 +65,14 @@ export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
       ? `${((data[hoverIdx]?.value ?? 0) / Math.max(total, 1) * 100).toFixed(1)}%`
       : centerValue;
 
+  // The ring sits beside its legend rather than above it, so cap it well
+  // short of the card width and let the value list take the rest.
+  const ringSize = Math.min(height, 132);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <svg viewBox="0 0 180 180" width={height} height={height}
+    <div className="donut-wrap">
+      <div className="donut-ring">
+      <svg viewBox="0 0 180 180" width={ringSize} height={ringSize}
         style={{ opacity: on ? 1 : 0, transform: on ? "scale(1) rotate(0)" : "scale(.85) rotate(-8deg)", transition: "opacity .5s ease, transform .6s cubic-bezier(.4,0,.2,1)" }}>
         <defs>
           <filter id="donut-shadow" x="-10%" y="-10%" width="120%" height="120%">
@@ -101,23 +114,28 @@ export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
           <text x="90" y="103" textAnchor="middle" fontSize="10" fill="var(--fg3)" fontFamily="var(--font-sans)">{displayLabel}</text>
         )}
       </svg>
-      <div className="legend">
+      </div>
+      <ul className="donut-list">
         {data.map((d, i) => (
-          <span
-            className="li"
+          <li
             key={i}
-            style={{
-              opacity: hoverIdx === null || hoverIdx === i ? 1 : 0.5,
-              transition: "opacity .2s ease",
-              cursor: "pointer",
-            }}
+            style={{ opacity: hoverIdx === null || hoverIdx === i ? 1 : 0.5 }}
             onMouseEnter={() => setHoverIdx(i)}
             onMouseLeave={() => setHoverIdx(null)}
           >
-            <span className="dot" style={{ background: d.color, borderRadius: "3px" }} />{d.label}
-          </span>
+            <span className="dl-sw" style={{ background: d.color }} />
+            <span className="dl-nm" title={d.label}>
+              {d.label}
+            </span>
+            <span className="dl-vals">
+              <span className="dl-vl num">{format(d.value)}</span>
+              <span className="dl-pc">
+                {total > 0 ? ((d.value / total) * 100).toFixed(1) : "0.0"}%
+              </span>
+            </span>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
