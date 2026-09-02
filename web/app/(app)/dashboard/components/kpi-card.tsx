@@ -134,8 +134,8 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <defs>
           <linearGradient id={`spark-${gradId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.26" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.38" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
           </linearGradient>
         </defs>
         <path d={area} fill={`url(#spark-${gradId})`} />
