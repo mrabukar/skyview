@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, type LucideIcon } from "lucide-react";
 
 type Color =
@@ -9,15 +12,59 @@ type Color =
   | "rose"
   | "slate";
 
-const TINTS: Record<Color, [string, string]> = {
-  indigo: ["var(--tint-indigo)", "var(--brand-indigo)"],
-  teal: ["var(--tint-teal)", "var(--brand-teal)"],
-  violet: ["var(--tint-violet)", "var(--brand-violet)"],
-  amber: ["var(--tint-amber)", "var(--status-amber)"],
-  emerald: ["var(--tint-emerald)", "var(--status-emerald)"],
-  rose: ["var(--tint-rose)", "var(--status-rose)"],
-  slate: ["var(--tint-slate)", "var(--cost-slate)"],
-};
+
+/** Parse "KSh 62,170" → { prefix: "KSh ", number: 62170, suffix: "" } */
+function parseFormattedValue(val: string | number): {
+  prefix: string;
+  number: number;
+  suffix: string;
+  decimals: number;
+} | null {
+  if (typeof val === "number") return { prefix: "", number: val, suffix: "", decimals: 0 };
+  const m = String(val).match(/^([^\d]*?)([\d,]+(?:\.\d+)?)(.*)$/);
+  if (!m) return null;
+  const raw = m[2].replace(/,/g, "");
+  const num = parseFloat(raw);
+  if (!Number.isFinite(num)) return null;
+  const dotIdx = raw.indexOf(".");
+  return {
+    prefix: m[1],
+    number: num,
+    suffix: m[3],
+    decimals: dotIdx >= 0 ? raw.length - dotIdx - 1 : 0,
+  };
+}
+
+function formatWithCommas(n: number, decimals: number): string {
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function useCountUp(value: string | number, duration = 700): string {
+  const [display, setDisplay] = useState(String(value));
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    const parsed = parseFormattedValue(value);
+    if (!parsed) { setDisplay(String(value)); return; }
+    const target = parsed.number;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const current = eased * target;
+      setDisplay(`${parsed.prefix}${formatWithCommas(current, parsed.decimals)}${parsed.suffix}`);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [value, duration]);
+
+  return display;
+}
 
 interface Props {
   icon: LucideIcon;
@@ -40,14 +87,14 @@ export function KpiCard({
   sublabel = "vs prior period",
   valueColor,
 }: Props) {
-  const [, fg] = TINTS[color] ?? TINTS.indigo;
   const hasTrend = trend != null;
+  const animatedValue = useCountUp(value);
 
   return (
     <div className="kpi-card" data-accent={color}>
       <div className="kpi-head">
-        <span className="kpi-ic" style={{ color: fg }} aria-hidden>
-          <Icon size={12} strokeWidth={2} />
+        <span className="kpi-ic" aria-hidden>
+          <Icon size={18} strokeWidth={2} />
         </span>
         <span className="kpi-label">{label}</span>
       </div>
@@ -57,7 +104,7 @@ export function KpiCard({
             className="kpi-val num"
             style={valueColor ? { color: valueColor } : undefined}
           >
-            {value}
+            {animatedValue}
           </span>
           {hasTrend && (
             <span
@@ -68,9 +115,9 @@ export function KpiCard({
               }
             >
               {trendDir === "down" ? (
-                <ArrowDownRight size={10} strokeWidth={2.25} />
+                <ArrowDownRight size={11} strokeWidth={2.25} />
               ) : (
-                <ArrowUpRight size={10} strokeWidth={2.25} />
+                <ArrowUpRight size={11} strokeWidth={2.25} />
               )}
               {trend}
             </span>
