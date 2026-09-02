@@ -12,6 +12,7 @@ interface Props {
 
 export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
   const [on, setOn] = useState(false);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   useEffect(() => {
     setOn(false);
     const t = setTimeout(() => setOn(true), 40);
@@ -19,19 +20,21 @@ export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
   }, [data]);
 
   const total = data.reduce((s, d) => s + d.value, 0);
-  // Wider inner hole (thinner ring) so the center value isn't crowded.
-  const R = 70, r = 57, C = 90;
+  const R = 72, r = 55, C = 90;
   const singleSlice = data.length === 1 && total > 0;
   let acc = 0;
 
+  // Tiny gap between segments for a cleaner look
+  const GAP = data.length > 1 ? 0.006 : 0;
+
   const segs = singleSlice
     ? []
-    : data.map((d) => {
+    : data.map((d, idx) => {
         const frac = total > 0 ? d.value / total : 0;
-        const a0 = acc * 2 * Math.PI - Math.PI / 2;
+        const a0 = (acc + GAP / 2) * 2 * Math.PI - Math.PI / 2;
         acc += frac;
-        const a1 = acc * 2 * Math.PI - Math.PI / 2;
-        const large = frac > 0.5 ? 1 : 0;
+        const a1 = (acc - GAP / 2) * 2 * Math.PI - Math.PI / 2;
+        const large = frac - GAP > 0.5 ? 1 : 0;
         const p = (ang: number, rad: number): [number, number] => [
           C + rad * Math.cos(ang),
           C + rad * Math.sin(ang),
@@ -44,32 +47,74 @@ export function Donut({ data, centerLabel, centerValue, height = 200 }: Props) {
           path: `M${x0} ${y0} A${R} ${R} 0 ${large} 1 ${x1} ${y1} L${x2} ${y2} A${r} ${r} 0 ${large} 0 ${x3} ${y3} Z`,
           color: d.color,
           label: d.label,
+          idx,
         };
       });
+
+  const displayLabel = hoverIdx != null ? data[hoverIdx]?.label : centerLabel;
+  const displayValue =
+    hoverIdx != null
+      ? `${((data[hoverIdx]?.value ?? 0) / Math.max(total, 1) * 100).toFixed(1)}%`
+      : centerValue;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <svg viewBox="0 0 180 180" width={height} height={height}
-        style={{ opacity: on ? 1 : 0, transform: on ? "scale(1)" : "scale(.9)", transition: "opacity .5s ease, transform .5s ease" }}>
+        style={{ opacity: on ? 1 : 0, transform: on ? "scale(1) rotate(0)" : "scale(.85) rotate(-8deg)", transition: "opacity .5s ease, transform .6s cubic-bezier(.4,0,.2,1)" }}>
+        <defs>
+          <filter id="donut-shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.12" />
+          </filter>
+        </defs>
+        {/* Subtle inner shadow ring */}
+        <circle cx={C} cy={C} r={(R + r) / 2} fill="none" stroke="var(--border)" strokeWidth={R - r} strokeOpacity="0.08" />
         {singleSlice ? (
           <>
-            <circle cx={C} cy={C} r={R} fill={data[0].color} />
+            <circle cx={C} cy={C} r={R} fill={data[0].color} filter="url(#donut-shadow)" />
             <circle cx={C} cy={C} r={r} fill="var(--surface)" />
           </>
         ) : (
-          segs.map((s, i) => <path key={i} d={s.path} fill={s.color} />)
+          segs.map((s) => (
+            <path
+              key={s.idx}
+              d={s.path}
+              fill={s.color}
+              style={{
+                opacity: hoverIdx === null || hoverIdx === s.idx ? 1 : 0.4,
+                transform: hoverIdx === s.idx ? "scale(1.035)" : "scale(1)",
+                transformOrigin: `${C}px ${C}px`,
+                transition: "opacity .2s ease, transform .2s ease",
+                filter: hoverIdx === s.idx ? "url(#donut-shadow)" : "none",
+                cursor: "pointer",
+              }}
+              onMouseEnter={() => setHoverIdx(s.idx)}
+              onMouseLeave={() => setHoverIdx(null)}
+            />
+          ))
         )}
-        {centerValue != null && (
-          <text x="90" y="86" textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--fg1)" fontFamily="var(--font-sans)">{centerValue}</text>
+        {/* White center circle */}
+        <circle cx={C} cy={C} r={r - 1} fill="var(--surface)" />
+        {displayValue != null && (
+          <text x="90" y={displayLabel ? "86" : "93"} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--fg1)" fontFamily="var(--font-sans)">{displayValue}</text>
         )}
-        {centerLabel && (
-          <text x="90" y="102" textAnchor="middle" fontSize="11" fill="var(--fg3)" fontFamily="var(--font-sans)">{centerLabel}</text>
+        {displayLabel && (
+          <text x="90" y="103" textAnchor="middle" fontSize="10" fill="var(--fg3)" fontFamily="var(--font-sans)">{displayLabel}</text>
         )}
       </svg>
       <div className="legend">
         {data.map((d, i) => (
-          <span className="li" key={i}>
-            <span className="dot" style={{ background: d.color }} />{d.label}
+          <span
+            className="li"
+            key={i}
+            style={{
+              opacity: hoverIdx === null || hoverIdx === i ? 1 : 0.5,
+              transition: "opacity .2s ease",
+              cursor: "pointer",
+            }}
+            onMouseEnter={() => setHoverIdx(i)}
+            onMouseLeave={() => setHoverIdx(null)}
+          >
+            <span className="dot" style={{ background: d.color, borderRadius: "3px" }} />{d.label}
           </span>
         ))}
       </div>
