@@ -54,7 +54,7 @@ interface Tile {
   fill?: number;
 }
 
-function HealthTile({ icon: Icon, label, value, tone, hint, fill }: Tile) {
+function HealthTile({ icon: Icon, label, value, tone, hint, fill, index = 0 }: Tile & { index?: number }) {
   const chipBg =
     tone === "emerald"
       ? "var(--tint-emerald)"
@@ -65,7 +65,12 @@ function HealthTile({ icon: Icon, label, value, tone, hint, fill }: Tile) {
           : "var(--tint-indigo)";
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border bg-card px-3 py-2.5 shadow-sm">
+    <div
+      className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border bg-card px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md"
+      style={{
+        animation: `card-enter .45s cubic-bezier(.4,0,.2,1) ${index * 60}ms both`,
+      }}
+    >
       <div className="flex min-w-0 items-center gap-1.5">
         <span
           className="inline-flex size-5 shrink-0 items-center justify-center rounded-md"
@@ -85,17 +90,17 @@ function HealthTile({ icon: Icon, label, value, tone, hint, fill }: Tile) {
         {value}
       </div>
       {fill != null ? (
-        <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
           <span
-            className="block h-full rounded-full"
+            className="block h-full rounded-full transition-[width] duration-700 ease-out"
             style={{
               width: `${fill}%`,
-              background: TONE[tone],
+              background: `linear-gradient(90deg, ${TONE[tone]}, color-mix(in srgb, ${TONE[tone]} 70%, #000))`,
             }}
           />
         </div>
       ) : (
-        <div className="h-1" aria-hidden />
+        <div className="h-1.5" aria-hidden />
       )}
       <p className="m-0 truncate text-[10px] leading-tight text-muted-foreground">
         {hint}
@@ -153,8 +158,8 @@ export function AdminKpiStrip({ summary: s }: Props) {
         Health
       </div>
       <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3 lg:grid-cols-5">
-        {tiles.map((tile) => (
-          <HealthTile key={tile.label} {...tile} />
+        {tiles.map((tile, i) => (
+          <HealthTile key={tile.label} {...tile} index={i} />
         ))}
       </div>
     </div>
