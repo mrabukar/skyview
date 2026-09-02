@@ -52,7 +52,7 @@ export function AdminDashboard() {
     <div className="dash-page">
       {header}
 
-      <AdminStatGrid summary={summary} comparison={comparison} />
+      <AdminStatGrid summary={summary} comparison={comparison} charts={charts} />
       <AdminRevenueCharts charts={charts} summary={summary} />
       <AdminPerformanceCharts charts={charts} />
       <div className="mb-3 grid gap-3 lg:grid-cols-2">
