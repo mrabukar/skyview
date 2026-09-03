@@ -16,6 +16,7 @@ import { FinancialLoadingSkeleton } from "./components/loading-skeleton";
 import { PnlBreakdown } from "./components/pnl-breakdown";
 import { Donut } from "@/components/charts/donut";
 import { GroupedBar } from "@/components/charts/grouped-bar";
+import { HBars } from "@/components/charts/h-bars";
 import { LineArea } from "@/components/charts/line-area";
 import { ReportFilterBar } from "@/components/filters/report-filter-bar";
 import { ReportExportMenu } from "@/components/reports/report-export-menu";
@@ -32,6 +33,7 @@ import { fmt } from "@/lib/utils";
 
 const defaultRange = getLastSixMonthsRange();
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
+const NO_SERIES: number[] = [];
 
 export default function FinancialPage() {
   const filters = useReportFilters(defaultRange);
@@ -56,6 +58,21 @@ export default function FinancialPage() {
     }),
     [data?.charts.netProfitTrend],
   );
+
+  // Monthly series behind each KPI card micro sparkline, matching the admin
+  // dashboard. Salaries, POS revenue and daily average have no monthly
+  // breakdown in this report, so those cards get an empty series — the card
+  // keeps its height with a blank track rather than inventing a trend.
+  const sparks = useMemo(() => {
+    const months = data?.charts.revenueCogsExpenses ?? [];
+    return {
+      revenue: months.map((m) => m.revenue),
+      cogs: months.map((m) => m.cogs),
+      expenses: months.map((m) => m.expenses),
+      grossProfit: months.map((m) => m.revenue - m.cogs),
+      netProfit: (data?.charts.netProfitTrend ?? []).map((m) => m.netProfit),
+    };
+  }, [data?.charts.revenueCogsExpenses, data?.charts.netProfitTrend]);
 
   const header = (
     <PageHeader
@@ -131,6 +148,7 @@ export default function FinancialPage() {
             value={fmt(s.totalRevenue)}
             label="Total Revenue"
             sublabel="All revenue this period"
+            spark={sparks.revenue}
           />
           <KpiCard
             icon={ShoppingBag}
@@ -138,6 +156,7 @@ export default function FinancialPage() {
             value={fmt(s.cogs)}
             label="Purchases"
             sublabel="Cost of goods sold"
+            spark={sparks.cogs}
           />
           <KpiCard
             icon={CreditCard}
@@ -145,6 +164,7 @@ export default function FinancialPage() {
             value={fmt(s.totalExpenses)}
             label="Expenses"
             sublabel="Operating costs"
+            spark={sparks.expenses}
           />
           <KpiCard
             icon={Wallet}
@@ -152,6 +172,7 @@ export default function FinancialPage() {
             value={fmt(s.salaries)}
             label="Salaries"
             sublabel="Payroll & wages"
+            spark={NO_SERIES}
           />
         </div>
         <div className="stat-grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -162,6 +183,7 @@ export default function FinancialPage() {
             label="Gross Profit"
             sublabel="Revenue minus COGS"
             valueColor={s.grossProfit < 0 ? "var(--status-rose)" : undefined}
+            spark={sparks.grossProfit}
           />
           <KpiCard
             icon={Percent}
@@ -170,6 +192,7 @@ export default function FinancialPage() {
             label="Net Profit"
             sublabel="After all expenses"
             valueColor={s.netProfit < 0 ? "var(--status-rose)" : undefined}
+            spark={sparks.netProfit}
           />
           <KpiCard
             icon={ReceiptText}
@@ -177,6 +200,7 @@ export default function FinancialPage() {
             value={fmt(s.posRevenue)}
             label="POS Revenue"
             sublabel="From the POS terminal"
+            spark={NO_SERIES}
           />
           <KpiCard
             icon={Banknote}
@@ -184,6 +208,7 @@ export default function FinancialPage() {
             value={fmt(s.dailyAvgRevenue)}
             label="Daily Avg Revenue"
             sublabel="Per day in range"
+            spark={NO_SERIES}
           />
         </div>
       </div>
@@ -195,7 +220,7 @@ export default function FinancialPage() {
       <div className="mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 lg:grid-cols-3">
         <Card title="Sales vs Purchases vs Expenses" pad className="h-full min-w-0">
           {revenueChart.length > 0 ? (
-            <GroupedBar data={revenueChart} height={180} />
+            <GroupedBar data={revenueChart} height={200} />
           ) : (
             <EmptyState
               title="No sales data"
@@ -208,7 +233,7 @@ export default function FinancialPage() {
             <LineArea
               values={netProfitChart.values}
               labels={netProfitChart.labels}
-              height={160}
+              height={180}
             />
           ) : (
             <EmptyState
@@ -227,7 +252,7 @@ export default function FinancialPage() {
               }))}
               centerLabel="Total"
               centerValue={fmt(s.totalRevenue)}
-              height={160}
+              height={180}
             />
           ) : (
             <EmptyState
@@ -238,14 +263,14 @@ export default function FinancialPage() {
         </Card>
       </div>
 
-      <div className="mb-3 grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
+      <div className="mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 lg:grid-cols-3">
         <Card title="Revenue Sources" pad className="h-full min-w-0">
           {revenueSourceDonut.length > 0 ? (
             <Donut
               data={revenueSourceDonut}
               centerLabel="Total"
               centerValue={fmt(s.totalRevenue)}
-              height={160}
+              height={180}
             />
           ) : (
             <EmptyState title="No revenue" sub="No revenue in the selected period." />
@@ -257,10 +282,30 @@ export default function FinancialPage() {
               data={expenseDonut}
               centerLabel="Total"
               centerValue={fmt(expenseTotal)}
-              height={160}
+              height={180}
             />
           ) : (
             <EmptyState title="No expenses" sub="No expenses in the selected period." />
+          )}
+        </Card>
+        <Card title="Top Performing Branches" pad className="h-full min-w-0">
+          {(charts.revenueByBranch?.length ?? 0) > 0 ? (
+            <HBars
+              data={charts.revenueByBranch.map((row) => ({
+                name: row.storeName,
+                revenue: row.revenue,
+              }))}
+              valueKey="revenue"
+              labelKey="name"
+              colors={DONUT_COLORS}
+              format={fmt}
+              shareLabel="of all revenue"
+            />
+          ) : (
+            <EmptyState
+              title="No branch rankings"
+              sub="Branch rankings appear when viewing all branches."
+            />
           )}
         </Card>
       </div>
@@ -271,7 +316,7 @@ export default function FinancialPage() {
             <LineArea
               values={charts.grossMarginTrend.map((r) => r.percent)}
               labels={charts.grossMarginTrend.map((r) => r.month)}
-              height={160}
+              height={180}
               color="var(--brand-teal)"
               valueLabel="Gross Margin"
               formatValue={fmtPct}
@@ -285,7 +330,7 @@ export default function FinancialPage() {
             <LineArea
               values={charts.profitMarginTrend.map((r) => r.percent)}
               labels={charts.profitMarginTrend.map((r) => r.month)}
-              height={160}
+              height={180}
               color="var(--status-amber)"
               valueLabel="Net Margin"
               formatValue={fmtPct}
