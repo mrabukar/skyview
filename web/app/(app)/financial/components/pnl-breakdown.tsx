@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { fmt } from "@/lib/utils";
 import type { FinancialBreakdown } from "@/types/reports/financial-summary";
 
@@ -48,75 +49,50 @@ export function PnlBreakdown({ breakdown }: { breakdown: FinancialBreakdown }) {
   const base = breakdown.revenue > 0 ? breakdown.revenue : 1;
 
   return (
-    <div className="card card-pad">
-      <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 600 }}>
-        P&L Breakdown
-      </h3>
-      {ROWS.map((row) => {
-        const value = breakdown[row.key];
-        const width = Math.min(100, Math.round((Math.abs(value) / base) * 100));
-        const color =
-          row.key === "netProfit" && value < 0
-            ? "var(--fin-net-neg)"
-            : row.color;
+    <Card title="P&L Breakdown" pad>
+      <ul className="pnl">
+        {ROWS.map((row) => {
+          const value = breakdown[row.key];
+          const share = (Math.abs(value) / base) * 100;
+          const width = Math.min(100, share);
+          const color =
+            row.key === "netProfit" && value < 0
+              ? "var(--fin-net-neg)"
+              : row.color;
 
-        return (
-          <div
-            key={row.key}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              padding: "7px 0",
-            }}
-          >
-            <span
-              style={{
-                width: 180,
-                flexShrink: 0,
-                fontSize: row.indent ? 12 : 13,
-                fontWeight: 500,
-                paddingLeft: row.indent ? 16 : 0,
-                color: row.indent ? "var(--fg3)" : undefined,
-              }}
+          return (
+            <li
+              key={row.key}
+              className={`pnl-row${row.indent ? " pnl-row--sub" : ""}${
+                row.emphasize ? " pnl-row--total" : ""
+              }`}
             >
-              <span style={{ color: "var(--fg3)" }}>{row.op} </span>
-              {row.label}
-            </span>
-            <span
-              style={{
-                flex: 1,
-                height: 14,
-                background: "var(--input-bg)",
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
+              <span className="pnl-label">
+                <span className="pnl-op" aria-hidden>
+                  {row.op}
+                </span>
+                {row.label}
+              </span>
+              <span className="pnl-track">
+                <span
+                  className="pnl-fill"
+                  style={{
+                    width: `${width}%`,
+                    background: `linear-gradient(90deg, ${color}, color-mix(in srgb, ${color} 68%, #000))`,
+                  }}
+                />
+              </span>
               <span
-                style={{
-                  display: "block",
-                  height: "100%",
-                  width: `${width}%`,
-                  background: color,
-                  borderRadius: 4,
-                }}
-              />
-            </span>
-            <span
-              className="num"
-              style={{
-                width: 90,
-                textAlign: "right",
-                fontWeight: 600,
-                fontSize: 13,
-                color: row.emphasize ? color : "var(--fg1)",
-              }}
-            >
-              {fmt(value)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
+                className="pnl-val num"
+                style={row.emphasize ? { color } : undefined}
+              >
+                {fmt(value)}
+              </span>
+              <span className="pnl-share">{share.toFixed(1)}%</span>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
   );
 }
