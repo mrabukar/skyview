@@ -16,57 +16,48 @@ function SkeletonBar({
   );
 }
 
+/** Mirrors KpiCard's anatomy — label first, icon right, sparkline track —
+ *  so the grid does not jump when real data replaces the skeleton. */
 function KpiCardSkeleton() {
   return (
     <div className="kpi-card">
       <div className="kpi-head">
-        <SkeletonBar
-          style={{ width: 12, height: 12, borderRadius: 3, maxWidth: 12 }}
-        />
         <SkeletonBar style={{ width: 72, height: 10, maxWidth: 72 }} />
+        <SkeletonBar
+          style={{ width: 15, height: 15, borderRadius: 3, maxWidth: 15 }}
+        />
       </div>
       <div className="kpi-inner">
         <div className="kpi-valrow">
-          <SkeletonBar
-            style={{ width: "70%", height: 20, maxWidth: 100 }}
-          />
+          <SkeletonBar style={{ width: "70%", height: 18, maxWidth: 96 }} />
         </div>
         <div className="kpi-footer">
-          <SkeletonBar
-            style={{ width: 14, height: 14, borderRadius: 3, maxWidth: 14 }}
-          />
-          <SkeletonBar style={{ width: 60, height: 11, maxWidth: 60 }} />
+          <SkeletonBar style={{ width: 60, height: 10, maxWidth: 60 }} />
         </div>
       </div>
+      <div className="kpi-spark" aria-hidden />
     </div>
   );
 }
 
 function PnlBreakdownSkeleton() {
   return (
-    <div className="card card-pad">
-      <SkeletonBar
-        style={{ width: 140, height: 16, maxWidth: 140, marginBottom: 14 }}
-      />
-      {Array.from({ length: 5 }).map((_, index) => (
-        <div
-          key={`pnl-row-${index}`}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            padding: "7px 0",
-          }}
-        >
-          <SkeletonBar
-            style={{ width: 180, height: 14, maxWidth: 180, flexShrink: 0 }}
-          />
-          <SkeletonBar style={{ flex: 1, height: 14, maxWidth: "none" }} />
-          <SkeletonBar
-            style={{ width: 90, height: 14, maxWidth: 90, flexShrink: 0 }}
-          />
-        </div>
-      ))}
+    <div className="card">
+      <div className="card-head">
+        <SkeletonBar style={{ width: 140, height: 14, maxWidth: 140 }} />
+      </div>
+      <div className="card-pad">
+        <ul className="pnl">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <li className="pnl-row" key={`pnl-row-${index}`}>
+              <SkeletonBar style={{ width: "70%", height: 12, maxWidth: 150 }} />
+              <SkeletonBar style={{ width: "100%", height: 8, maxWidth: "none" }} />
+              <SkeletonBar style={{ width: 68, height: 12, maxWidth: 68 }} />
+              <SkeletonBar style={{ width: 34, height: 10, maxWidth: 34 }} />
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -105,19 +96,20 @@ export function FinancialLoadingSkeleton() {
       </div>
 
       <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <ChartCardSkeleton height={200} />
+        <ChartCardSkeleton height={180} />
+        <ChartCardSkeleton height={180} />
+      </div>
+
+      <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         <ChartCardSkeleton height={180} />
         <ChartCardSkeleton height={180} />
         <ChartCardSkeleton height={180} />
       </div>
 
       <div className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <ChartCardSkeleton height={160} />
-        <ChartCardSkeleton height={160} />
-      </div>
-
-      <div className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <ChartCardSkeleton height={160} />
-        <ChartCardSkeleton height={160} />
+        <ChartCardSkeleton height={180} />
+        <ChartCardSkeleton height={180} />
       </div>
 
       <div className="rounded-[10px] border border-border bg-muted p-1 pt-0">
