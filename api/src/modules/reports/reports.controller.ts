@@ -33,6 +33,12 @@ export class ReportsController {
   }
 
   @Roles(UserRole.admin)
+  @Get("company-net-profit")
+  companyNetProfit() {
+    return this.reportsService.companyNetProfitToDate();
+  }
+
+  @Roles(UserRole.admin)
   @Get("financial-summary")
   financialSummary(
     @Query() query: ReportQueryDto,
