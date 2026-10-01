@@ -29,14 +29,11 @@ import { useStores } from "@/hooks/stores/list-stores";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
   buildProfitWarningMessage,
-  formatProfitPeriodLabel,
-  getProfitCheckPeriod,
-  isExpenseInPeriod,
   shouldWarnExpenseProfit,
 } from "@/lib/expenses/profit-warning";
 import { getCurrentMonthRange } from "@/lib/filters/dates";
 import { listExpenses } from "@/service/expenses/list-expenses";
-import { getFinancialSummary } from "@/service/reports/financial-summary";
+import { getCompanyNetProfitToDate } from "@/service/reports/financial-summary";
 import { useAppStore } from "@/store/app";
 import { expenseAmount, type Expense } from "@/types/expenses/expense";
 import { fmt } from "@/lib/utils";
@@ -220,7 +217,7 @@ export default function ExpensesPage() {
     if (form.categoryId == null) return;
 
     // Managers don't get the company-wide profit warning (it needs the
-    // admin-only financial summary). Save directly for them.
+    // admin-only running net profit). Save directly for them.
     if (!isAdmin) {
       try {
         await persistExpense(form);
@@ -235,30 +232,24 @@ export default function ExpensesPage() {
 
     const amount = Number(form.amount);
     const isEdit = modal?.mode === "edit";
-    const period = getProfitCheckPeriod();
     const expenseStoreLabel = storeItems.find(
       (s) => s.value === form.storeId,
     )?.label;
     const scopeLabel = expenseStoreLabel
       ? `company-wide net profit (expense for ${expenseStoreLabel})`
       : "company-wide";
-    const periodLabel = formatProfitPeriodLabel(period);
 
     setIsCheckingProfit(true);
     try {
-      // Always use company-wide net profit — matches the dashboard headline.
-      // Store-scoped profit excludes company-wide costs (e.g. rent) and can
-      // look healthy while company-wide net profit is negative.
-      const summary = await getFinancialSummary({
-        fromDate: period.fromDate,
-        toDate: period.toDate,
-      });
-      const currentNetProfit = summary.summary.netProfit;
+      // Running company-wide total through today. A single month can sit at
+      // zero while earlier months still leave the business in surplus.
+      const snapshot = await getCompanyNetProfitToDate();
+      const currentNetProfit = snapshot.netProfit;
 
       const oldAmount =
         isEdit &&
         modal.expense &&
-        isExpenseInPeriod(modal.expense.expenseDate, period)
+        modal.expense.expenseDate.slice(0, 10) <= snapshot.asOf
           ? expenseAmount(modal.expense)
           : 0;
 
@@ -275,7 +266,6 @@ export default function ExpensesPage() {
           amount,
           oldAmount,
           isEdit,
-          periodLabel,
           scopeLabel,
         });
         setProfitWarning({
