@@ -14,6 +14,7 @@ import {
   startOfMonthCalendarDate,
   todayCalendarDate,
   toReportDateRange,
+  zonedDayEnd,
 } from "../../common/utils/app-timezone.util";
 import { resolveBranchFilter, type BranchIdFilter } from "../../common/utils/branch-scope.util";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -361,6 +362,50 @@ export class ReportsService {
         stockByCategory: [],
       },
       recentSales: this.recentSales(recentSales),
+    };
+  }
+
+  /**
+   * Company-wide net profit from the first recorded activity through today.
+   * Aggregates only, so it is not limited by the 12-month report window.
+   * Same formula as the financial summary: sales + paid POS − purchases − expenses.
+   */
+  async companyNetProfitToDate() {
+    const asOf = todayCalendarDate();
+    const asOfDate = calendarDateToDbDate(asOf);
+    const asOfEnd = zonedDayEnd(asOf);
+
+    const [sales, purchases, expenses, pos] = await Promise.all([
+      this.prisma.dailySale.aggregate({
+        where: { saleDate: { lte: asOfDate } },
+        _sum: { totalAmount: true },
+      }),
+      this.prisma.purchase.aggregate({
+        where: { purchaseDate: { lte: asOfDate } },
+        _sum: { totalCost: true },
+      }),
+      this.prisma.expense.aggregate({
+        where: { expenseDate: { lte: asOfDate } },
+        _sum: { amount: true },
+      }),
+      this.prisma.posOrder.aggregate({
+        where: {
+          status: OrderStatus.paid,
+          createdAt: { lte: asOfEnd },
+          branch: { posEnabled: true },
+        },
+        _sum: { totalAmount: true },
+      }),
+    ]);
+
+    const revenue =
+      Number(sales._sum.totalAmount ?? 0) + Number(pos._sum.totalAmount ?? 0);
+    const cogs = Number(purchases._sum.totalCost ?? 0);
+    const totalExpenses = Number(expenses._sum.amount ?? 0);
+
+    return {
+      asOf,
+      netProfit: Math.round(revenue - cogs - totalExpenses),
     };
   }
 
