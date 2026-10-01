@@ -34,6 +34,16 @@ export async function runReports(ctx) {
   check("financial-summary expenseByCategory is array", Array.isArray(fs.expenseByCategory));
   check("gross margin percent present", typeof fs.summary?.grossMarginPercent === "number");
 
+  r = await admin.req("GET", "/api/reports/company-net-profit");
+  check("company-net-profit → 200", r.status === 200, `got ${r.status}`);
+  check(
+    "company-net-profit shape",
+    typeof r.json?.netProfit === "number" && typeof r.json?.asOf === "string",
+    JSON.stringify(r.json),
+  );
+  r = await manager.req("GET", "/api/reports/company-net-profit");
+  check("manager company-net-profit → 403", r.status === 403, `got ${r.status}`);
+
   // branch filter accepted
   r = await admin.req("GET", `/api/reports/admin-dashboard?fromDate=${from}&toDate=${to}&branchId=${ctx.branchId}`);
   check("admin-dashboard branch filter → 200", r.status === 200, `got ${r.status}`);
