@@ -16,6 +16,16 @@ function toQueryString(params: FinancialSummaryQuery): string {
   return qs ? `?${qs}` : "";
 }
 
+export interface CompanyNetProfitToDate {
+  asOf: string;
+  netProfit: number;
+}
+
+/** Running company-wide net profit through today. Admin only. */
+export function getCompanyNetProfitToDate(): Promise<CompanyNetProfitToDate> {
+  return apiFetch<CompanyNetProfitToDate>("/api/reports/company-net-profit");
+}
+
 export function getFinancialSummary(
   params: FinancialSummaryQuery = getLastSixMonthsRange(),
 ): Promise<FinancialSummaryResponse> {
