@@ -119,11 +119,17 @@ export class PayrollService {
 
     const salariesCategoryId = await this.requireSalariesCategoryId();
 
-    await this.prisma.$transaction(async (tx) => {
-      for (const u of toPay) {
-        await this.payOne(tx, user, u, monthKey, salariesCategoryId);
-      }
-    });
+    // Default interactive-transaction timeout is 5s. Paying every staff member
+    // (expense + payment + audit log each) exceeds that on a slow database
+    // and Prisma then throws P2028.
+    await this.prisma.$transaction(
+      async (tx) => {
+        for (const u of toPay) {
+          await this.payOne(tx, user, u, monthKey, salariesCategoryId);
+        }
+      },
+      { maxWait: 10_000, timeout: 20_000 },
+    );
 
     return this.getStatus(user, monthKey);
   }
@@ -192,6 +198,23 @@ export class PayrollService {
     return category.id;
   }
 
+  /**
+   * Book the salary in the month being paid.
+   * The current month uses today. A past month uses that month's last day,
+   * so a September payment made in October stays in September.
+   */
+  private expenseDateForMonth(monthKey: string): Date {
+    const today = todayCalendarDate();
+    if (monthKey === today.slice(0, 7)) {
+      return calendarDateToDbDate(today);
+    }
+
+    const [year, month] = monthKey.split("-").map(Number);
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const ymd = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    return calendarDateToDbDate(ymd);
+  }
+
   /** Create the salary expense + payment record for one user (inside a tx). */
   private async payOne(
     tx: Prisma.TransactionClient,
@@ -210,7 +233,7 @@ export class PayrollService {
           amount: target.salary,
           categoryId: salariesCategoryId,
           branchId: target.branchId,
-          expenseDate: calendarDateToDbDate(todayCalendarDate()),
+          expenseDate: this.expenseDateForMonth(monthKey),
           note: `Salary payment ${label}`,
           createdById: actor.id,
         },
