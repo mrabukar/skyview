@@ -31,7 +31,7 @@ import {
   buildProfitWarningMessage,
   shouldWarnExpenseProfit,
 } from "@/lib/expenses/profit-warning";
-import { getCurrentMonthRange } from "@/lib/filters/dates";
+import { defaultDateForRange, getCurrentMonthRange } from "@/lib/filters/dates";
 import { listExpenses } from "@/service/expenses/list-expenses";
 import { getCompanyNetProfitToDate } from "@/service/reports/financial-summary";
 import { useAppStore } from "@/store/app";
@@ -208,6 +208,14 @@ export default function ExpensesPage() {
         ...(form.storeId ? { storeId: form.storeId } : {}),
       });
       addToast({ title: "Expense added successfully" });
+    }
+    if (form.expenseDate < fromDate) {
+      setFromDate(form.expenseDate);
+      resetPage();
+    }
+    if (form.expenseDate > toDate) {
+      setToDate(form.expenseDate);
+      resetPage();
     }
     setModal(null);
     setProfitWarning(null);
@@ -497,6 +505,7 @@ export default function ExpensesPage() {
           storeItems={storeItems}
           showBranchField={showStoreField}
           allowCompanyWide={isAdmin}
+          defaultDate={defaultDateForRange(fromDate, toDate)}
           onClose={() => setModal(null)}
           onSave={(form) => void handleSaveExpense(form)}
           isSaving={isSaving}

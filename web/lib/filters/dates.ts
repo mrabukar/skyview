@@ -44,6 +44,22 @@ export function todayYmd(timeZone = APP_TIMEZONE): string {
   return toYmd(year, month, day);
 }
 
+/**
+ * Prefill date for a create form from the visible filter range.
+ * Past ranges (e.g. last month) use that range's end date so the entry
+ * stays in the month the user is looking at, instead of always today.
+ */
+export function defaultDateForRange(
+  fromDate: string,
+  toDate: string,
+  timeZone = APP_TIMEZONE,
+): string {
+  const today = todayYmd(timeZone);
+  if (toDate && toDate < today) return toDate;
+  if (fromDate && fromDate > today) return today;
+  return today;
+}
+
 export function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }

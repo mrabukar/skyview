@@ -286,6 +286,13 @@ export class ExpensesService {
     const organizationId = requireOrganizationId(user);
 
     await this.prisma.$transaction(async (tx) => {
+      const linkedPayment = await tx.salaryPayment.findFirst({
+        where: { expenseId: id },
+        select: { id: true, monthKey: true, userId: true, userName: true },
+      });
+      if (linkedPayment) {
+        await tx.salaryPayment.delete({ where: { id: linkedPayment.id } });
+      }
       await tx.expense.delete({ where: { id } });
       await tx.auditLog.create({
         data: {
@@ -296,7 +303,16 @@ export class ExpensesService {
           entityId: id,
           branchId: existing.branchId,
           oldValue: this.toAuditSnapshot(existing),
-          newValue: Prisma.JsonNull,
+          newValue: linkedPayment
+            ? {
+                reversedSalaryPayment: {
+                  id: linkedPayment.id,
+                  monthKey: linkedPayment.monthKey,
+                  userId: linkedPayment.userId,
+                  userName: linkedPayment.userName,
+                },
+              }
+            : Prisma.JsonNull,
         },
       });
     });

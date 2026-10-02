@@ -8,7 +8,7 @@ import { ExpenseCategoryCreateModal } from "./expense-category-create-modal";
 import { ExpenseCategoryPicker } from "./expense-category-picker";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { dateToYmd } from "@/lib/filters/dates";
+import { todayYmd } from "@/lib/filters/dates";
 import { cn } from "@/lib/utils";
 import type { Expense } from "@/types/expenses/expense";
 import type { ExpenseCategory } from "@/types/expenses/expense-category";
@@ -42,6 +42,8 @@ interface Props {
   showBranchField?: boolean;
   /** When true, branch may be cleared to company-wide (admin only). */
   allowCompanyWide?: boolean;
+  /** Add-mode date prefill (selected period). Falls back to today. */
+  defaultDate?: string;
   onClose: () => void;
   onSave: (data: ExpenseFormValues) => void;
   isSaving: boolean;
@@ -66,13 +68,14 @@ async function tryCreateCategory(
   if (created) onCreated(created);
 }
 
-function initialForm(expense?: Expense): ExpenseFormValues {
+function initialForm(expense?: Expense, defaultDate?: string): ExpenseFormValues {
   return {
     title: expense?.title ?? "",
     amount: expense ? String(expense.amount) : "",
     categoryId: expense?.categoryId,
     storeId: expense?.storeId ?? undefined,
-    expenseDate: expense?.expenseDate.slice(0, 10) ?? dateToYmd(new Date()),
+    expenseDate:
+      expense?.expenseDate.slice(0, 10) ?? defaultDate ?? todayYmd(),
     note: expense?.note ?? "",
   };
 }
@@ -109,6 +112,7 @@ export function ExpenseModal({
   storeItems,
   showBranchField = true,
   allowCompanyWide = true,
+  defaultDate,
   onClose,
   onSave,
   isSaving,
@@ -118,9 +122,9 @@ export function ExpenseModal({
   isCreatingCategory = false,
 }: Props) {
   const isEdit = mode === "edit";
-  const today = useMemo(() => dateToYmd(new Date()), []);
+  const today = useMemo(() => todayYmd(), []);
   const [form, setForm] = useState<ExpenseFormValues>(() =>
-    initialForm(expense),
+    initialForm(expense, defaultDate),
   );
   const [err, setErr] = useState<
     Partial<Record<keyof ExpenseFormValues, string>>
